@@ -227,7 +227,7 @@ $$
 G'_t(s,sw,f_\theta)=Z_C(s).
 $$
 
-On the proposal's support, $M'_tG'_t=\pi_\theta(w\mid xs)$. If $Z_C(s)=0$, the masked proposal is undefined unless the program handles that dead state explicitly. This is why choosing a legal next token and conditioning the complete generated string are not generally the same operation.
+On the proposal's support, $M_t^{\prime}G_t^{\prime}=\pi_\theta(w\mid xs)$. If $Z_C(s)=0$, the masked proposal is undefined unless the program handles that dead state explicitly. This is why choosing a legal next token and conditioning the complete generated string are not generally the same operation.
 
 In a LLaMPPL program, one step's potential can combine several factors:
 
