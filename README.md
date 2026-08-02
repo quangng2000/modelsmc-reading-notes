@@ -51,3 +51,12 @@ The source PDFs are linked from their paper pages rather than committed to this 
 1. Read the [Paper 2 notes](papers/02-data-structure-synthesis/README.md) for the classical synthesis vocabulary: hypotheses, holes, deduction, types, cost, and enumerative search.
 2. Read the [Paper 1 notes](papers/01-modelsmc/README.md) for probabilistic model discovery: kernels, potential functions, particles, likelihood weighting, and resampling.
 3. Compare what guarantees are gained or lost when moving from an explicit typed search space to open-ended LLM proposals.
+
+## Collaboration
+
+- Discuss [Paper 1 in issue #2](https://github.com/quangng2000/modelsmc-reading-notes/issues/2) and [Paper 2 in issue #1](https://github.com/quangng2000/modelsmc-reading-notes/issues/1).
+- Open a [new paper-review issue](https://github.com/quangng2000/modelsmc-reading-notes/issues/new?template=paper-review.md) for a separate question, disputed interpretation, possible correction, or missing definition.
+- Use a focused branch and pull request for a concrete notes change that is ready for line-by-line review.
+- Follow the evidence, notation, and review guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+General rule: discuss the claim in an issue, propose exact wording in a pull request, and ask a collaborator to review before merging.
