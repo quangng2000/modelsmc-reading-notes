@@ -32,10 +32,12 @@ Among all consistent programs, it returns one with minimum cost:
 
 $$
 C(e^\star)=
-\min\left\{
-C(e)\mid
-\text{for every }i,(e\,a_i)\Downarrow b_i
-\right\}.
+\min_e C(e)
+\qquad
+\text{subject to}
+\qquad
+(e\,a_i)\Downarrow b_i
+\text{ for every }i.
 $$
 
 The cost function is part of the specification. For example, assigning a larger cost to pattern matching than to folds biases the synthesizer toward fold-based programs.
