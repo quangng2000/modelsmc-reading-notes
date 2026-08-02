@@ -163,7 +163,7 @@ In this paper the state space is discrete, so a Markov kernel is simply a condit
 | $F^{\mathrm c}=S\setminus F$ | Unfinished strings from which generation may continue. |
 | $S_t$ / $s_t$ | The random state at step $t$ / one realized value of that state. |
 | $x$ | A fixed prompt, when it is kept separate from the generated string state. |
-| $f_\theta:F^{\mathrm c}\to\mathbb R^{|V|}$ | The generative Transformer, mapping an unfinished string to next-token logits. |
+| $f_\theta:F^{\mathrm c}\to\mathbb R^{\lvert V\rvert}$ | The generative Transformer, mapping an unfinished string to next-token logits. |
 | $M_t(s'\mid s,f_\theta)$ | The probability of moving from current state $s$ to next state $s'$ at step $t$. |
 | $\delta_s(s')$ | A point mass: $1$ when $s'=s$ and $0$ otherwise. |
 | $T=\inf\{t\ge 0:S_t\in F\}$ | The first step at which the process reaches an EOS-terminated state. |
