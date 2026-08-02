@@ -198,7 +198,7 @@ Other useful properties are:
 For ordinary next-token generation, define
 
 $$
-\pi_\theta(w\mid xs)=\operatorname{softmax}(f_\theta(xs))_w.
+\pi_\theta(w\mid xs)=\mathrm{softmax}(f_\theta(xs))_w.
 $$
 
 The corresponding append-one-token kernel is
