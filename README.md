@@ -137,8 +137,7 @@ $$
 In a LLaMPPL program, one step's potential can combine several factors:
 
 $$
-G_t
-=
+G_t =
 \prod_{\text{sample sites}}
 \frac{p(v)}{q(v)}
 \times
@@ -149,7 +148,7 @@ $$
 
 These are, respectively, importance corrections, observation likelihoods, and hard constraints. Therefore, $G_t$ is more than a local preference score.
 
-If $M_t$ is ordinary temperature-$1$ next-token sampling from the Transformer, setting every $G_t=1$ recovers ordinary generation. If $M_t$ is modified, for example by masking illegal tokens, $G_t=1$ instead targets the modified locally normalized proposal. An importance correction is generally needed to preserve the original language model conditioned on the complete constraint.
+If $M_t$ is ordinary temperature-1 next-token sampling from the Transformer, setting every $G_t=1$ recovers ordinary generation. If $M_t$ is modified, for example by masking illegal tokens, $G_t=1$ instead targets the modified locally normalized proposal. An importance correction is generally needed to preserve the original language model conditioned on the complete constraint.
 
 This definition does not directly cover an encoder-only Transformer, which has no next-token transition kernel. It also assumes access to next-token logits. A black-box generator may still serve as a proposal in a more general SMC construction, but it cannot directly provide corrections or likelihood factors that require token probabilities.
 
