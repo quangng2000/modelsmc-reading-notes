@@ -119,20 +119,115 @@ $$
 \left(s_0, \{M_t\}_{t \ge 1}, \{G_t\}_{t \ge 1}\right).
 $$
 
-For a realized path, its probability is reweighted as
+For a realized stopped path, the product below is its **unnormalized path weight**:
 
 $$
-P(s_{0:T})
-\propto
+\widetilde W(s_{0:T})=
 \prod_{t=1}^{T}
 M_t(s_t \mid s_{t-1}, f_\theta)
 G_t(s_{t-1}, s_t, f_\theta).
+$$
+
+The paper defines a normalized filtering distribution at step $t$,
+
+$$
+P_t(s)=
+\frac{
+\mathbb E_M\!\left[
+\left(\prod_{i=1}^{t\wedge T}G_i(S_{i-1},S_i,f_\theta)\right)
+\mathbf 1[S_t=s]
+\right]
+}{
+\mathbb E_M\!\left[
+\prod_{i=1}^{t\wedge T}G_i(S_{i-1},S_i,f_\theta)
+\right]
+},
+\qquad
+P(s)=\lim_{t\to\infty}P_t(s).
 $$
 
 - $f_\theta$ maps every unfinished string to vocabulary logits.
 - $M_t$ is a normalized transition distribution over string states. It need not append exactly one token: it can append several tokens or insert known fragments, provided the state contains enough information for the process to remain Markov.
 - EOS-terminated strings are absorbing, and the process must reach EOS with probability $1$.
 - $G_t$ is a nonnegative, computable incremental weight, and the resulting weighted distribution must have a finite, nonzero normalizer.
+
+##### Markov kernel: notation and properties
+
+In this paper the state space is discrete, so a Markov kernel is simply a conditional probability mass function over the next string state.
+
+| Notation | Meaning |
+| --- | --- |
+| $V$ | The model's token vocabulary, including EOS. |
+| $S=V^*$ | All finite token strings that can be states of the process. |
+| $F \subseteq S$ | Finished strings: states whose final token is EOS. |
+| $F^{\mathrm c}=S\setminus F$ | Unfinished strings from which generation may continue. |
+| $S_t$ / $s_t$ | The random state at step $t$ / one realized value of that state. |
+| $x$ | A fixed prompt, when it is kept separate from the generated string state. |
+| $f_\theta:F^{\mathrm c}\to\mathbb R^{|V|}$ | The generative Transformer, mapping an unfinished string to next-token logits. |
+| $M_t(s'\mid s,f_\theta)$ | The probability of moving from current state $s$ to next state $s'$ at step $t$. |
+| $\delta_s(s')$ | A point mass: $1$ when $s'=s$ and $0$ otherwise. |
+| $T=\inf\{t\ge 0:S_t\in F\}$ | The first step at which the process reaches an EOS-terminated state. |
+
+For every unfinished state $s$, a valid kernel is nonnegative and normalized:
+
+$$
+M_t(s'\mid s,f_\theta)\ge 0,
+\qquad
+\sum_{s'\in S}M_t(s'\mid s,f_\theta)=1.
+$$
+
+The **Markov property** says that, after the current state and step are known, earlier states provide no additional information about the next transition:
+
+$$
+\Pr(S_t=s_t\mid S_{0:t-1}=s_{0:t-1},f_\theta)
+=M_t(s_t\mid s_{t-1},f_\theta).
+$$
+
+Using the entire current string as the state does not mean the model forgets its prefix; the prefix is already contained in $S_{t-1}$. If a generation procedure uses additional history that cannot be recovered from the string and $t$, that information must also be included in the state for the process to remain Markov.
+
+Other useful properties are:
+
+- **Time-inhomogeneous transitions are allowed.** The subscript $t$ means that different steps may use different kernels, as in infilling.
+- **A step need not equal one token.** A normalized kernel may append one token, append multiple tokens, or add deterministic fragments around sampled tokens.
+- **Finished states are absorbing.** $M_t$ is defined for $s\in F^{\mathrm c}$; the stopped chain extends the transition rule on $s\in F$ with $\delta_s(s')$, so the string cannot change after EOS.
+- **Termination is an assumption.** The construction requires $\Pr(T<\infty)=1$; a kernel that can generate forever with positive probability does not satisfy the paper's setup.
+- **The kernel is a proposal, not the final target.** $M_t$ determines how particles move. $G_t$ reweights those moves, and SMC uses the resulting weights to decide which partial paths receive descendants.
+- **It is not an MCMC transition kernel.** No stationary distribution or invariance property is required here.
+- **The factorization is not unique.** Different pairs $(M_t,G_t)$ can define the same posterior but yield very different weight variance and finite-particle efficiency.
+
+For ordinary next-token generation, define
+
+$$
+\pi_\theta(w\mid xs)=\operatorname{softmax}(f_\theta(xs))_w.
+$$
+
+The corresponding append-one-token kernel is
+
+$$
+M_t(s'\mid s,f_\theta)
+=\sum_{w\in V}\pi_\theta(w\mid xs)\,\mathbf 1[s'=sw].
+$$
+
+As a contrasting example, let $C$ be the set of prefixes that can still lead to a valid complete string. The probability that an ordinary LM transition remains inside $C$ is
+
+$$
+Z_C(s)=\sum_{u\in V}\pi_\theta(u\mid xs)\,\mathbf 1[su\in C].
+$$
+
+When $Z_C(s)>0$, a token-masked proposal is
+
+$$
+M'_t(sw\mid s,f_\theta)
+=\frac{\pi_\theta(w\mid xs)\,\mathbf 1[sw\in C]}{Z_C(s)}.
+$$
+
+This is a valid locally normalized kernel, but it changes the path distribution. To preserve the original language-model probabilities on allowed paths, the potential must restore the removed normalizer:
+
+$$
+G'_t(s,sw,f_\theta)=Z_C(s).
+$$
+
+On the proposal's support, $M'_tG'_t=\pi_\theta(w\mid xs)$. If $Z_C(s)=0$, the masked proposal is undefined unless the program handles that dead state explicitly. This is why choosing a legal next token and conditioning the complete generated string are not generally the same operation.
 
 In a LLaMPPL program, one step's potential can combine several factors:
 
@@ -148,7 +243,7 @@ $$
 
 These are, respectively, importance corrections, observation likelihoods, and hard constraints. Therefore, $G_t$ is more than a local preference score.
 
-If $M_t$ is ordinary temperature-1 next-token sampling from the Transformer, setting every $G_t=1$ recovers ordinary generation. If $M_t$ is modified, for example by masking illegal tokens, $G_t=1$ instead targets the modified locally normalized proposal. An importance correction is generally needed to preserve the original language model conditioned on the complete constraint.
+If $M_t$ is ordinary temperature-1 next-token sampling from the Transformer and reaches EOS almost surely, setting every $G_t=1$ recovers ordinary generation. If $M_t$ is modified, for example by masking illegal tokens, $G_t=1$ instead targets the modified locally normalized proposal. An importance correction is generally needed to preserve the original language model conditioned on the complete constraint.
 
 This definition does not directly cover an encoder-only Transformer, which has no next-token transition kernel. It also assumes access to next-token logits. A black-box generator may still serve as a proposal in a more general SMC construction, but it cannot directly provide corrections or likelihood factors that require token probabilities.
 
