@@ -86,13 +86,78 @@ The output is a weighted collection of plausible scientific models, not only one
 
 ## Glossary
 
+### Potential functions: what SMC weights with
+
+A **potential function** is a supplied, nonnegative function that scores one step of a particle path:
+
+$$
+G_t:\mathcal{X}_{t-1}\times\mathcal{X}_t\to[0,\infty).
+$$
+
+It may depend on both the previous state $x_{t-1}$ and the proposed state $x_t$; a potential of the form $G_t(x_t)$ is a common special case. It is **not required to be a probability distribution** and does not need to sum or integrate to $1$.
+
+Given an initial distribution $\mu$, normalized Markov kernels $M_i$, and potentials $G_i$, their product defines an unnormalized path distribution:
+
+$$
+\widetilde p_t(x_{0:t})=
+\mu(x_0)
+\prod_{i=1}^{t}
+M_i(x_i\mid x_{i-1})
+G_i(x_{i-1},x_i).
+$$
+
+The corresponding target distribution is obtained by normalization:
+
+$$
+p_t(x_{0:t})=
+\frac{\widetilde p_t(x_{0:t})}{Z_t},
+\qquad
+Z_t=\sum_{x_{0:t}}\widetilde p_t(x_{0:t})
+$$
+
+for a discrete state space; the sum becomes an integral in a continuous space. The potential changes **relative** path mass:
+
+- $G_t=0$ removes a path from the target.
+- A larger $G_t$ gives a path more posterior support relative to other paths.
+- Likelihoods, hard constraints, reward-like scores, and importance corrections can all serve as potentials.
+- The normalizing constant $Z_t$ makes the weighted object a probability distribution; $G_t$ itself need not be normalized or bounded by $1$.
+
+In a standard SMC update, particles first move through $M_t$, then inherit incremental weight from $G_t$:
+
+$$
+\widetilde w_t^{(i)}=
+w_{t-1}^{(i)}
+G_t\!\left(x_{t-1}^{(i)},x_t^{(i)}\right),
+\qquad
+w_t^{(i)}=
+\frac{\widetilde w_t^{(i)}}{\sum_j\widetilde w_t^{(j)}}.
+$$
+
+Resampling uses the normalized $w_t^{(i)}$ values to copy high-weight particles and remove many low-weight ones. Thus SMC approximates the **normalized distribution induced by** the kernels and potentials; it evaluates a supplied potential at particle states, but it does not learn or approximate the potential function itself.
+
+> [!IMPORTANT]
+> **Potential function and particle weight are different objects.** $G_t$ is the scoring rule shared by all particles; $G_t(x_{t-1}^{(i)},x_t^{(i)})$ is its value for particle $i$ at one step; and $w_t^{(i)}$ is the resulting normalized particle weight used for resampling.
+
+For ModelSMC, one particle is an executable model $m_k$. Its potential is the model's likelihood-based evidence for the observations, estimated by simulation and parameter marginalization. Schematically,
+
+$$
+G_k(m_k)\approx\widehat p(x_o\mid m_k)=
+\prod_{j=1}^{M}
+\int p(\theta)\,
+p_\phi(x_o^j\mid m_k,\theta,c_o^j)\,
+d\theta.
+$$
+
+So the LLM proposes a model through the propagation kernel, while the potential answers: **given the observed data, how much relative weight should this proposed model receive?** ModelSMC's surrogate likelihood makes this potential approximate, but that approximation belongs to the model-specific scoring procedure, not to SMC itself.
+
 ### ModelSMC
 
 | Term | Intuition |
 | --- | --- |
-| **Sequential Monte Carlo (SMC)** | Approximates a target probability distribution with weighted particles, propagation, and resampling. It does not approximate the potential function itself. |
+| **Potential function** | A supplied nonnegative incremental weight that turns proposed particle paths into an unnormalized target distribution. |
+| **Sequential Monte Carlo (SMC)** | Approximates the normalized distribution induced by transition kernels and potential functions using propagation, weighting, and resampling. |
 | **Particle** | In ModelSMC, one complete executable scientific program. |
-| **Weight** | Relative evidence that a candidate model explains the observations. |
+| **Particle weight** | The numeric value attached to a particle after potential evaluation and normalization; it determines the particle's resampling probability. |
 | **Resampling** | Rebuild the population from normalized weights so promising programs receive more descendants. |
 | **Simulator** | Executable code that converts model structure, parameters, and conditions into synthetic data. |
 | **Hodgkin-Huxley code** | A neuron simulator based on sodium, potassium, and leak currents; the LLM proposes additional ion-channel mechanisms. |
