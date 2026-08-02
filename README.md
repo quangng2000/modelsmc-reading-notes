@@ -111,6 +111,50 @@ The output is a weighted collection of plausible scientific models, not only one
 | **Prompt intersection** | Sample text that is simultaneously probable under multiple prompts. |
 | **Resampling** | Copy promising partial strings and remove low-weight partial strings. |
 
+#### What exactly is a Feynman-Kac Transformer model?
+
+A Feynman-Kac Transformer is **not a new neural-network architecture**. It is a stopped, weighted Markov process built around a generative Transformer $f_\theta$:
+
+$$
+\left(s_0, \{M_t\}_{t \ge 1}, \{G_t\}_{t \ge 1}\right).
+$$
+
+For a realized path, its probability is reweighted as
+
+$$
+P(s_{0:T})
+\propto
+\prod_{t=1}^{T}
+M_t(s_t \mid s_{t-1}, f_\theta)
+G_t(s_{t-1}, s_t, f_\theta).
+$$
+
+- $f_\theta$ maps every unfinished string to vocabulary logits.
+- $M_t$ is a normalized transition distribution over string states. It need not append exactly one token: it can append several tokens or insert known fragments, provided the state contains enough information for the process to remain Markov.
+- EOS-terminated strings are absorbing, and the process must reach EOS with probability $1$.
+- $G_t$ is a nonnegative, computable incremental weight, and the resulting weighted distribution must have a finite, nonzero normalizer.
+
+In a LLaMPPL program, one step's potential can combine several factors:
+
+$$
+G_t
+=
+\prod_{\text{sample sites}}
+\frac{p(v)}{q(v)}
+\times
+\prod_{\text{observations}} p(y)
+\times
+\prod_{\text{conditions}} \mathbf{1}[c].
+$$
+
+These are, respectively, importance corrections, observation likelihoods, and hard constraints. Therefore, $G_t$ is more than a local preference score.
+
+If $M_t$ is ordinary temperature-$1$ next-token sampling from the Transformer, setting every $G_t=1$ recovers ordinary generation. If $M_t$ is modified, for example by masking illegal tokens, $G_t=1$ instead targets the modified locally normalized proposal. An importance correction is generally needed to preserve the original language model conditioned on the complete constraint.
+
+This definition does not directly cover an encoder-only Transformer, which has no next-token transition kernel. It also assumes access to next-token logits. A black-box generator may still serve as a proposal in a more general SMC construction, but it cannot directly provide corrections or likelihood factors that require token probabilities.
+
+> **Compressed:** the Transformer supplies probabilities, $M_t$ proposes state transitions, $G_t$ corrects and scores them, and SMC approximates the resulting global posterior.
+
 ### Same algorithmic pattern, different state
 
 | Framework | One particle represents | Transformer role | Evidence |
