@@ -6,7 +6,7 @@ import {
   type Program,
   type RuntimeValue,
   type StaticType,
-} from "../core/language.verify.js";
+} from "../../core/language.verify.js";
 
 export type JsonValue =
   | null

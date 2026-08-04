@@ -158,6 +158,22 @@ The model prefers smaller programs but does not prove global minimality or catal
 
 The shell imports the verified functions directly. It does not duplicate the type checker, evaluator, equality relation, structural cost, or exact acceptance decision.
 
+The shell is organized as feature packages with narrow public indexes:
+
+| Package | One reason to change |
+| --- | --- |
+| `ast/` | change untrusted AST decoding, JSON conversion, or rendering |
+| `catalog/` | add or reorder bounded offline candidate families |
+| `cli/` | change command arguments or command-line orchestration |
+| `config/` | change specification decoding, validation, or overrides |
+| `deduction/` | add sound family refutations or inferred subexamples |
+| `engine/` | change SMC population lifecycle, propagation, or lineage |
+| `ollama/` | change prompt diagnostics, response schema, or HTTP transport |
+| `proposal/` | change the common proposal request/result contract |
+| `scoring/` | change soft sequence loss or potential evaluation |
+
+ESS normalization, seeded randomness, resampling, and trace emission live inside `engine/` because they serve the SMC lifecycle. `cli.ts` is the only shell-root file and contains only the executable entry-point guard. The verified language remains a single formal unit so its semantic calls are proved together rather than replaced by unproved cross-module assumptions.
+
 ## 8. Proof catalog
 
 The additions-only Dafny proof file establishes:
@@ -189,6 +205,10 @@ Only complete `Program` values become particles. There is no `Hole` variant in t
 
 SMC scores every candidate against all original examples. A best-so-far archive prevents a later stochastic iteration from forgetting an exact program, while the live population and resampling equations remain unchanged.
 
+Propagation is explicitly refinement-aware. A proposal receives its ancestor AST and score, its iteration and population slot, diagnostics for failing examples, family deductions, and already proposed siblings. The engine records parent/child loss, exact matches, cost, and ancestry. It reports the first exact iteration/call and reconstructs the winning lineage from an archive of immutable particles.
+
+The hard bounded-square example and deterministic equal-budget test distinguish independent sampling from iterative refinement. Four one-round proposals do not solve the controlled task; two particles refined for two rounds do, using the same four calls. This validates the feedback mechanism, not posterior correctness or universal LLM effectiveness.
+
 ## 10. Verification and test workflow
 
 After any verified TypeScript change:
@@ -206,7 +226,7 @@ npm test
 npm run verify
 ```
 
-The current deterministic test matrix covers scalar regression, empty lists, type-changing map, integer sum, order-sensitive right subtraction, filter construction, invalid scopes and prepends, exact list equality, large `bigint` elements, config/decoder bounds, deduction events, and deterministic map/fold SMC discovery.
+The current deterministic test matrix covers scalar regression, empty lists, type-changing map, integer sum, order-sensitive right subtraction, filter construction, invalid scopes and prepends, exact list equality, large `bigint` elements, config/decoder bounds, deduction events, deterministic map/fold SMC discovery, refinement lineage, and equal-budget one-shot versus iterative search.
 
 ## 11. Deferred work
 

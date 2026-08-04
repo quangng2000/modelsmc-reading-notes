@@ -1,4 +1,4 @@
-import type { Expr, Program } from "../core/language.verify.js";
+import type { Expr, Program } from "../../core/language.verify.js";
 
 export class AstDecodeError extends Error {
   constructor(message: string) {

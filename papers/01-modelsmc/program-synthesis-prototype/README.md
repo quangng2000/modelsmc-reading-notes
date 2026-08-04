@@ -177,9 +177,46 @@ $$
 -\beta\,\operatorname{cost}(m).
 $$
 
-Integer loss is capped absolute distance. Boolean loss is zero-or-one disagreement. List loss sums aligned element losses plus a length-mismatch penalty. The potential $G(m)=\exp(\log G(m))$ is a nonnegative relative score, not a normalized probability.
+Integer loss is capped absolute distance. Boolean loss is zero-or-one disagreement. List loss is a bounded sequence edit distance: insertion and deletion cost one, while substitution uses the scalar loss but never costs more than delete-plus-insert. This prevents one extra element from making every following element look misaligned. The potential $G(m)=\exp(\log G(m))$ is a nonnegative relative score, not a normalized probability.
 
 The shell deliberately does not multiply old weights into this fixed-dataset score again at every refinement step. It also lacks an importance correction for the unknown LLM proposal probability. The population is therefore an approximate search distribution, not an exact Bayesian posterior.
+
+## Experiment: when iterative SMC can help
+
+[`examples/foldr-bounded-square.json`](examples/foldr-bounded-square.json) is intentionally harder than the small demonstrations. Its examples specify a list transformation that must discover three ideas together:
+
+1. traverse with `foldr` so retained values keep their order;
+2. keep only values strictly between `-2` and `3`;
+3. square each retained value before prepending it.
+
+This creates useful intermediate candidates. “Square every item,” “filter only the lower boundary,” and the complete two-boundary filter receive progressively better example scores. After every proposal, the engine records the parent-to-child loss, exact-match count, cost, and rationale. The next Ollama prompt receives those diagnostics, the inferred map/fold subexamples, its iteration and particle slot, and sibling programs to avoid.
+
+The deterministic test suite compares two searches with the same four-proposal budget:
+
+```text
+one-shot:  4 particles × 1 iteration = 4 independent proposals
+iterative: 2 particles × 2 iterations = 4 ancestry-aware proposals
+```
+
+The controlled proposer cannot finish the task in the one-shot configuration. In the iterative configuration its winning lineage strictly improves from the seed, to a partial transformation, to the exact program. This proves that the implemented feedback path can create value; it does not establish that every LLM run will do so.
+
+Run the same equal-budget comparison against Ollama:
+
+```bash
+# Four independent calls
+npm run synthesize -- examples/foldr-bounded-square.json \
+  --proposal ollama --model gpt-oss:20b \
+  --particles 4 --iterations 1 --alpha 0 \
+  --temperature 0.7 --max-tokens 2048 --trace
+
+# Four calls arranged as two rounds of refinement
+npm run synthesize -- examples/foldr-bounded-square.json \
+  --proposal ollama --model gpt-oss:20b \
+  --particles 2 --iterations 2 --alpha 0 --ess-threshold 1 \
+  --temperature 0.7 --max-tokens 2048 --trace
+```
+
+Evidence for SMC value is an exact solution first appearing after iteration 1, along a lineage whose losses improve, when the equal-call one-shot run does not solve the task. A reliable empirical claim requires repeating both configurations across seeds and reporting success rates—not selecting one favorable run.
 
 ## Reading the trace
 
@@ -192,8 +229,9 @@ The shell deliberately does not multiply old weights into this fixed-dataset sco
 - ESS, resampling decisions, and ancestor indices;
 - clone-versus-propose draws;
 - decoded proposal types and rejection reasons;
+- parent-to-child loss, exact-match, and cost changes;
 - per-example predictions and potential scores;
-- best-so-far improvements and exact completion.
+- population diversity, first-exact proposal call, best-so-far improvements, and champion lineage.
 
 Write the same events as JSONL:
 
@@ -221,10 +259,11 @@ npm run synthesize -- examples/map-increment.json \
   --proposal ollama \
   --model gpt-oss:20b \
   --ollama-url http://localhost:11434/v1 \
+  --max-tokens 2048 \
   --trace
 ```
 
-The frozen model proposes strict JSON `Program` ASTs, never executable TypeScript or Python source. The boundary decoder enforces exact keys, tags, allowed constants, depth, node count, and acyclicity. The verified checker then rejects ill-typed or incorrectly scoped programs. A failed proposal falls back to its ancestor.
+The frozen model proposes strict JSON `Program` ASTs, never executable TypeScript or Python source. The boundary decoder enforces exact keys, tags, allowed constants, depth, node count, and acyclicity. The verified checker then rejects ill-typed or incorrectly scoped programs. A failed proposal falls back to its ancestor. The response budget defaults to 2,048 tokens and can be changed with `--max-tokens`.
 
 ## Verification boundary
 
@@ -256,16 +295,27 @@ npm test
 npm run verify
 ```
 
-The deterministic suite currently contains 26 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, and a mocked Ollama schema/decoder round trip.
+The deterministic suite currently contains 27 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, and a mocked Ollama schema/decoder round trip.
 
 Project layout:
 
 ```text
-src/core/          executable verified semantics and Dafny proof
-src/shell/         config, decoding, proposals, deduction, SMC, trace
-examples/          scalar and recursive-list PBE specifications
-tests/             deterministic core and shell tests
+src/core/              executable verified semantics and Dafny proof
+src/shell/ast/         strict AST decoding, JSON conversion, rendering
+src/shell/catalog/     bounded offline candidate families
+src/shell/cli/         argument parsing, proposer selection, command runner
+src/shell/config/      JSON validation, typed values, overrides
+src/shell/deduction/   family inference plus map/fold deduction
+src/shell/engine/      SMC lifecycle, propagation, ESS, resampling, trace
+src/shell/ollama/      prompt, diagnostics, response schema, HTTP proposer
+src/shell/proposal/    shared proposer context, result, and error contract
+src/shell/scoring/     sequence loss and potential evaluation
+src/shell/cli.ts       executable entry point only
+examples/              scalar and recursive-list PBE specifications
+tests/                 focused core, config, catalog, engine, and Ollama suites
 LemmaScript-files.txt
 DESIGN.md
 PROOF_FINDINGS.md
 ```
+
+Each feature directory exposes a narrow `index.ts`; tests may import a package-internal numerical primitive when that primitive is the test subject. Internal modules can otherwise evolve without making callers depend on their implementation layout. The verified core remains one proof unit because splitting it without verified cross-module contracts would enlarge the trusted boundary rather than improve it.

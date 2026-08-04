@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { jsonStringify } from "./render.js";
+import { jsonStringify } from "../ast/render.js";
 
 export interface TraceOptions {
   readonly enabled?: boolean;

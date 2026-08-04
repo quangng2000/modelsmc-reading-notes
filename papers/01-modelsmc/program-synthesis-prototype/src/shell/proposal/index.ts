@@ -1,8 +1,11 @@
-import type { Program, RuntimeValue, StaticType } from "../core/language.verify.js";
-import type { ValidScore } from "./scoring.js";
+import type { Program, RuntimeValue, StaticType } from "../../core/language.verify.js";
+import type { ValidScore } from "../scoring/index.js";
 
 export interface ProposalContext {
   readonly requestIndex: number;
+  readonly iteration?: number;
+  readonly slot?: number;
+  readonly avoidPrograms?: readonly Program[];
   readonly inputType: StaticType;
   readonly outputType: StaticType;
   readonly examples: readonly { readonly input: RuntimeValue; readonly output: RuntimeValue }[];
@@ -12,6 +15,7 @@ export interface ProposalContext {
   readonly maxCost: number;
   readonly ancestor: Program;
   readonly ancestorScore: ValidScore;
+  readonly ancestorFeedback?: string;
 }
 
 export interface ProposalResult {
