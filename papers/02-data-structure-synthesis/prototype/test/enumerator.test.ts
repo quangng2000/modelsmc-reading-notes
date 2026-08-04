@@ -8,7 +8,7 @@ import {
   enumerateExpressionsByCost,
   evaluateScalar,
   synthesize,
-} from "../src/enumerator.js";
+} from "../src/enumeration/index.js";
 
 test("enumerates every expression in its exact cost bucket", () => {
   const buckets = [...enumerateExpressionsByCost({ maxCost: 3 })];
@@ -41,11 +41,12 @@ test("enumerates every expression in its exact cost bucket", () => {
       ...renderedAtOne.map((left) => `(${left} ${operator} x)`),
     ]),
     "(x * x)",
+    "(x % x)",
   ];
   assert.deepEqual([...renderedAtTwo].sort(), expectedAtTwo.sort());
   assert.deepEqual(
     buckets.slice(0, 3).map(({ expressions }) => expressions.length),
-    [1, 6, 25],
+    [1, 6, 26],
   );
   assert.ok(renderedAtThree.includes("(1 + 1)"));
 });

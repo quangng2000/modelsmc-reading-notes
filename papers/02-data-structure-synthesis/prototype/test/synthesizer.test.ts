@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { renderExpression } from "../src/ast.js";
-import { synthesizeMap } from "../src/synthesizer.js";
+import { synthesizeMap } from "../src/synthesis/index.js";
 
 test("synthesizes a completed map program end to end", () => {
   const result = synthesizeMap(

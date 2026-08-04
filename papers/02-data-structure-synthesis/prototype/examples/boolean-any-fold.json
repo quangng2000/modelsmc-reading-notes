@@ -1,0 +1,12 @@
+{
+  "inputType": "list<bool>",
+  "outputType": "bool",
+  "examples": [
+    { "input": [], "output": false },
+    { "input": [false], "output": false },
+    { "input": [true], "output": true },
+    { "input": [false, true], "output": true },
+    { "input": [true, false], "output": true }
+  ],
+  "maxCost": 1
+}

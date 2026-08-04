@@ -15,11 +15,11 @@ import {
   expectIntList,
   type Value,
   type ValueBinding,
-} from "../src/evaluate.js";
+} from "../src/evaluation/index.js";
 import {
   MAP_SKELETON,
   substituteHole,
-} from "../src/synthesizer.js";
+} from "../src/synthesis/index.js";
 import { inferType } from "../src/typecheck.js";
 
 test("renders and type-checks the open map skeleton", () => {

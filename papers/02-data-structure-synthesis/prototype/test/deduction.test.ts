@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { deduceMapExamples } from "../src/deduction.js";
+import { deduceMapExamples } from "../src/deduction/index.js";
 
 test("infers scalar examples for the map function hole", () => {
   const result = deduceMapExamples([

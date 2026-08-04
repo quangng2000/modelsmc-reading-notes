@@ -1,0 +1,12 @@
+{
+  "inputType": "list<string>",
+  "outputType": "string",
+  "examples": [
+    { "input": [], "output": "" },
+    { "input": ["a"], "output": "a" },
+    { "input": ["a", "b"], "output": "ab" },
+    { "input": ["go"], "output": "go" },
+    { "input": ["go", "pher"], "output": "gopher" }
+  ],
+  "maxCost": 1
+}

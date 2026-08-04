@@ -1,0 +1,15 @@
+{
+  "inputType": "list<string>",
+  "outputType": "list<int>",
+  "examples": [
+    {
+      "input": ["", "hi", "codex"],
+      "output": [0, 2, 5]
+    },
+    {
+      "input": ["a", "yes"],
+      "output": [1, 3]
+    }
+  ],
+  "maxCost": 1
+}

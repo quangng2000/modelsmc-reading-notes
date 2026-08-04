@@ -126,7 +126,7 @@ The important idea is not enumeration alone. It is the recursive conversion of o
 
 ## Executable experiment
 
-The [minimal λ² TypeScript slice](prototype/README.md) makes a hypothesis AST, cost model, object-language type checker, evaluator, `map` deduction rule, enumerator, and best-first frontier executable. It remains intentionally smaller than λ²: the experiment supports one `map` skeleton and a unary integer-expression grammar.
+The [small λ² synthesizer in TypeScript](prototype/README.md) makes a hypothesis AST, cost model, object-language type checker, evaluator, per-combinator deduction rules, a typed enumerator, and a best-first frontier executable. Type-compatible instances of three skeleton families — `map`, `filter`, and left `fold` — compete in one search ordered by total program cost, so the first returned program is minimum-cost across families, and a CLI (`lambda2-synth`) accepts JSON examples directly. The prototype handles lists of integer, Boolean, or string primitives with explicit signatures, but remains intentionally smaller than λ²: no nested lists, trees, pattern matching, recursion, or nested skeleton composition.
 
 ## Motivating examples
 

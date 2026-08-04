@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "lambda2-synth": "dist/src/cli.js"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "demo": "npm run build && node dist/src/demo.js",
+    "synth": "npm run build && node dist/src/cli.js",
     "test": "npm run build && node --test dist/test/*.test.js"
   },
   "devDependencies": {
