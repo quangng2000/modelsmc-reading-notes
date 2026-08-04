@@ -124,6 +124,10 @@ input-output examples
 
 The important idea is not enumeration alone. It is the recursive conversion of one synthesis problem into smaller synthesis problems using the semantics of typed combinators.
 
+## Executable experiment
+
+The [minimal λ² TypeScript slice](prototype/README.md) makes a hypothesis AST, cost model, object-language type checker, evaluator, `map` deduction rule, enumerator, and best-first frontier executable. It remains intentionally smaller than λ²: the experiment supports one `map` skeleton and a unary integer-expression grammar.
+
 ## Motivating examples
 
 | Program | Transformation | Reported synthesis time |
