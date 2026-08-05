@@ -36,6 +36,8 @@ export interface AcceptedProposal {
   readonly logPriorUnnormalized: number;
   /** log q of the emitted text under the neutralized sampler (content tokens). */
   readonly logProposal: number;
+  /** Canonical token ids (sidecar path): the designated atom, scorable later. */
+  readonly tokenIds?: readonly number[];
 }
 
 export type ProposalOutcome = AcceptedProposal | { readonly rejected: string };
@@ -167,6 +169,61 @@ export function evaluateDraw(draw: RawDraw, task: ProposalTask): ProposalOutcome
     logPriorUnnormalized: score.logPriorUnnormalized,
     logProposal: draw.sumLogProb,
   };
+}
+
+import { evaluate } from "../../core/language.verify.js";
+import type { SidecarClient, SidecarDraw } from "./sidecar-client.js";
+
+/**
+ * Per-example diagnostics for the feedback prompt: what the program predicts
+ * versus what the specification expects (lineage-only context; never siblings).
+ */
+export function exampleDiagnostics(program: Program, task: ProposalTask): string {
+  const lines: string[] = [];
+  task.examples.forEach((example, index) => {
+    const result = evaluate(program, example.input);
+    const predicted = result.kind === "EvalOk" ? renderValuePlain(result.output) : "<error>";
+    const expected = renderValuePlain(example.output);
+    lines.push(
+      `example ${index + 1}: input ${renderValuePlain(example.input)} -> predicted ${predicted}, expected ${expected}${predicted === expected ? "" : "  MISMATCH"}`,
+    );
+  });
+  return lines.join("\n");
+}
+
+/** Feedback-conditioned prompt: the base task plus the particle's own state. */
+export function feedbackPrompt(task: ProposalTask, current: AcceptedProposal): string {
+  return [
+    proposalPrompt(task),
+    ``,
+    `Your previous attempt was:`,
+    jsonStringify(programToJsonValue(current.program)),
+    `Its results:`,
+    exampleDiagnostics(current.program, task),
+    `Revise it to fix every MISMATCH (or, if all match, output the same or a cheaper equivalent). Output ONLY the minified JSON.`,
+  ].join("\n");
+}
+
+/**
+ * Accept a sidecar draw iff it stopped at EOS and its token ids equal the
+ * canonical encoding of the canonical serialization (the designated atom).
+ */
+export async function evaluateSidecarDraw(
+  draw: SidecarDraw,
+  task: ProposalTask,
+  encode: SidecarClient["encode"],
+): Promise<ProposalOutcome> {
+  if (!draw.stoppedAtEos) return { rejected: "length-capped (no EOS)" };
+  const outcome = evaluateDraw({ text: draw.text, sumLogProb: draw.logQ, doneReason: "stop" }, task);
+  if ("rejected" in outcome) return outcome;
+  const canonicalIds = await encode(jsonStringify(programToJsonValue(outcome.program)));
+  if (
+    canonicalIds.length !== draw.ids.length ||
+    canonicalIds.some((id, index) => id !== draw.ids[index])
+  ) {
+    return { rejected: "non-canonical tokenization" };
+  }
+  return { ...outcome, tokenIds: canonicalIds };
 }
 
 /**

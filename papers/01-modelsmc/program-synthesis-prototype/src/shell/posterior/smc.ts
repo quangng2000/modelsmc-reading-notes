@@ -6,10 +6,14 @@ import { createPriorSampler, type PriorSampler } from "../prior/index.js";
 import { scoreCalibrated } from "../scoring/calibrated.js";
 import {
   drawAccepted,
+  evaluateSidecarDraw,
+  feedbackPrompt,
+  proposalPrompt,
   type AcceptedProposal,
   type ProposalTask,
   type RawDraw,
 } from "./llm-proposal.js";
+import type { SidecarClient } from "./sidecar-client.js";
 
 /**
  * Calibrated tempered Sequential Monte Carlo over programs.
@@ -53,11 +57,13 @@ export interface CalibratedSmcOptions {
   readonly particleCount: number;
   /** Tempering schedule; strictly increasing, ending at exactly 1. */
   readonly gammas: readonly number[];
-  readonly moves: "prior" | "llm";
+  readonly moves: "prior" | "llm" | "llm-feedback";
   readonly sweepsPerStage: number;
   readonly essThresholdRatio: number;
   readonly rng: RandomSource;
   readonly drawer?: () => Promise<RawDraw>;
+  /** Required for llm-feedback: exact generate/score/encode primitives. */
+  readonly sidecar?: SidecarClient;
   readonly onReject?: (reason: string) => void;
   readonly trace?: (message: string) => void;
 }
@@ -129,12 +135,38 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
   if (options.moves === "llm" && countingDrawer === undefined) {
     throw new Error("llm moves require a drawer");
   }
+  const sidecar = options.sidecar;
+  if (options.moves === "llm-feedback" && sidecar === undefined) {
+    throw new Error("llm-feedback moves require a sidecar client");
+  }
+  const basePrompt = proposalPrompt(task);
+
+  async function sidecarAccepted(prompt: string): Promise<AcceptedProposal> {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      llmDraws += 1;
+      const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt), task, sidecar!.encode);
+      if ("rejected" in outcome) {
+        options.onReject?.(outcome.rejected);
+        continue;
+      }
+      return outcome;
+    }
+    throw new Error("no accepted sidecar proposal in 200 attempts");
+  }
 
   // Initialization targeting pi_0 = prior.
   const particles: SmcParticle[] = [];
   for (let index = 0; index < particleCount; index += 1) {
     if (options.moves === "llm") {
       const proposal = await drawAccepted(countingDrawer!, task, options.onReject);
+      particles.push({
+        proposal,
+        logWeight: proposal.logPriorUnnormalized - proposal.logProposal,
+      });
+    } else if (options.moves === "llm-feedback") {
+      // Fixed base prompt: the acceptance-conditioning constant is shared by
+      // every init draw and cancels in self-normalization.
+      const proposal = await sidecarAccepted(basePrompt);
       particles.push({
         proposal,
         logWeight: proposal.logPriorUnnormalized - proposal.logProposal,
@@ -179,6 +211,37 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
           candidate = priorAsProposal(priorSampler, task);
           // [pi(c)/pi(x)] * [p(x)/p(c)] = (L(c)/L(x))^gamma.
           logAlpha = gamma * (candidate.logLikelihood - particle.proposal.logLikelihood);
+        } else if (options.moves === "llm-feedback") {
+          // Feedback-conditioned independence MH. ONE raw draw per move — no
+          // retry: the acceptance-conditioning constant would depend on the
+          // per-particle prompt and would not cancel in the ratio. An invalid
+          // draw proposes a zero-target point, i.e. the move is rejected.
+          proposalsMade += 1;
+          llmDraws += 1;
+          const promptForCurrent = feedbackPrompt(task, particle.proposal);
+          const outcome = await evaluateSidecarDraw(
+            await sidecar!.generate(promptForCurrent),
+            task,
+            sidecar!.encode,
+          );
+          if ("rejected" in outcome) {
+            options.onReject?.(outcome.rejected);
+            continue;
+          }
+          llmDraws += 1; // the reverse-scoring pass is a full model evaluation too
+          const reverseLogQ = await sidecar!.score(
+            feedbackPrompt(task, outcome),
+            particle.proposal.tokenIds!,
+          );
+          logAlpha =
+            temperedLogTarget(outcome, gamma) +
+            reverseLogQ -
+            (temperedLogTarget(particle.proposal, gamma) + outcome.logProposal);
+          if (Math.log(rng.next()) < logAlpha) {
+            particle.proposal = outcome;
+            accepts += 1;
+          }
+          continue;
         } else {
           candidate = await drawAccepted(countingDrawer!, task, options.onReject);
           logAlpha =

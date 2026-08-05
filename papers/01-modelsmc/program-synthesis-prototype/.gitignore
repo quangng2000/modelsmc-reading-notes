@@ -4,3 +4,5 @@ runs/
 *.ts.json
 *.svg.png
 .claude/
+experiments/sidecar/.venv/
+__pycache__/

@@ -12,9 +12,12 @@
  *     [--particles 32] [--stages 5] [--sweeps 1] [--islands prior,llm]
  *     [--seed 17] [--ollama-url http://localhost:11434]
  */
+import { acceptProgram } from "../src/core/language.verify.js";
 import { renderProgram } from "../src/shell/ast/render.js";
+import { deriveSynthesisTrace } from "../src/shell/deduction/index.js";
 import { SeededRandom } from "../src/shell/engine/random.js";
 import { createOllamaDrawer, proposalPrompt, type ProposalTask } from "../src/shell/posterior/llm-proposal.js";
+import { createSidecarClient } from "../src/shell/posterior/sidecar-client.js";
 import { linearGammas, runCalibratedSmc, type CalibratedSmcResult } from "../src/shell/posterior/smc.js";
 import { computeExactPosterior, formatProbability, parseHarnessArgs } from "./posterior-lib.js";
 
@@ -42,6 +45,12 @@ const task: ProposalTask = {
   beta: args.beta,
   noise: args.noise,
 };
+
+console.log(`[smc] task: ${args.config.name}`);
+console.log(`[smc] signature: ${task.inputType} -> ${task.outputType}; ${task.examples.length} examples`);
+for (const event of deriveSynthesisTrace(task.inputType, task.outputType, task.examples)) {
+  console.log(`[deduction] ${event.message}`);
+}
 
 console.log(`[smc] computing exact posterior for ground truth (cap ${args.costCap})...`);
 const exact = computeExactPosterior(args);
@@ -76,8 +85,13 @@ console.log(`[smc] particles=${particles} stages=${stages} sweeps=${sweeps} gamm
 const estimates = new Map<string, Map<string, number>>();
 const rejectionCounts = new Map<string, number>();
 
+const sidecarUrl = flag("--sidecar-url", "http://127.0.0.1:8765");
+const finalPopulations = new Map<string, CalibratedSmcResult>();
+
 for (const island of islands) {
-  if (island !== "prior" && island !== "llm") throw new Error(`unknown island: ${island}`);
+  if (island !== "prior" && island !== "llm" && island !== "llm-feedback") {
+    throw new Error(`unknown island: ${island}`);
+  }
   console.log(`\n[smc] === ${island} island ===`);
   const result = await runCalibratedSmc({
     task,
@@ -86,14 +100,16 @@ for (const island of islands) {
     moves: island,
     sweepsPerStage: sweeps,
     essThresholdRatio: 0.5,
-    rng: new SeededRandom(args.seed + (island === "llm" ? 1000 : 0)),
+    rng: new SeededRandom(args.seed + (island === "llm" ? 1000 : island === "llm-feedback" ? 2000 : 0)),
     drawer:
       island === "llm"
         ? createOllamaDrawer({ model, baseUrl, prompt: proposalPrompt(task) })
         : undefined,
+    sidecar: island === "llm-feedback" ? createSidecarClient(sidecarUrl) : undefined,
     onReject: (reason) => rejectionCounts.set(reason, (rejectionCounts.get(reason) ?? 0) + 1),
     trace: (message) => console.log(`  [${island}] ${message}`),
   });
+  finalPopulations.set(island, result);
   estimates.set(island, summarize(island, result));
 }
 
@@ -129,4 +145,24 @@ for (const entry of exact.entries.slice(0, args.top)) {
   console.log(
     `  true=${formatProbability(entry.probability).padStart(12)}  ${parts}  ${entry.exact ? "EXACT" : "     "}  ${entry.rendered.slice(0, 80)}`,
   );
+}
+
+// The user-facing verdict: each island's best program (MAP estimate).
+for (const [island, result] of finalPopulations) {
+  const masses = estimates.get(island)!;
+  const byProgram = new Map<string, (typeof result.particles)[number]>();
+  result.particles.forEach((particle) => {
+    const rendered = renderProgram(particle.proposal.program, task.inputType);
+    if (!byProgram.has(rendered)) byProgram.set(rendered, particle);
+  });
+  const [bestRendered, bestMass] = [...masses.entries()].sort((a, b) => b[1] - a[1])[0]!;
+  const best = byProgram.get(bestRendered)!;
+  const exactOnAll = acceptProgram(best.proposal.program, [...task.examples]);
+  console.log(`\n[result:${island}] best program (highest estimated posterior mass):`);
+  console.log(`[result:${island}] program: ${bestRendered}`);
+  console.log(
+    `[result:${island}] cost=${best.proposal.cost} logLik=${best.proposal.logLikelihood.toFixed(3)} ` +
+      `estimated-mass=${formatProbability(bestMass)} true-mass=${formatProbability(exact.probabilityByRendering.get(bestRendered) ?? 0)}`,
+  );
+  console.log(`[result:${island}] exact on every example (verified): ${exactOnAll}`);
 }
