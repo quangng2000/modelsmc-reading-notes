@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "synthesize": "tsx src/shell/cli.ts",
+    "posterior": "tsx experiments/exact-posterior.ts",
+    "prior-is": "tsx experiments/prior-is.ts",
+    "space": "tsx experiments/space-size.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "verify": "lsc check"
