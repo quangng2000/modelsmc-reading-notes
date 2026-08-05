@@ -160,6 +160,105 @@ test("the Anthropic adapter accepts a JSON-encoded expression string", async () 
   assert.equal(proposal.source, "anthropic");
 });
 
+// Live matrices show Claude sometimes returning benign envelope variants from
+// the forced tool call (rationale omitted, null-valued keys); these helpers
+// replay a canned tool input through the full adapter decode path.
+async function proposeToolInput(input: unknown) {
+  const config = listConfig("map successor", "List<Int>", [
+    { input: [], output: [] },
+    { input: ["1"], output: ["2"] },
+  ]);
+  const ancestor: Program = { kind: "ExpressionProgram", body: { kind: "Input" } };
+  const ancestorScore = scoreProgram(ancestor, {
+    inputType: config.inputType,
+    outputType: config.outputType,
+    examples: config.examples,
+    lossScale: config.lossScale,
+    costScale: config.costScale,
+    lossCap: config.lossCap,
+    maxCost: config.maxCost,
+  });
+  if (ancestorScore.kind !== "Scored") assert.fail(ancestorScore.reason);
+
+  const requester: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        stop_reason: "tool_use",
+        content: [{ type: "tool_use", name: "emit_typed_program_proposal", input }],
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+
+  return new AnthropicProposer({ apiKey: "sk-test-key", requester, timeoutMs: 1000 }).propose({
+    requestIndex: 0,
+    inputType: config.inputType,
+    outputType: config.outputType,
+    examples: config.examples,
+    integerConstants: config.integerConstants,
+    maxDepth: config.maxDepth,
+    maxNodes: config.maxNodes,
+    maxCost: config.maxCost,
+    ancestor,
+    ancestorScore,
+    ancestorFeedback: "initial seed",
+  });
+}
+
+const mapperExpression = {
+  kind: "MapProgram",
+  mapper: {
+    kind: "Add",
+    left: { kind: "Item" },
+    right: { kind: "IntLiteral", intValue: "1" },
+  },
+};
+
+test("the Anthropic adapter defaults a missing rationale to an empty string", async () => {
+  const proposal = await proposeToolInput({ expression: mapperExpression });
+  assert.equal(proposal.expression.kind, "MapProgram");
+  assert.equal(proposal.rationale, "");
+});
+
+test("the Anthropic adapter tolerates a null rationale and extra null-valued keys", async () => {
+  const proposal = await proposeToolInput({
+    expression: mapperExpression,
+    rationale: null,
+    explanation: null,
+  });
+  assert.equal(proposal.expression.kind, "MapProgram");
+  assert.equal(proposal.rationale, "");
+});
+
+test("the Anthropic adapter rejects extra envelope keys that carry a value", async () => {
+  await assert.rejects(
+    () =>
+      proposeToolInput({
+        expression: mapperExpression,
+        rationale: "increment",
+        explanation: "should not be here",
+      }),
+    /must contain expression and rationale; received: explanation, expression, rationale/,
+  );
+});
+
+test("the Anthropic adapter rejects an envelope without an expression", async () => {
+  await assert.rejects(
+    () => proposeToolInput({ rationale: "no program included" }),
+    /must contain expression and rationale; received: rationale/,
+  );
+  await assert.rejects(
+    () => proposeToolInput({ expression: null, rationale: "null program" }),
+    /must contain expression and rationale; received: expression \(null\), rationale/,
+  );
+});
+
+test("the Anthropic adapter rejects a non-string non-null rationale", async () => {
+  await assert.rejects(
+    () => proposeToolInput({ expression: mapperExpression, rationale: 7 }),
+    /rationale must be a string; received a number/,
+  );
+});
+
 test("the Anthropic adapter rejects a response that did not stop on a tool call", async () => {
   const config = listConfig("identity", "List<Int>", [{ input: [], output: [] }]);
   const ancestor: Program = { kind: "ExpressionProgram", body: { kind: "Input" } };

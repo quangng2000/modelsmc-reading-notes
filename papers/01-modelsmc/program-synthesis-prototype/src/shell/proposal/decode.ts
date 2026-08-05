@@ -38,20 +38,48 @@ function normalizeExpression(raw: unknown): unknown {
   }
 }
 
+function describeShape(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "an array";
+  return `a ${typeof value}`;
+}
+
+// Forced tool calls do not strictly enforce the input schema server-side, so
+// live runs produce benign envelope variants alongside well-formed expressions:
+// `rationale` omitted (or null) after a large expression tree, and extra keys
+// carrying only null. Tolerate exactly those variants; an extra key holding a
+// real value still fails, and the expression itself always goes through the
+// bounded AST decoder. Rejections enumerate the received keys so that trace
+// and summary failureReasons capture the actual envelope shape.
 export function decodeEnvelope(
   value: unknown,
   context: ProposalContext,
   source: ProposalResult["source"],
 ): ProposalResult {
-  if (!isRecord(value)) throw new ProposalError("model response must be a JSON object");
+  if (!isRecord(value)) {
+    throw new ProposalError(
+      `model response must be a JSON object; received ${describeShape(value)}`,
+    );
+  }
   const keys = Object.keys(value).sort();
-  if (keys.length !== 2 || keys[0] !== "expression" || keys[1] !== "rationale") {
-    throw new ProposalError("model response must contain exactly expression and rationale");
+  const extraKeys = keys.filter(
+    (key) => key !== "expression" && key !== "rationale" && value[key] !== null,
+  );
+  if (value.expression === null || value.expression === undefined || extraKeys.length > 0) {
+    const received = keys
+      .map((key) => (value[key] === null ? `${key} (null)` : key))
+      .join(", ");
+    throw new ProposalError(
+      `model response must contain expression and rationale; received: ${received === "" ? "(no keys)" : received}`,
+    );
   }
-  if (typeof value.rationale !== "string") {
-    throw new ProposalError("model response rationale must be a string");
+  const rawRationale = value.rationale ?? "";
+  if (typeof rawRationale !== "string") {
+    throw new ProposalError(
+      `model response rationale must be a string; received ${describeShape(rawRationale)}`,
+    );
   }
-  const rationale = value.rationale.trim().slice(0, 2_000);
+  const rationale = rawRationale.trim().slice(0, 2_000);
   const expression = decodeProgram(normalizeExpression(value.expression), {
     integerConstants: context.integerConstants,
     maxDepth: context.maxDepth,
