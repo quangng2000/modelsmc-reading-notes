@@ -218,6 +218,8 @@ npm run synthesize -- examples/foldr-bounded-square.json \
 
 Evidence for SMC value is an exact solution first appearing after iteration 1, along a lineage whose losses improve, when the equal-call one-shot run does not solve the task. A reliable empirical claim requires repeating both configurations across seeds and reporting success rates—not selecting one favorable run.
 
+That multi-seed program has been run — three experiments, **270 runs**, reported with statistics and adversarially verified figures in [`experiments/RESULTS.md`](experiments/RESULTS.md). The arc: **(E1)** at a 4-call budget, feedback value is gated by proposer capability — unnecessary at the frontier (Claude Sonnet 5 solves one-shot), visible near the threshold (Claude Haiku 4.5), absent below it (Qwen3-Coder 30B mode-collapses); **(E2)** two harder tasks show a task's "difficulty" is model-relative and that call-level failures (token truncation) can masquerade as search-strategy effects; **(E3)** at a 16-call budget, on the one cell swept to depth (Haiku × bounded-square), pure sampling gives 0/10 while deep refinement (2×8, 4×4) gives 9/10 at equal budget (Fisher p = 1.2e-4). Capability gates whether search can succeed; in that cell, refinement depth — not population width — decides whether it does (generalization to other cells is left open). The report grounds the loop in ModelSMC's Feynman–Kac potential and proves (machine-checked, via the Dafny core's `EvaluateProgramSound`) that the verified evaluator is what makes that potential a well-defined total function. Reproduce with `npx tsx experiments/run-matrix.ts` (see RESULTS.md for per-experiment flags).
+
 ## Reading the trace
 
 `--trace` reports:
@@ -243,6 +245,21 @@ npm run synthesize -- examples/foldr-sum.json \
 
 Run `npm run synthesize -- --help` for all overrides.
 
+## Choose a proposal backend
+
+`--proposal` controls only how the next candidate program is proposed. Every
+backend returns the same bounded `Program` AST and then passes through the same
+decoder, type checker, scorer, and SMC resampling loop.
+
+| Backend | Where proposals run | CLI value | Credentials |
+| --- | --- | --- | --- |
+| Catalog | Offline bounded enumerator | `catalog` | None |
+| Ollama | Local OpenAI-compatible endpoint | `ollama` | None by default |
+| Anthropic | Claude through the cloud Messages API | `anthropic` | `ANTHROPIC_API_KEY` |
+
+The cloud backend can incur provider API charges; the local and catalog
+backends do not make an external API request.
+
 ## Optional local open-weight LLM
 
 The LLM proposer uses Ollama's OpenAI-compatible local endpoint:
@@ -264,6 +281,38 @@ npm run synthesize -- examples/map-increment.json \
 ```
 
 The frozen model proposes strict JSON `Program` ASTs, never executable TypeScript or Python source. The boundary decoder enforces exact keys, tags, allowed constants, depth, node count, and acyclicity. The verified checker then rejects ill-typed or incorrectly scoped programs. A failed proposal falls back to its ancestor. The response budget defaults to 2,048 tokens and can be changed with `--max-tokens`.
+
+The request omits the provider-specific reasoning option by default so non-thinking models work without rejecting the request. For a model that supports Ollama's OpenAI-compatible reasoning option, set it explicitly with `--reasoning-effort low`, `medium`, or `high`.
+
+## Optional Claude cloud LLM
+
+To propose with a hosted Claude model instead of a local one, use the `anthropic`
+backend. It calls the native Messages API (`/v1/messages`) and forces a tool call
+so the model must return the same strict typed-AST envelope the boundary decoder
+already verifies.
+
+The API key is read from the `ANTHROPIC_API_KEY` environment variable; it is never
+passed on the command line or written to the repository. Export it in your shell:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Then:
+
+```bash
+npm run synthesize -- examples/map-increment.json \
+  --proposal anthropic \
+  --model claude-sonnet-5 \
+  --max-tokens 2048 \
+  --trace
+```
+
+`--model` defaults to `claude-sonnet-5` for this backend; override it with any
+Claude model id. `--anthropic-url` overrides the API base URL (default
+`https://api.anthropic.com`). `--reasoning-effort` applies only to the `ollama`
+backend and is ignored here. The decode, verification, and ancestor-fallback path
+is identical to the local backend—only the transport differs.
 
 ## Verification boundary
 
@@ -295,7 +344,7 @@ npm test
 npm run verify
 ```
 
-The deterministic suite currently contains 27 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, and a mocked Ollama schema/decoder round trip.
+The deterministic suite currently contains 35 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, CLI backend selection, and mocked Ollama and Anthropic schema/decoder round trips.
 
 Project layout:
 
@@ -307,12 +356,13 @@ src/shell/cli/         argument parsing, proposer selection, command runner
 src/shell/config/      JSON validation, typed values, overrides
 src/shell/deduction/   family inference plus map/fold deduction
 src/shell/engine/      SMC lifecycle, propagation, ESS, resampling, trace
-src/shell/ollama/      prompt, diagnostics, response schema, HTTP proposer
-src/shell/proposal/    shared proposer context, result, and error contract
+src/shell/ollama/      OpenAI-compatible local HTTP proposer
+src/shell/anthropic/   native Messages API cloud proposer
+src/shell/proposal/    shared context, result, prompt, schema, decode, error contract
 src/shell/scoring/     sequence loss and potential evaluation
 src/shell/cli.ts       executable entry point only
 examples/              scalar and recursive-list PBE specifications
-tests/                 focused core, config, catalog, engine, and Ollama suites
+tests/                 focused core, config, catalog, engine, Ollama, and Anthropic suites
 LemmaScript-files.txt
 DESIGN.md
 PROOF_FINDINGS.md

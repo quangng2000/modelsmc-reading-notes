@@ -21,7 +21,7 @@ export interface ProposalContext {
 export interface ProposalResult {
   readonly expression: Program;
   readonly rationale: string;
-  readonly source: "catalog" | "ollama";
+  readonly source: "catalog" | "ollama" | "anthropic";
 }
 
 export interface Proposer {
