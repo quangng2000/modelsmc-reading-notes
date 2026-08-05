@@ -265,6 +265,38 @@ npm run synthesize -- examples/map-increment.json \
 
 The frozen model proposes strict JSON `Program` ASTs, never executable TypeScript or Python source. The boundary decoder enforces exact keys, tags, allowed constants, depth, node count, and acyclicity. The verified checker then rejects ill-typed or incorrectly scoped programs. A failed proposal falls back to its ancestor. The response budget defaults to 2,048 tokens and can be changed with `--max-tokens`.
 
+The request omits the provider-specific reasoning option by default so non-thinking models work without rejecting the request. For a model that supports Ollama's OpenAI-compatible reasoning option, set it explicitly with `--reasoning-effort low`, `medium`, or `high`.
+
+## Optional Claude cloud LLM
+
+To propose with a hosted Claude model instead of a local one, use the `anthropic`
+backend. It calls the native Messages API (`/v1/messages`) and forces a tool call
+so the model must return the same strict typed-AST envelope the boundary decoder
+already verifies.
+
+The API key is read from the `ANTHROPIC_API_KEY` environment variable; it is never
+passed on the command line or written to the repository. Export it in your shell:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Then:
+
+```bash
+npm run synthesize -- examples/map-increment.json \
+  --proposal anthropic \
+  --model claude-sonnet-5 \
+  --max-tokens 2048 \
+  --trace
+```
+
+`--model` defaults to `claude-sonnet-5` for this backend; override it with any
+Claude model id. `--anthropic-url` overrides the API base URL (default
+`https://api.anthropic.com`). `--reasoning-effort` applies only to the `ollama`
+backend and is ignored here. The decode, verification, and ancestor-fallback path
+is identical to the local backend—only the transport differs.
+
 ## Verification boundary
 
 [`src/core/language.verify.ts`](src/core/language.verify.ts) is executable TypeScript and verified through the Dafny backend. Generated Dafny is in [`language.verify.dfy.gen`](src/core/language.verify.dfy.gen); additions-only proofs are in [`language.verify.dfy`](src/core/language.verify.dfy).
@@ -295,7 +327,7 @@ npm test
 npm run verify
 ```
 
-The deterministic suite currently contains 27 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, and a mocked Ollama schema/decoder round trip.
+The deterministic suite currently contains 35 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, CLI backend selection, and mocked Ollama and Anthropic schema/decoder round trips.
 
 Project layout:
 
@@ -307,12 +339,13 @@ src/shell/cli/         argument parsing, proposer selection, command runner
 src/shell/config/      JSON validation, typed values, overrides
 src/shell/deduction/   family inference plus map/fold deduction
 src/shell/engine/      SMC lifecycle, propagation, ESS, resampling, trace
-src/shell/ollama/      prompt, diagnostics, response schema, HTTP proposer
-src/shell/proposal/    shared proposer context, result, and error contract
+src/shell/ollama/      OpenAI-compatible local HTTP proposer
+src/shell/anthropic/   native Messages API cloud proposer
+src/shell/proposal/    shared context, result, prompt, schema, decode, error contract
 src/shell/scoring/     sequence loss and potential evaluation
 src/shell/cli.ts       executable entry point only
 examples/              scalar and recursive-list PBE specifications
-tests/                 focused core, config, catalog, engine, and Ollama suites
+tests/                 focused core, config, catalog, engine, Ollama, and Anthropic suites
 LemmaScript-files.txt
 DESIGN.md
 PROOF_FINDINGS.md
