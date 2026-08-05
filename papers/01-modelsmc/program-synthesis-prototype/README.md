@@ -174,7 +174,7 @@ $$
 \log G(m)
 =
 -\lambda\sum_j d\!\left(m(x_j),y_j\right)
--\beta\,\operatorname{cost}(m).
+-\beta\,\mathrm{cost}(m).
 $$
 
 Integer loss is capped absolute distance. Boolean loss is zero-or-one disagreement. List loss is a bounded sequence edit distance: insertion and deletion cost one, while substitution uses the scalar loss but never costs more than delete-plus-insert. This prevents one extra element from making every following element look misaligned. The potential $G(m)=\exp(\log G(m))$ is a nonnegative relative score, not a normalized probability.
