@@ -17,6 +17,7 @@
   <a href="#core-idea">Core idea</a> ·
   <a href="#system-roles">Roles</a> ·
   <a href="#methodology">Method</a> ·
+  <a href="#executable-prototype">Prototype</a> ·
   <a href="#glossary">Glossary</a> ·
   <a href="#results">Results</a> ·
   <a href="#notes--questions">Questions</a>
@@ -85,6 +86,10 @@ flowchart LR
 8. Return the results to the LLM and repeat.
 
 The output is a weighted collection of plausible scientific models, not only one winner.
+
+## Executable prototype
+
+The [`program-synthesis-prototype`](program-synthesis-prototype/README.md) directory contains a deliberately hybrid programming-by-example experiment. It uses Paper 2-style typed input-output examples, family hypotheses, and deductions; Paper 1-style SMC searches a population of complete program ASTs. Its LemmaScript/Dafny-verified core supports scalar expressions plus recursive `List<Int>`/`List<Bool>` programs built with `map`, `foldr`, typed empty lists, and prepend. Deterministic examples synthesize an affine scalar function, map-increment, fold-sum, and a fold-based filter; an optional Ollama backend can ask a frozen local open-weight LLM to propose strict JSON ASTs.
 
 ## Glossary
 
