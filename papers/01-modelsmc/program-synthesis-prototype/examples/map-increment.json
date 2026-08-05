@@ -1,0 +1,25 @@
+{
+  "name": "map increment over a recursive integer list",
+  "signature": {
+    "input": "List<Int>",
+    "output": "List<Int>"
+  },
+  "examples": [
+    { "input": [], "output": [] },
+    { "input": ["1"], "output": ["2"] },
+    { "input": ["1", "2"], "output": ["2", "3"] },
+    { "input": ["-2", "0", "3"], "output": ["-1", "1", "4"] }
+  ],
+  "integerConstants": ["-2", "-1", "0", "1", "2", "3"],
+  "particles": 8,
+  "iterations": 7,
+  "cloneProbability": 0.25,
+  "essThreshold": 0.6,
+  "seed": 7,
+  "lossScale": 2,
+  "costScale": 0.15,
+  "lossCap": 1000,
+  "maxCost": 20,
+  "maxDepth": 10,
+  "maxNodes": 127
+}

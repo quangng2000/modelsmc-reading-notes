@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-label="Grouped bar chart of exact-solution rates by proposer and search arm">
+<rect width="720" height="400" fill="#fcfcfb"/>
+<text x="56" y="24" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="600" fill="#0b0b0b">Exact-solution rate on foldr-bounded-square (budget: 4 proposal calls)</text>
+<rect x="56" y="35" width="12" height="12" rx="3" fill="#2a78d6"/>
+<text x="74" y="45" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">one-shot (4 particles × 1 iteration)</text>
+<rect x="288" y="35" width="12" height="12" rx="3" fill="#eb6834"/>
+<text x="306" y="45" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">iterative (2 particles × 2 iterations)</text>
+<line x1="56" y1="336" x2="704" y2="336" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="340" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">0%</text>
+<line x1="56" y1="268" x2="704" y2="268" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="272" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">25%</text>
+<line x1="56" y1="200" x2="704" y2="200" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="204" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">50%</text>
+<line x1="56" y1="132" x2="704" y2="132" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="136" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">75%</text>
+<line x1="56" y1="64" x2="704" y2="64" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="68" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">100%</text>
+<text x="137" y="358" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Claude Sonnet 5</text>
+<path d="M 112 336 L 112 68 Q 112 64 116 64 L 132 64 Q 136 64 136 68 L 136 336 Z" fill="#2a78d6"/>
+<line x1="124" y1="139.48892242308773" x2="124" y2="64.00000000000003" stroke="#52514e" stroke-width="1.5"/>
+<line x1="120" y1="139.48892242308773" x2="128" y2="139.48892242308773" stroke="#52514e" stroke-width="1.5"/>
+<line x1="120" y1="64.00000000000003" x2="128" y2="64.00000000000003" stroke="#52514e" stroke-width="1.5"/>
+<text x="130" y="58.00000000000003" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">10/10</text>
+<path d="M 138 336 L 138 95.19999999999999 Q 138 91.19999999999999 142 91.19999999999999 L 158 91.19999999999999 Q 162 91.19999999999999 162 95.19999999999999 L 162 336 Z" fill="#eb6834"/>
+<line x1="150" y1="173.92880803073803" x2="150" y2="68.86232990773213" stroke="#52514e" stroke-width="1.5"/>
+<line x1="146" y1="173.92880803073803" x2="154" y2="173.92880803073803" stroke="#52514e" stroke-width="1.5"/>
+<line x1="146" y1="68.86232990773213" x2="154" y2="68.86232990773213" stroke="#52514e" stroke-width="1.5"/>
+<text x="144" y="62.86232990773213" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="start">9/10</text>
+<text x="299" y="358" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Claude Haiku 4.5</text>
+<line x1="286" y1="336" x2="286" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<line x1="282" y1="336" x2="290" y2="336" stroke="#52514e" stroke-width="1.5"/>
+<line x1="282" y1="260.51107757691227" x2="290" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<text x="292" y="254.51107757691227" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">0/10</text>
+<path d="M 300 336 L 300 258.4 Q 300 254.39999999999998 304 254.39999999999998 L 320 254.39999999999998 Q 324 254.39999999999998 324 258.4 L 324 336 Z" fill="#eb6834"/>
+<line x1="312" y1="306.68077549666083" x2="312" y2="171.92365553410409" stroke="#52514e" stroke-width="1.5"/>
+<line x1="308" y1="306.68077549666083" x2="316" y2="306.68077549666083" stroke="#52514e" stroke-width="1.5"/>
+<line x1="308" y1="171.92365553410409" x2="316" y2="171.92365553410409" stroke="#52514e" stroke-width="1.5"/>
+<text x="306" y="165.92365553410409" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="start">3/10</text>
+<text x="461" y="358" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Qwen3-Coder 30B</text>
+<line x1="448" y1="336" x2="448" y2="217.82076852464513" stroke="#52514e" stroke-width="1.5"/>
+<line x1="444" y1="336" x2="452" y2="336" stroke="#52514e" stroke-width="1.5"/>
+<line x1="444" y1="217.82076852464513" x2="452" y2="217.82076852464513" stroke="#52514e" stroke-width="1.5"/>
+<text x="454" y="211.82076852464513" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">0/5</text>
+<line x1="474" y1="336" x2="474" y2="217.82076852464513" stroke="#52514e" stroke-width="1.5"/>
+<line x1="470" y1="336" x2="478" y2="336" stroke="#52514e" stroke-width="1.5"/>
+<line x1="470" y1="217.82076852464513" x2="478" y2="217.82076852464513" stroke="#52514e" stroke-width="1.5"/>
+<text x="468" y="211.82076852464513" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="start">0/5</text>
+<text x="623" y="358" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Catalog (offline)</text>
+<line x1="610" y1="336" x2="610" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<line x1="606" y1="336" x2="614" y2="336" stroke="#52514e" stroke-width="1.5"/>
+<line x1="606" y1="260.51107757691227" x2="614" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<text x="616" y="254.51107757691227" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">0/10</text>
+<line x1="636" y1="336" x2="636" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<line x1="632" y1="336" x2="640" y2="336" stroke="#52514e" stroke-width="1.5"/>
+<line x1="632" y1="260.51107757691227" x2="640" y2="260.51107757691227" stroke="#52514e" stroke-width="1.5"/>
+<text x="630" y="254.51107757691227" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="start">0/10</text>
+<line x1="56" y1="336" x2="704" y2="336" stroke="#c3c2b7" stroke-width="1"/>
+</svg>
