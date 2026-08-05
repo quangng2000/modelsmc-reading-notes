@@ -45,11 +45,11 @@ and weights update multiplicatively, $\widetilde w_t^{(i)} = w_{t-1}^{(i)}\,G_t(
 For programming-by-example over a fixed dataset $\{(x_j,y_j)\}_{j=1}^{n}$, this prototype instantiates the potential as
 
 $$
-\log G(m) \;=\; -\lambda \sum_{j=1}^{n} d\!\left(m(x_j), y_j\right) \;-\; \beta\,\operatorname{cost}(m),
+\log G(m) \;=\; -\lambda \sum_{j=1}^{n} d\!\left(m(x_j), y_j\right) \;-\; \beta\,\mathrm{cost}(m),
 \qquad G(m)=\exp\log G(m)\in[0,\infty),
 $$
 
-with $d$ a bounded type-aware distance (§4.3) and $\operatorname{cost}$ a structural size penalty (an Occam prior).
+with $d$ a bounded type-aware distance (§4.3) and $\mathrm{cost}$ a structural size penalty (an Occam prior).
 
 Computing $G(m)$ *runs the candidate program*, $m(x_j)$. For $G$ to be the total nonnegative function the Feynman–Kac construction assumes, evaluation must terminate, never crash, and return a value of the type $d(\cdot, y_j)$ expects. An LLM-proposed AST has none of these guarantees a priori. The verified core supplies exactly them on the type-checker's accepted set $\mathcal{M}_{\text{typed}}$.
 
@@ -57,9 +57,9 @@ Computing $G(m)$ *runs the candidate program*, $m(x_j)$. For $G$ to be the total
 >
 > *Proof.* This is the type-soundness theorem `EvaluateProgramSound` in [`language.verify.dfy`](../src/core/language.verify.dfy): under `valueMatchesType(input, inputType)` and `inferType(program, inputType).TypeOk?` it `ensures evaluate(program, input).EvalOk?` (progress — no evaluation error) and `valueMatchesType(evaluate(program,input).output, inferType(...).inferred)` (preservation — the output inhabits the inferred type). The DSL has no unbounded recursion (no `Fix`, no general application), so evaluation is total by structural recursion on the finite input list. $\square$
 
-> **Proposition 2 (Well-founded cost prior; machine-checked).** $\operatorname{cost}$ is positive and strictly decreasing along the subterm order, so the cost cap admits only finitely many programs and the Occam term is well-founded.
+> **Proposition 2 (Well-founded cost prior; machine-checked).** $\mathrm{cost}$ is positive and strictly decreasing along the subterm order, so the cost cap admits only finitely many programs and the Occam term is well-founded.
 >
-> *Proof.* `expressionCost_ensures` gives $\operatorname{cost}(m)\ge 1$; `ExpressionBodyCostExceedsDirectChildren` and `ProgramCostExceedsContainedBodies` give $\operatorname{cost}(\text{parent}) > \operatorname{cost}(\text{child})$ for every *compound* constructor (every branching expression node, and the `map`/`foldr` wrappers). Leaf expressions have cost 1, and the `expression`-program wrapper is the identity on cost; the subterm order is thus well-founded and bounded below, so a fixed cap admits finitely many programs. $\square$
+> *Proof.* `expressionCost_ensures` gives $\mathrm{cost}(m)\ge 1$; `ExpressionBodyCostExceedsDirectChildren` and `ProgramCostExceedsContainedBodies` give $\mathrm{cost}(\text{parent}) > \mathrm{cost}(\text{child})$ for every *compound* constructor (every branching expression node, and the `map`/`foldr` wrappers). Leaf expressions have cost 1, and the `expression`-program wrapper is the identity on cost; the subterm order is thus well-founded and bounded below, so a fixed cap admits finitely many programs. $\square$
 
 The exactness metric is likewise anchored in the verified evaluator: a program *solves* the task iff `matchesExample` holds on every example, and the lemma `MatchesExampleExact` proves this is exactly "evaluation succeeds and the value equals the target." **Every "exact" count in this report is therefore a verified statement, not a heuristic match.**
 
