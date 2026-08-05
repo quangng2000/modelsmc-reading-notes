@@ -12,7 +12,8 @@
     "llm-is": "tsx experiments/llm-is.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "verify": "lsc check"
+    "verify": "lsc check",
+    "smc-posterior": "tsx experiments/smc-posterior.ts"
   },
   "devDependencies": {
     "@types/node": "24.1.0",
