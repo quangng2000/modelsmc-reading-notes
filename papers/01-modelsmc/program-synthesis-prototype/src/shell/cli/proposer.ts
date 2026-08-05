@@ -5,6 +5,9 @@ import { ProposalError, type Proposer } from "../proposal/index.js";
 import type { CliOptions } from "./arguments.js";
 
 export function createProposer(options: CliOptions): Proposer {
+  if (options.proposal === "grammar-smc") {
+    throw new ProposalError("grammar-smc is a complete search backend, not an LLM proposer");
+  }
   if (options.proposal === "catalog") return new CatalogProposer();
   if (options.proposal === "anthropic") {
     const apiKey = process.env.ANTHROPIC_API_KEY;

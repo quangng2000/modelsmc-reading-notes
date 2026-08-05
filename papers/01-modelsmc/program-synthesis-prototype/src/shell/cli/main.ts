@@ -7,6 +7,7 @@ import {
 import { jsonStringify, renderProgram, renderType } from "../ast/index.js";
 import { formatNumber, SynthesisEngine, TraceSink } from "../engine/index.js";
 import { CliArgumentError, parseCliArgs, USAGE } from "./arguments.js";
+import { runGrammarControl } from "./grammar-control.js";
 import { createProposer } from "./proposer.js";
 
 export async function main(args: readonly string[] = process.argv.slice(2)): Promise<number> {
@@ -22,6 +23,11 @@ export async function main(args: readonly string[] = process.argv.slice(2)): Pro
       enabled: options.trace,
       ...(options.logFile === undefined ? {} : { logFile: options.logFile }),
     });
+    if (options.proposal === "grammar-smc") {
+      runGrammarControl(config, options, trace);
+      if (trace.logFile !== undefined) console.log(`[result] JSONL trace: ${trace.logFile}`);
+      return 0;
+    }
     const result = await new SynthesisEngine({
       config,
       proposer: createProposer(options),

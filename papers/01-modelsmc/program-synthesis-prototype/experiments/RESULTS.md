@@ -67,6 +67,8 @@ The exactness metric is likewise anchored in the verified evaluator: a program *
 
 > **Scope of the theory.** This prototype is a *Feynman–Kac-inspired search*, not a calibrated Feynman–Kac model. The shell applies no importance correction for the unknown LLM proposal density and re-scores a fixed dataset rather than accumulating incremental potentials, so the classical asymptotic SMC guarantees — convergence of the particle approximation to $p_t$ and unbiasedness of the $Z_t$ estimate as $P\to\infty$ — do **not** transfer. What the theory licenses is the qualitative role of resampling (weight-proportional reallocation of descendants toward high-potential regions), whose empirical bite Experiment 3 measures. Verification makes the potential well-formed; it does not make the population a correct posterior. This is the exact sense of "a verified core inside an approximate shell."
 
+The later `grammar-smc` control in the prototype addresses this issue only for a separately declared finite AST universe with a known grammar prior and incremental tempering potentials. It is not used in E1–E3 and does not retroactively calibrate their black-box LLM populations.
+
 ## 4. Method
 
 **4.1 Language.** A defunctionalized higher-order combinator DSL over `Int`, `Bool`, `List<Int>`, `List<Bool>`, with program families `expression`, `map`, and `foldr`; 17 expression constructors; scoped `Item`/`Accumulator`; no unrestricted recursion.

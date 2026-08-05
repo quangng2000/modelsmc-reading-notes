@@ -2,7 +2,7 @@
 
 ## 1. Product and boundary
 
-The product is a command-line programming-by-example experiment. A deterministic catalog or frozen local LLM proposes typed program ASTs. An SMC shell scores them against input-output examples, resamples the population, and retains the best program encountered.
+The product is a command-line programming-by-example experiment. A deterministic catalog, local LLM, or cloud LLM can propose typed program ASTs for an exploratory resample-and-revise search. A separate finite-grammar control enumerates its state space and runs tempered SMC against an exactly computable reference target.
 
 The verified core owns all semantic decisions:
 
@@ -15,7 +15,7 @@ The verified core owns all semantic decisions:
 
 The shell owns JSON parsing, proposal generation, Paper 2-style hypothesis/deduction messages, soft loss, floating-point potentials, ESS, randomness, resampling, logging, and rendering. Those pieces are tested but not proved.
 
-The claim is therefore **a verified language core inside an approximate synthesis experiment**, not an end-to-end verified synthesizer or exact Bayesian posterior sampler.
+The LLM-guided path is therefore **a verified language core inside an approximate synthesis experiment**, not an end-to-end verified synthesizer or exact Bayesian posterior sampler. A separate finite-grammar control has an explicit target and known proposal probabilities, but its floating-point SMC implementation is tested rather than formally verified.
 
 ## 2. Why dedicated combinators instead of full lambda calculus
 
@@ -140,7 +140,8 @@ The model prefers smaller programs but does not prove global minimality or catal
 ┌──────────────────────────── unverified shell ────────────────────────────┐
 │ explicit-signature JSON parser                                           │
 │ bounded strict Program decoder                                           │
-│ offline catalog or Ollama proposer                                       │
+│ offline catalog, Ollama, or Anthropic proposer                            │
+│ finite typed enumerator and exact-reference grammar SMC control           │
 │ family hypotheses and map/fold deduction traces                          │
 │ list-aware soft loss, floating potential, ESS, resampling, champion       │
 │                                  │ direct imports                         │
@@ -168,6 +169,7 @@ The shell is organized as feature packages with narrow public indexes:
 | `config/` | change specification decoding, validation, or overrides |
 | `deduction/` | add sound family refutations or inferred subexamples |
 | `engine/` | change SMC population lifecycle, propagation, or lineage |
+| `grammar-smc/` | change finite enumeration, tempered targets, or exact-reference SMC |
 | `ollama/` | change prompt diagnostics, response schema, or HTTP transport |
 | `proposal/` | change the common proposal request/result contract |
 | `scoring/` | change soft sequence loss or potential evaluation |
@@ -209,6 +211,8 @@ Propagation is explicitly refinement-aware. A proposal receives its ancestor AST
 
 The hard bounded-square example and deterministic equal-budget test distinguish independent sampling from iterative refinement. Four one-round proposals do not solve the controlled task; two particles refined for two rounds do, using the same four calls. This validates the feedback mechanism, not posterior correctness or universal LLM effectiveness.
 
+The independent `grammar-smc` path defines a finite universe of every well-typed unique AST through a configured structural-cost bound. It normalizes the prior $p_0(e)\propto\exp[-\lambda\,\mathrm{cost}(e)]$, samples that prior directly, and moves through a fixed tempering ladder with incremental potential $\exp[-(\beta_t-\beta_{t-1})sL(e)]$. Systematic resampling is triggered by relative ESS. An independent Metropolis–Hastings kernel proposes from $p_0$; the known proposal and prior cancel in the acceptance ratio. Because the universe is finite, enumeration supplies the exact final distribution and normalizing constant for direct error measurement. This control isolates SMC mechanics from black-box LLM capability and does not change the claims made about the LLM path.
+
 ## 10. Verification and test workflow
 
 After any verified TypeScript change:
@@ -226,7 +230,7 @@ npm test
 npm run verify
 ```
 
-The current deterministic test matrix covers scalar regression, empty lists, type-changing map, integer sum, order-sensitive right subtraction, filter construction, invalid scopes and prepends, exact list equality, large `bigint` elements, config/decoder bounds, deduction events, deterministic map/fold SMC discovery, refinement lineage, and equal-budget one-shot versus iterative search.
+The current deterministic test matrix covers scalar regression, empty lists, type-changing map, integer sum, order-sensitive right subtraction, filter construction, invalid scopes and prepends, exact list equality, large `bigint` elements, config/decoder bounds, deduction events, deterministic map/fold SMC discovery, refinement lineage, equal-budget one-shot versus iterative search, bounded grammar enumeration, the beta-zero prior identity, enumeration limits, and finite-target SMC agreement.
 
 ## 11. Deferred work
 
@@ -236,4 +240,5 @@ The current deterministic test matrix covers scalar regression, empty lists, typ
 - verified JSON decoding and rendering round trips;
 - verified map/fold deduction rules;
 - proof of search completeness or minimum-cost synthesis;
-- proposal-density importance corrections for an exact SMC target.
+- proposal-density access or correction for a calibrated LLM-guided SMC target;
+- scalable exact controls beyond the deliberately small enumerated grammar bound.

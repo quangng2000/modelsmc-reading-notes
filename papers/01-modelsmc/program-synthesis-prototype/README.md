@@ -5,7 +5,7 @@ This CLI combines the two papers in the repository:
 - Paper 1 contributes a population of program particles, potential-based weighting, ESS, and resampling.
 - Paper 2 contributes typed input-output specifications, program-family hypotheses, deduction, and a small functional language.
 
-An offline catalog or frozen local LLM proposes complete program ASTs. A LemmaScript/Dafny-verified core type-checks and evaluates them. The unverified SMC shell scores each candidate against the examples, favors smaller programs, and keeps a best-so-far exact discovery even if later resampling removes it from the live population.
+An offline catalog, local LLM, or cloud LLM can propose complete program ASTs for the exploratory search. A separate exact finite-grammar backend removes the LLM entirely. In both paths, a LemmaScript/Dafny-verified core type-checks and evaluates programs; the unverified shell owns scoring, floating-point inference, and orchestration.
 
 The language now supports recursive `List<Int>` and `List<Bool>` values, `map`, and `foldr`. It is a **defunctionalized higher-order combinator DSL**, not a full lambda calculus: the displayed mapper and reducer lambdas are scoped surface notation, not general `Lambda`/`Apply` AST nodes.
 
@@ -181,6 +181,49 @@ Integer loss is capped absolute distance. Boolean loss is zero-or-one disagreeme
 
 The shell deliberately does not multiply old weights into this fixed-dataset score again at every refinement step. It also lacks an importance correction for the unknown LLM proposal probability. The population is therefore an approximate search distribution, not an exact Bayesian posterior.
 
+## Exact finite-grammar SMC control
+
+The `grammar-smc` backend is a scientific control for that limitation. It makes **no LLM or network call**. Instead, it exhaustively enumerates every well-typed AST through a small cost bound and defines a normalized Occam prior on that finite universe:
+
+$$
+p_0(e)
+=
+\frac{\exp[-\lambda\,\mathrm{cost}(e)]}
+{\sum_{e'\in\mathcal E_C}\exp[-\lambda\,\mathrm{cost}(e')]}.
+$$
+
+Here $\mathcal E_C$ is the set of unique typed ASTs with structural cost at most $C$, and `costScale` supplies $\lambda$. A fixed inverse-temperature ladder $0=\beta_0<\cdots<\beta_T=\beta_{\max}$ then defines
+
+$$
+\pi_{\beta_t}(e)
+\propto
+p_0(e)\exp[-\beta_t\,s\,L(e)],
+\qquad
+G_t(e)=\exp[-(\beta_t-\beta_{t-1})sL(e)],
+$$
+
+where `lossScale` supplies $s$ and $L(e)$ is the verified program's total example loss. Early stages retain imperfect programs; later stages concentrate mass on low-loss programs.
+
+Particles are sampled exactly from $p_0$, reweighted by the incremental potential, and systematically resampled when relative ESS crosses the configured threshold. Each stage also applies an independent Metropolis–Hastings move whose proposal is $p_0$. Because that proposal is known and equals the prior, the prior/proposal terms cancel and the log acceptance ratio is simply
+
+$$
+-\beta_t s\,[L(e')-L(e)].
+$$
+
+The bounded universe lets the CLI calculate the final target by enumeration as ground truth. It reports particle and exact-enumeration values for exact-program mass, mean loss, $\log(Z_{\beta}/Z_0)$, and total-variation distance. This makes particles, tempering, ESS, resampling, and the normalizing-constant estimate testable independently of LLM capability.
+
+Run the control on the map example:
+
+```bash
+npm run synthesize -- examples/map-increment.json \
+  --proposal grammar-smc \
+  --particles 1024 --iterations 8 --ess-threshold 0.8 \
+  --grammar-max-cost 5 --beta-max 1 --moves-per-stage 1 \
+  --trace
+```
+
+`--iterations` is the number of temperature stages in this mode. `--alpha` is not used because this mode has no clone-or-LLM-propose decision. `--grammar-max-cost` is intentionally small because exhaustive typed enumeration grows combinatorially; `--grammar-limit` fails clearly before an accidental explosion. The exact grammar control is calibrated **inside its declared bounded DSL**. It is not evidence that the separate black-box LLM proposal distribution is calibrated.
+
 ## Experiment: when iterative SMC can help
 
 [`examples/foldr-bounded-square.json`](examples/foldr-bounded-square.json) is intentionally harder than the small demonstrations. Its examples specify a list transformation that must discover three ideas together:
@@ -247,15 +290,16 @@ Run `npm run synthesize -- --help` for all overrides.
 
 ## Choose a proposal backend
 
-`--proposal` controls only how the next candidate program is proposed. Every
-backend returns the same bounded `Program` AST and then passes through the same
-decoder, type checker, scorer, and SMC resampling loop.
+`--proposal` selects either the LLM-guided resample-and-revise search or the
+finite-grammar SMC control. Every candidate still passes through the same
+verified type checker, evaluator, structural cost, and exact acceptance check.
 
 | Backend | Where proposals run | CLI value | Credentials |
 | --- | --- | --- | --- |
 | Catalog | Offline bounded enumerator | `catalog` | None |
 | Ollama | Local OpenAI-compatible endpoint | `ollama` | None by default |
 | Anthropic | Claude through the cloud Messages API | `anthropic` | `ANTHROPIC_API_KEY` |
+| Exact grammar SMC | Offline exhaustive finite grammar; no LLM | `grammar-smc` | None |
 
 The cloud backend can incur provider API charges; the local and catalog
 backends do not make an external API request.
@@ -334,7 +378,7 @@ Current verification result:
 Dafny program verifier finished with 416 verified, 0 errors
 ```
 
-The proof does **not** cover JSON parsing, LLM or HTTP behavior, catalog completeness, hypothesis/deduction completeness, floating-point loss and normalization, ESS, randomness, resampling, logging, rendering, global minimum cost, or posterior correctness. This is a verified semantic core inside an approximate synthesis experiment—not an end-to-end verified synthesizer.
+The proof does **not** cover JSON parsing, LLM or HTTP behavior, grammar/catalog completeness beyond the implemented bound, hypothesis/deduction completeness, floating-point loss and normalization, ESS, randomness, resampling, logging, rendering, or global minimum cost. The exact grammar mode has a fully specified finite target and an enumerated reference distribution, but its numerical SMC implementation remains tested rather than Dafny-verified. The LLM modes remain approximate resample-and-revise searches, not calibrated posterior samplers.
 
 ## Test and inspect
 
@@ -344,7 +388,7 @@ npm test
 npm run verify
 ```
 
-The deterministic suite currently contains 35 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, CLI backend selection, and mocked Ollama and Anthropic schema/decoder round trips.
+The deterministic suite currently contains 45 passing tests, including scalar regression, type-changing map, right-associative fold, recursive filter construction, scope rejection, large `bigint` list values, deduction traces, exact catalog synthesis, champion retention, the equal-budget iterative-feedback scenario, CLI backend selection, mocked Ollama and Anthropic schema/decoder round trips, bounded typed enumeration, exact target normalization, deterministic grammar SMC, and agreement with enumeration.
 
 Project layout:
 
@@ -356,6 +400,7 @@ src/shell/cli/         argument parsing, proposer selection, command runner
 src/shell/config/      JSON validation, typed values, overrides
 src/shell/deduction/   family inference plus map/fold deduction
 src/shell/engine/      SMC lifecycle, propagation, ESS, resampling, trace
+src/shell/grammar-smc/ finite typed enumeration, exact target, tempered SMC control
 src/shell/ollama/      OpenAI-compatible local HTTP proposer
 src/shell/anthropic/   native Messages API cloud proposer
 src/shell/proposal/    shared context, result, prompt, schema, decode, error contract
