@@ -144,6 +144,44 @@ just has to report the EOS sampling step. A separate probe surprise worth
 remembering: llama.cpp logprobs are not bit-stable across calls (~1e-4 KV-cache
 numerics), but each response is self-consistent, which is all the weights use.
 
+## 6. Calibrated tempered SMC — first live results
+
+`src/shell/posterior/smc.ts` (`npm run smc-posterior`) implements likelihood-tempered
+SMC (AIS reweighting, ESS-triggered systematic resampling, independence-MH
+rejuvenation) in the two exactly-computable variants: prior-kernel moves and
+LLM-kernel moves with cached draw densities. Exact kernel alternation on one
+trajectory is impossible without a scoring primitive: an accepted prior move stales
+the cached LLM density, and the Del Moral refresh that would repair it carries a
+branch-only normalizer that cannot cancel across particles.
+
+Live validation against the exact map-increment posterior (cap 9):
+
+- **LLM island (gpt-oss:20b, 24 particles)**: population collapses to the single
+  canonical program by stage 1 (unique = 1/24) — identical to the one-shot llm-is
+  result, as theory predicts for a near-deterministic proposal. exact-solve mass
+  1.000 vs truth 0.997; per-atom TV ~1. The one-shot llm-is run (qwen, 200 draws,
+  61% canonical acceptance) showed the same signature with a perfectly misleading
+  ESS of 100% — the textbook proof that ESS measures weight variance, not support
+  coverage, and that ground truth was necessary to see the failure at all.
+- **Prior island at 24 particles**: exact-mass estimate 0.063 — pure budget
+  starvation (~120 proposals against a ~1% solver hit rate).
+- **Prior island at 2000 particles / 8 stages / 2 sweeps**: exact-mass estimate
+  **0.997434 vs truth 0.997453** — the calibrated SMC machinery is correct; the
+  small-N failures are sampling budgets, and the LLM-island failure is proposal
+  degeneracy, both now measured.
+
+**The scoring sidecar (v2, built).** `experiments/sidecar/llm_q_server.py` serves
+/generate, /score, /encode from llama-cpp-python (Metal) on the local qwen3-coder
+GGUF (the Ollama gpt-oss blob uses an incompatible arch name). It closes the EOS gap
+(the termination step's probability is read from the same softmax) and provides
+teacher-forced scoring — the primitive that makes feedback-conditioned MH kernels
+computable: alpha = min(1, [pi(x') q(x|prompt(x'))]/[pi(x) q(x'|prompt(x))]).
+One measured subtlety is baked into the design: Metal kernels differ by batch shape
+(batched rescoring drifts ~6e-4/token from generation), so /score replays the exact
+eval pattern of generation (prompt batch, then one token per step), which reproduces
+the sampling density with 0.0 measured deviation. Atoms are token-id sequences
+(generated ids must equal the tokenizer's canonical encoding of the canonical text).
+
 ## Next steps
 
 - **E5**: LLM-as-proposal with exact q on a small-cap task; corrected SMC/IS population

@@ -1,3 +1,4 @@
+import { jsonStringify, programToJsonValue } from "../ast/render.js";
 import type { RandomSource } from "../engine/random.js";
 import { effectiveSampleSize, normalizeLogWeights } from "../engine/numerics.js";
 import { systematicResample } from "../engine/resampling.js";
@@ -193,7 +194,9 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
       }
     }
 
-    const unique = new Set(particles.map((particle) => JSON.stringify(particle.proposal.program))).size;
+    const unique = new Set(
+      particles.map((particle) => jsonStringify(programToJsonValue(particle.proposal.program))),
+    ).size;
     const stage: StageDiagnostics = {
       gamma,
       relativeEss,
