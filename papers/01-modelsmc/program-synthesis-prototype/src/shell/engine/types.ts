@@ -7,7 +7,7 @@ export interface Particle {
   readonly expression: Program;
   readonly score: ValidScore;
   readonly weight: number;
-  readonly origin: "initial" | "clone" | "catalog" | "ollama" | "anthropic" | "fallback";
+  readonly origin: "initial" | "clone" | "catalog" | "ollama" | "fallback";
   readonly rationale: string;
 }
 

@@ -2,16 +2,15 @@ import type { ConfigOverrides } from "../config/index.js";
 
 export interface CliOptions {
   readonly configPath: string;
-  readonly proposal: "catalog" | "ollama" | "anthropic";
+  readonly proposal: "catalog" | "ollama";
   readonly trace: boolean;
   readonly logFile?: string;
   readonly model: string;
   readonly ollamaUrl: string;
-  readonly anthropicUrl: string;
   readonly timeoutMs: number;
-  readonly temperature?: number;
+  readonly temperature: number;
   readonly maxTokens: number;
-  readonly reasoningEffort?: "low" | "medium" | "high";
+  readonly reasoningEffort: "low" | "medium" | "high";
   readonly overrides: ConfigOverrides;
 }
 
@@ -19,14 +18,13 @@ export const USAGE = `Usage:
   npm run synthesize -- <config.json> [options]
 
 Options:
-  --proposal <catalog|ollama|anthropic>  Proposal backend (default: catalog)
-  --model <name>               Model id (default: gpt-oss:20b for ollama, claude-sonnet-5 for anthropic)
-  --ollama-url <url>           OpenAI-compatible base URL for the ollama backend
-  --anthropic-url <url>        Anthropic API base URL (default: https://api.anthropic.com)
-  --timeout-ms <integer>       Request timeout (default: 180000)
-  --temperature <number>       Sampling temperature (ollama default 0; omitted unless set, as the Claude 5 family rejects it)
-  --max-tokens <integer>       Response token limit (default: 2048)
-  --reasoning-effort <level>   Send low, medium, or high reasoning (ollama backend only)
+  --proposal <catalog|ollama>  Proposal backend (default: catalog)
+  --model <name>               Ollama model (default: gpt-oss:20b)
+  --ollama-url <url>           OpenAI-compatible base URL
+  --timeout-ms <integer>       Ollama timeout (default: 180000)
+  --temperature <number>       Ollama temperature (default: 0)
+  --max-tokens <integer>       Ollama response token limit (default: 2048)
+  --reasoning-effort <level>   low, medium, or high (default: low)
   --particles <integer>        Override particle count
   --iterations <integer>       Override iteration count
   --alpha <number>             Override clone probability
@@ -66,16 +64,15 @@ function safeInteger(value: string, flag: string): number {
 
 export function parseCliArgs(args: readonly string[]): CliOptions | "help" {
   let configPath: string | undefined;
-  let proposal: "catalog" | "ollama" | "anthropic" = "catalog";
+  let proposal: "catalog" | "ollama" = "catalog";
   let trace = false;
   let logFile: string | undefined;
-  let model: string | undefined;
+  let model = "gpt-oss:20b";
   let ollamaUrl = "http://localhost:11434/v1";
-  let anthropicUrl = "https://api.anthropic.com";
   let timeoutMs = 180_000;
-  let temperature: number | undefined;
+  let temperature = 0;
   let maxTokens = 2_048;
-  let reasoningEffort: "low" | "medium" | "high" | undefined;
+  let reasoningEffort: "low" | "medium" | "high" = "low";
   const overrides: {
     particles?: number;
     iterations?: number;
@@ -102,16 +99,14 @@ export function parseCliArgs(args: readonly string[]): CliOptions | "help" {
     const value = requireValue(args, index, argument);
     index += 1;
     if (argument === "--proposal") {
-      if (value !== "catalog" && value !== "ollama" && value !== "anthropic") {
-        throw new CliArgumentError("--proposal must be catalog, ollama, or anthropic");
+      if (value !== "catalog" && value !== "ollama") {
+        throw new CliArgumentError("--proposal must be catalog or ollama");
       }
       proposal = value;
     } else if (argument === "--model") {
       model = value;
     } else if (argument === "--ollama-url") {
       ollamaUrl = value;
-    } else if (argument === "--anthropic-url") {
-      anthropicUrl = value;
     } else if (argument === "--timeout-ms") {
       timeoutMs = safeInteger(value, argument);
       if (timeoutMs <= 0) throw new CliArgumentError("--timeout-ms must be positive");
@@ -144,19 +139,17 @@ export function parseCliArgs(args: readonly string[]): CliOptions | "help" {
   }
 
   if (configPath === undefined) throw new CliArgumentError("a configuration path is required");
-  const resolvedModel = model ?? (proposal === "anthropic" ? "claude-sonnet-5" : "gpt-oss:20b");
   return {
     configPath,
     proposal,
     trace,
     ...(logFile === undefined ? {} : { logFile }),
-    model: resolvedModel,
+    model,
     ollamaUrl,
-    anthropicUrl,
     timeoutMs,
-    ...(temperature === undefined ? {} : { temperature }),
+    temperature,
     maxTokens,
-    ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
+    reasoningEffort,
     overrides,
   };
 }

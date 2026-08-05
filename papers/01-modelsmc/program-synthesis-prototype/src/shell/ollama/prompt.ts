@@ -1,5 +1,5 @@
 import { deriveSynthesisTrace } from "../deduction/index.js";
-import type { ProposalContext } from "./index.js";
+import type { ProposalContext } from "../proposal/index.js";
 import {
   jsonStringify,
   programToJsonValue,

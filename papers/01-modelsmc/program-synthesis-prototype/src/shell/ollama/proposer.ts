@@ -1,12 +1,16 @@
 import {
+  expressionUsesInput,
+  type Program,
+} from "../../core/language.verify.js";
+import { decodeProgram } from "../ast/decode.js";
+import {
   ProposalError,
   type ProposalContext,
   type ProposalResult,
   type Proposer,
 } from "../proposal/index.js";
-import { decodeEnvelope } from "../proposal/decode.js";
-import { promptFor } from "../proposal/prompt.js";
-import { isRecord, responseSchema, stripJsonFence } from "../proposal/schema.js";
+import { promptFor } from "./prompt.js";
+import { isRecord, responseSchema, stripJsonFence } from "./schema.js";
 
 export interface OllamaProposerOptions {
   readonly model?: string;
@@ -18,6 +22,41 @@ export interface OllamaProposerOptions {
   readonly requester?: typeof fetch;
 }
 
+function assertCombinatorScope(program: Program): void {
+  if (program.kind === "MapProgram" && expressionUsesInput(program.mapper)) {
+    throw new ProposalError(
+      "MapProgram.mapper must not reference the outer Input; use Item for the current element",
+    );
+  }
+  if (
+    program.kind === "FoldRightProgram" &&
+    (expressionUsesInput(program.initial) || expressionUsesInput(program.reducer))
+  ) {
+    throw new ProposalError(
+      "FoldRightProgram initial/reducer must not reference the outer Input",
+    );
+  }
+}
+
+function decodeEnvelope(value: unknown, context: ProposalContext): ProposalResult {
+  if (!isRecord(value)) throw new ProposalError("model response must be a JSON object");
+  const keys = Object.keys(value).sort();
+  if (keys.length !== 2 || keys[0] !== "expression" || keys[1] !== "rationale") {
+    throw new ProposalError("model response must contain exactly expression and rationale");
+  }
+  if (typeof value.rationale !== "string") {
+    throw new ProposalError("model response rationale must be a string");
+  }
+  const rationale = value.rationale.trim().slice(0, 2_000);
+  const expression = decodeProgram(value.expression, {
+    integerConstants: context.integerConstants,
+    maxDepth: context.maxDepth,
+    maxNodes: context.maxNodes,
+  });
+  assertCombinatorScope(expression);
+  return { expression, rationale, source: "ollama" };
+}
+
 export class OllamaProposer implements Proposer {
   readonly name = "ollama";
   private readonly model: string;
@@ -25,7 +64,7 @@ export class OllamaProposer implements Proposer {
   private readonly timeoutMs: number;
   private readonly temperature: number;
   private readonly maxTokens: number;
-  private readonly reasoningEffort: "low" | "medium" | "high" | undefined;
+  private readonly reasoningEffort: "low" | "medium" | "high";
   private readonly requester: typeof fetch;
 
   constructor(options: OllamaProposerOptions = {}) {
@@ -37,7 +76,7 @@ export class OllamaProposer implements Proposer {
     if (!Number.isSafeInteger(this.maxTokens) || this.maxTokens <= 0) {
       throw new RangeError("maxTokens must be a positive safe integer");
     }
-    this.reasoningEffort = options.reasoningEffort;
+    this.reasoningEffort = options.reasoningEffort ?? "low";
     this.requester = options.requester ?? fetch;
   }
 
@@ -53,9 +92,7 @@ export class OllamaProposer implements Proposer {
           model: this.model,
           temperature: this.temperature,
           max_tokens: this.maxTokens,
-          ...(this.reasoningEffort === undefined
-            ? {}
-            : { reasoning_effort: this.reasoningEffort }),
+          reasoning_effort: this.reasoningEffort,
           messages: [
             {
               role: "system",
@@ -99,7 +136,7 @@ export class OllamaProposer implements Proposer {
         const detail = error instanceof Error ? error.message : String(error);
         throw new ProposalError(`Ollama content is not valid JSON: ${detail}`);
       }
-      return decodeEnvelope(inner, context, "ollama");
+      return decodeEnvelope(inner, context);
     } catch (error) {
       if (error instanceof ProposalError) throw error;
       if (error instanceof Error && error.name === "AbortError") {
