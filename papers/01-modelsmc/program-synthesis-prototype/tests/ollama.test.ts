@@ -78,4 +78,70 @@ test("the Ollama adapter requests and decodes a complete bounded Program AST", a
   assert.match(requestBody, /must not reference the outer Input/);
   assert.match(requestBody, /Previous transition feedback/);
   assert.match(requestBody, /replace enumerated literal cases with compact relational predicates/);
+  assert.equal(
+    Object.hasOwn(JSON.parse(requestBody) as object, "reasoning_effort"),
+    false,
+    "reasoning_effort must be omitted unless the caller enables it",
+  );
+});
+
+test("the Ollama adapter sends reasoning effort only when explicitly enabled", async () => {
+  let requestBody = "";
+  const requester: typeof fetch = async (_input, init) => {
+    requestBody = String(init?.body ?? "");
+    return new Response(
+      JSON.stringify({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: {
+              content: JSON.stringify({
+                expression: { kind: "ExpressionProgram", body: { kind: "Input" } },
+                rationale: "identity",
+              }),
+            },
+          },
+        ],
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+  const config = listConfig("identity", "List<Int>", [{ input: [], output: [] }]);
+  const ancestor: Program = {
+    kind: "ExpressionProgram",
+    body: { kind: "Input" },
+  };
+  const ancestorScore = scoreProgram(ancestor, {
+    inputType: config.inputType,
+    outputType: config.outputType,
+    examples: config.examples,
+    lossScale: config.lossScale,
+    costScale: config.costScale,
+    lossCap: config.lossCap,
+    maxCost: config.maxCost,
+  });
+  if (ancestorScore.kind !== "Scored") assert.fail(ancestorScore.reason);
+
+  await new OllamaProposer({
+    requester,
+    timeoutMs: 1000,
+    reasoningEffort: "low",
+  }).propose({
+    requestIndex: 0,
+    inputType: config.inputType,
+    outputType: config.outputType,
+    examples: config.examples,
+    integerConstants: config.integerConstants,
+    maxDepth: config.maxDepth,
+    maxNodes: config.maxNodes,
+    maxCost: config.maxCost,
+    ancestor,
+    ancestorScore,
+    ancestorFeedback: "initial seed",
+  });
+
+  assert.equal(
+    (JSON.parse(requestBody) as { reasoning_effort?: unknown }).reasoning_effort,
+    "low",
+  );
 });
