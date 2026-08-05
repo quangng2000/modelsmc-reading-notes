@@ -109,6 +109,41 @@ sibling-avoidance list couples same-iteration particles, which breaks the per-pa
 Markov-kernel form the importance correction assumes; the corrected proposer must build
 prompts from lineage-only context.
 
+## 5. LLM proposal with (almost) exact weights — v1 on stock Ollama
+
+`experiments/llm-is.ts` (`npm run llm-is`) treats the LLM as a proposal
+distribution whose density we evaluate — an exotic random number generator, with
+all program semantics in the target. Construction:
+
+- **Unconstrained sampling, neutralized samplers.** No grammar mask; temperature 1,
+  top_k 0, top_p 1, min_p 0, repeat_penalty 1 — verified in the llama.cpp backend
+  log (Homebrew Ollama 0.31.1 runs llama-server underneath; top_k <= 0 is a no-op in
+  llama.cpp source). Under these settings the returned per-token logprobs ARE the
+  sampling distribution (30/30 sampled tokens matched their top_logprobs entries
+  bit-exactly in the probe).
+- **Designated serializations + rejection.** A draw is accepted only if its text is
+  the canonical minified serialization of a verifier-accepted program within the
+  cost cap (one optional trailing newline; a constant-size designated set per
+  program, prefix-free across programs). Rejection is not a heuristic: the extended
+  target assigns those texts zero mass, so self-normalized IS needs no acceptance
+  probability. Pilot acceptance on map-increment: 5/5 byte-identical canonical
+  outputs.
+- **Weights** w = exp(-beta*cost + logLik - sum of token logprobs); the designated-set
+  constant, Z_prior, and Z_posterior all cancel in self-normalization. Because the
+  support is finite (Proposition 2), the maximum weight is finite: the estimator has
+  finite variance and a sqrt-N CLT.
+
+**Known v1 gap (measured, not assumed):** Ollama omits the EOS token from logprobs
+(n_logprobs = eval_count - 1 whenever done_reason = "stop"), so the termination
+factor p(EOS | text) is missing from every weight. The factor depends only on the
+emitted text, hence cancels for repeated draws of the same program; the residual
+bias is the cross-program ratio of EOS probabilities, ~1 for compliant completions.
+v2 closes this exactly: because this scheme needs no grammar mask at all, a
+standalone llama-server on the same GGUF blob (or the llama-cpp-python sidecar)
+just has to report the EOS sampling step. A separate probe surprise worth
+remembering: llama.cpp logprobs are not bit-stable across calls (~1e-4 KV-cache
+numerics), but each response is self-consistent, which is all the weights use.
+
 ## Next steps
 
 - **E5**: LLM-as-proposal with exact q on a small-cap task; corrected SMC/IS population
