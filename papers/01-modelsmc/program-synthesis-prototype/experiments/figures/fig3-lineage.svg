@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 316" role="img" aria-label="Small-multiple line charts of champion lineage losses for the iterative arm">
+<rect width="720" height="316" fill="#fcfcfb"/>
+<text x="56" y="24" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="600" fill="#0b0b0b">Champion-lineage loss along SMC ancestry (iterative arm, every seed)</text>
+<text x="56" y="42" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">Each line is one run's winning ancestry: seed program → iteration-1 revision → iteration-2 revision</text>
+<text x="156" y="308" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Claude Sonnet 5</text>
+<line x1="56" y1="72" x2="256" y2="72" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="76" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">0</text>
+<line x1="56" y1="130.07407407407408" x2="256" y2="130.07407407407408" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="134.07407407407408" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">8</text>
+<line x1="56" y1="188.14814814814815" x2="256" y2="188.14814814814815" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="192.14814814814815" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">16</text>
+<line x1="56" y1="246.2222222222222" x2="256" y2="246.2222222222222" stroke="#e1e0d9" stroke-width="1"/>
+<text x="48" y="250.2222222222222" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" text-anchor="end">24</text>
+<text x="56" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="start">seed</text>
+<text x="156" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="middle">iter 1</text>
+<text x="256" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="end">iter 2</text>
+<polyline points="56,231.7037037037037 156,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="156" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,72 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,72 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="156" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="156" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,86.51851851851852 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,72 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="156" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,122.81481481481481 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="56,231.7037037037037 156,130.07407407407408 256,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="256" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<text x="256" y="64" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">9/10 reach 0</text>
+<line x1="56" y1="72" x2="256" y2="72" stroke="#c3c2b7" stroke-width="1"/>
+<text x="380" y="308" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Claude Haiku 4.5</text>
+<line x1="280" y1="72" x2="480" y2="72" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="280" y1="130.07407407407408" x2="480" y2="130.07407407407408" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="280" y1="188.14814814814815" x2="480" y2="188.14814814814815" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="280" y1="246.2222222222222" x2="480" y2="246.2222222222222" stroke="#e1e0d9" stroke-width="1"/>
+<text x="280" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="start">seed</text>
+<text x="380" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="middle">iter 1</text>
+<text x="480" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="end">iter 2</text>
+<polyline points="280,231.7037037037037 380,151.85185185185185 480,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,202.66666666666666 480,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,202.66666666666666 480,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,101.03703703703704 480,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,159.1111111111111 480,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,217.1851851851852" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="380" cy="217.1851851851852" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,268 480,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,101.03703703703704 480,72" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="72" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,188.14814814814815 480,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="480" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="280,231.7037037037037 380,101.03703703703704" fill="none" stroke="#eb6834" stroke-width="2" stroke-opacity="0.45" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="380" cy="101.03703703703704" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<text x="480" y="64" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">3/10 reach 0</text>
+<line x1="280" y1="72" x2="480" y2="72" stroke="#c3c2b7" stroke-width="1"/>
+<text x="604" y="308" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e" text-anchor="middle">Qwen3-Coder 30B</text>
+<line x1="504" y1="72" x2="704" y2="72" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="504" y1="130.07407407407408" x2="704" y2="130.07407407407408" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="504" y1="188.14814814814815" x2="704" y2="188.14814814814815" stroke="#e1e0d9" stroke-width="1"/>
+<line x1="504" y1="246.2222222222222" x2="704" y2="246.2222222222222" stroke="#e1e0d9" stroke-width="1"/>
+<text x="504" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="start">seed</text>
+<text x="604" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="middle">iter 1</text>
+<text x="704" y="282" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" fill="#898781" text-anchor="end">iter 2</text>
+<circle cx="504" cy="231.7037037037037" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="514" cy="231.7037037037037" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="524" cy="231.7037037037037" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="534" cy="231.7037037037037" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="544" cy="231.7037037037037" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<text x="704" y="64" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#0b0b0b" text-anchor="end">0/5 reach 0</text>
+<line x1="504" y1="72" x2="704" y2="72" stroke="#c3c2b7" stroke-width="1"/>
+</svg>

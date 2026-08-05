@@ -218,6 +218,8 @@ npm run synthesize -- examples/foldr-bounded-square.json \
 
 Evidence for SMC value is an exact solution first appearing after iteration 1, along a lineage whose losses improve, when the equal-call one-shot run does not solve the task. A reliable empirical claim requires repeating both configurations across seeds and reporting success rates—not selecting one favorable run.
 
+That multi-seed experiment has been run: [`experiments/RESULTS.md`](experiments/RESULTS.md) reports a 70-run matrix (one-shot vs. iterative × four proposers × 5–10 seeds) with statistics and figures. Headline: the benefit of iterative feedback is gated by proposer capability — unnecessary at the frontier (Claude Sonnet 5 solves one-shot), decisive near the threshold (Claude Haiku 4.5: mean loss 12.2 → 4.4, exact permutation p = 0.011), and unable to rescue a proposer whose proposals collapse below it (Qwen3-Coder 30B). Reproduce with `npx tsx experiments/run-matrix.ts`.
+
 ## Reading the trace
 
 `--trace` reports:
@@ -242,6 +244,21 @@ npm run synthesize -- examples/foldr-sum.json \
 ```
 
 Run `npm run synthesize -- --help` for all overrides.
+
+## Choose a proposal backend
+
+`--proposal` controls only how the next candidate program is proposed. Every
+backend returns the same bounded `Program` AST and then passes through the same
+decoder, type checker, scorer, and SMC resampling loop.
+
+| Backend | Where proposals run | CLI value | Credentials |
+| --- | --- | --- | --- |
+| Catalog | Offline bounded enumerator | `catalog` | None |
+| Ollama | Local OpenAI-compatible endpoint | `ollama` | None by default |
+| Anthropic | Claude through the cloud Messages API | `anthropic` | `ANTHROPIC_API_KEY` |
+
+The cloud backend can incur provider API charges; the local and catalog
+backends do not make an external API request.
 
 ## Optional local open-weight LLM
 
