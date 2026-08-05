@@ -8,6 +8,7 @@
     "posterior": "tsx experiments/exact-posterior.ts",
     "prior-is": "tsx experiments/prior-is.ts",
     "space": "tsx experiments/space-size.ts",
+    "annotate": "tsx experiments/annotate-trace.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "verify": "lsc check"
