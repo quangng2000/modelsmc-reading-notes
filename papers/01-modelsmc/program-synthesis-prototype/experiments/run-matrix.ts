@@ -305,6 +305,17 @@ async function main(): Promise<void> {
   // Proposer pools run concurrently with each other; each pool bounds its own concurrency.
   const perProposer = await Promise.all(active.map((spec) => runPool(spec)));
   const runs = perProposer.flat();
+  // Budget = particles x iterations, read back from the observed per-run call counts
+  // (every arm in a matrix shares one budget). Falls back to the arm spec if empty.
+  const budgetProposalCalls = Math.max(
+    0,
+    ...runs.map((run) => run.proposalCalls ?? 0),
+    ...ARMS.map((arm) => {
+      const p = Number(arm.flags[arm.flags.indexOf("--particles") + 1]);
+      const i = Number(arm.flags[arm.flags.indexOf("--iterations") + 1]);
+      return p * i;
+    }),
+  );
   const summaryPath = resolve(OUT_DIR, TAG ? `summary-${TAG}.json` : "summary.json");
   const existing = existsSync(summaryPath)
     ? (JSON.parse(readFileSync(summaryPath, "utf8")) as { runs?: RunResult[] })
@@ -319,7 +330,7 @@ async function main(): Promise<void> {
         task: TASK,
         startedAt,
         finishedAt: new Date().toISOString(),
-        budgetProposalCalls: 4,
+        budgetProposalCalls,
         runs: [...previous, ...runs].sort((a, b) => a.runId.localeCompare(b.runId)),
       },
       null,

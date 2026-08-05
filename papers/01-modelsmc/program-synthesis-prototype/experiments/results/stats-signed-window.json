@@ -130,7 +130,9 @@
     }
   ],
   "fisher": {
-    "claude-sonnet-5": {
+    "claude-sonnet-5|iterative_vs_one-shot": {
+      "arm": "iterative",
+      "baseline": "one-shot",
       "table": [
         [
           6,
@@ -143,7 +145,9 @@
       ],
       "p": 0.08668730650154902
     },
-    "claude-haiku-4-5": {
+    "claude-haiku-4-5|iterative_vs_one-shot": {
+      "arm": "iterative",
+      "baseline": "one-shot",
       "table": [
         [
           1,
@@ -158,14 +162,18 @@
     }
   },
   "lossPermutation": {
-    "claude-sonnet-5": {
-      "oneShotMean": 0,
-      "iterativeMean": 1.6,
+    "claude-sonnet-5|iterative_vs_one-shot": {
+      "arm": "iterative",
+      "baseline": "one-shot",
+      "armMean": 1.6,
+      "baselineMean": 0,
       "p": 0.08668730650154799
     },
-    "claude-haiku-4-5": {
-      "oneShotMean": 10,
-      "iterativeMean": 9.1,
+    "claude-haiku-4-5|iterative_vs_one-shot": {
+      "arm": "iterative",
+      "baseline": "one-shot",
+      "armMean": 9.1,
+      "baselineMean": 10,
       "p": 0.7508930697785187
     }
   },

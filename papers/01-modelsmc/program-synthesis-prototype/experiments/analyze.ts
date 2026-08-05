@@ -186,28 +186,41 @@ stats.sort(
     left.arm.localeCompare(right.arm),
 );
 
-const fisher: Record<string, { table: number[][]; p: number }> = {};
+// Every non-baseline arm is tested against the baseline arm. Default baseline is
+// "one-shot" (reproducing the E1/E2 one-shot-vs-iterative pairing); pass
+// --baseline <arm> for other sweeps, e.g. --baseline 16x1 for the E3 frontier.
+const baselineArgIndex = process.argv.indexOf("--baseline");
+const BASELINE_ARM = baselineArgIndex === -1 ? "one-shot" : process.argv[baselineArgIndex + 1]!;
+
+const fisher: Record<string, { arm: string; baseline: string; table: number[][]; p: number }> = {};
 const lossPermutation: Record<
   string,
-  { oneShotMean: number; iterativeMean: number; p: number }
+  { arm: string; baseline: string; armMean: number; baselineMean: number; p: number }
 > = {};
-for (const proposer of proposerOrder) {
-  const oneShot = stats.find((cell) => cell.proposer === proposer && cell.arm === "one-shot");
-  const iterative = stats.find((cell) => cell.proposer === proposer && cell.arm === "iterative");
-  if (!oneShot || !iterative) continue;
-  const table = [
-    [iterative.exactCount, iterative.n - iterative.exactCount],
-    [oneShot.exactCount, oneShot.n - oneShot.exactCount],
-  ];
-  fisher[proposer] = {
-    table,
-    p: fisherExact(table[0]![0]!, table[0]![1]!, table[1]![0]!, table[1]![1]!),
-  };
-  lossPermutation[proposer] = {
-    oneShotMean: oneShot.meanBestLoss,
-    iterativeMean: iterative.meanBestLoss,
-    p: permutationTest(iterative.bestLosses, oneShot.bestLosses),
-  };
+const proposersPresent = [...new Set(stats.map((cell) => cell.proposer))];
+for (const proposer of proposersPresent) {
+  const base = stats.find((cell) => cell.proposer === proposer && cell.arm === BASELINE_ARM);
+  if (!base) continue;
+  for (const cell of stats.filter((entry) => entry.proposer === proposer && entry.arm !== BASELINE_ARM)) {
+    const key = `${proposer}|${cell.arm}_vs_${BASELINE_ARM}`;
+    const table = [
+      [cell.exactCount, cell.n - cell.exactCount],
+      [base.exactCount, base.n - base.exactCount],
+    ];
+    fisher[key] = {
+      arm: cell.arm,
+      baseline: BASELINE_ARM,
+      table,
+      p: fisherExact(table[0]![0]!, table[0]![1]!, table[1]![0]!, table[1]![1]!),
+    };
+    lossPermutation[key] = {
+      arm: cell.arm,
+      baseline: BASELINE_ARM,
+      armMean: cell.meanBestLoss,
+      baselineMean: base.meanBestLoss,
+      p: permutationTest(cell.bestLosses, base.bestLosses),
+    };
+  }
 }
 
 writeFileSync(
@@ -230,14 +243,14 @@ for (const cell of stats) {
       `[${cell.firstExactCalls.join(", ")}]`,
   );
 }
-console.log("\nFisher exact (iterative vs one-shot success, two-sided):");
-for (const [proposer, test] of Object.entries(fisher)) {
-  console.log(`  ${proposer.padEnd(19)} ${JSON.stringify(test.table)}  p=${test.p.toFixed(4)}`);
+console.log(`\nFisher exact (arm vs baseline "${BASELINE_ARM}" success, two-sided):`);
+for (const [key, test] of Object.entries(fisher)) {
+  console.log(`  ${key.padEnd(34)} ${JSON.stringify(test.table)}  p=${test.p.toFixed(5)}`);
 }
-console.log("\nExact permutation test on mean final loss (iterative vs one-shot, two-sided):");
-for (const [proposer, test] of Object.entries(lossPermutation)) {
+console.log(`\nExact permutation test on mean final loss (arm vs baseline "${BASELINE_ARM}", two-sided):`);
+for (const [key, test] of Object.entries(lossPermutation)) {
   console.log(
-    `  ${proposer.padEnd(19)} iterative=${test.iterativeMean.toFixed(1)} one-shot=${test.oneShotMean.toFixed(1)}  p=${test.p.toFixed(4)}`,
+    `  ${key.padEnd(34)} arm=${test.armMean.toFixed(1)} baseline=${test.baselineMean.toFixed(1)}  p=${test.p.toFixed(5)}`,
   );
 }
 if (erroredRuns.length > 0) {

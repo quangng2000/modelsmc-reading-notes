@@ -2,7 +2,7 @@
   "task": "examples/foldr-bounded-square.json",
   "startedAt": "2026-08-05T04:50:43.626Z",
   "finishedAt": "2026-08-05T05:04:28.662Z",
-  "budgetProposalCalls": 4,
+  "budgetProposalCalls": 16,
   "runs": [
     {
       "runId": "budget16-haiku_claude-haiku-4-5_16x1_seed1",

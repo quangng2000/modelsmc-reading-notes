@@ -137,7 +137,75 @@
       "meanDurationS": 79.743
     }
   ],
-  "fisher": {},
-  "lossPermutation": {},
+  "fisher": {
+    "claude-haiku-4-5|2x8_vs_16x1": {
+      "arm": "2x8",
+      "baseline": "16x1",
+      "table": [
+        [
+          9,
+          1
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.00011907597046915969
+    },
+    "claude-haiku-4-5|4x4_vs_16x1": {
+      "arm": "4x4",
+      "baseline": "16x1",
+      "table": [
+        [
+          9,
+          1
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.00011907597046915969
+    },
+    "claude-haiku-4-5|8x2_vs_16x1": {
+      "arm": "8x2",
+      "baseline": "16x1",
+      "table": [
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.0030959752321981565
+    }
+  },
+  "lossPermutation": {
+    "claude-haiku-4-5|2x8_vs_16x1": {
+      "arm": "2x8",
+      "baseline": "16x1",
+      "armMean": 0.3,
+      "baselineMean": 5.7,
+      "p": 0.00001082508822446903
+    },
+    "claude-haiku-4-5|4x4_vs_16x1": {
+      "arm": "4x4",
+      "baseline": "16x1",
+      "armMean": 0.4,
+      "baselineMean": 5.7,
+      "p": 0.00008660070579575224
+    },
+    "claude-haiku-4-5|8x2_vs_16x1": {
+      "arm": "8x2",
+      "baseline": "16x1",
+      "armMean": 1.9,
+      "baselineMean": 5.7,
+      "p": 0.012015847929160623
+    }
+  },
   "erroredRuns": []
 }
