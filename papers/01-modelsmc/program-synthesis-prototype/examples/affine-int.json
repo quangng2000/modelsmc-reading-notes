@@ -1,0 +1,22 @@
+{
+  "name": "discover y = 2*x + 1",
+  "examples": [
+    { "input": "-2", "output": "-3" },
+    { "input": "-1", "output": "-1" },
+    { "input": "0", "output": "1" },
+    { "input": "1", "output": "3" },
+    { "input": "2", "output": "5" }
+  ],
+  "integerConstants": ["0", "1", "2", "-1", "-2"],
+  "particles": 8,
+  "iterations": 6,
+  "cloneProbability": 0.25,
+  "essThreshold": 0.6,
+  "seed": 7,
+  "lossScale": 2,
+  "costScale": 0.15,
+  "lossCap": 1000000,
+  "maxCost": 12,
+  "maxDepth": 8,
+  "maxNodes": 63
+}

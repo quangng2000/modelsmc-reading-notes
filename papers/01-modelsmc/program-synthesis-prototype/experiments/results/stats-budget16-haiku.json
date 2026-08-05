@@ -1,0 +1,211 @@
+{
+  "cells": [
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "16x1",
+      "n": 10,
+      "exactCount": 0,
+      "successRate": 0,
+      "wilsonLow": 0,
+      "wilsonHigh": 0.2775328030260577,
+      "meanBestLoss": 5.7,
+      "medianBestLoss": 4,
+      "bestLosses": [
+        4,
+        4,
+        9,
+        4,
+        4,
+        11,
+        4,
+        9,
+        4,
+        4
+      ],
+      "firstExactCalls": [],
+      "rejectedTotal": 17,
+      "failedTotal": 5,
+      "meanDurationS": 76.7008
+    },
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "2x8",
+      "n": 10,
+      "exactCount": 9,
+      "successRate": 0.9,
+      "wilsonLow": 0.5958499704752279,
+      "wilsonHigh": 0.982123787103926,
+      "meanBestLoss": 0.3,
+      "medianBestLoss": 0,
+      "bestLosses": [
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "firstExactCalls": [
+        5,
+        9,
+        11,
+        7,
+        9,
+        6,
+        11,
+        9,
+        7
+      ],
+      "rejectedTotal": 16,
+      "failedTotal": 3,
+      "meanDurationS": 85.2815
+    },
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "4x4",
+      "n": 10,
+      "exactCount": 9,
+      "successRate": 0.9,
+      "wilsonLow": 0.5958499704752279,
+      "wilsonHigh": 0.982123787103926,
+      "meanBestLoss": 0.4,
+      "medianBestLoss": 0,
+      "bestLosses": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "firstExactCalls": [
+        6,
+        15,
+        10,
+        11,
+        9,
+        8,
+        5,
+        5,
+        9
+      ],
+      "rejectedTotal": 13,
+      "failedTotal": 4,
+      "meanDurationS": 79.8149
+    },
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "8x2",
+      "n": 10,
+      "exactCount": 7,
+      "successRate": 0.7,
+      "wilsonLow": 0.3967781453459709,
+      "wilsonHigh": 0.892208733443606,
+      "meanBestLoss": 1.9,
+      "medianBestLoss": 0,
+      "bestLosses": [
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        4,
+        11,
+        0,
+        0
+      ],
+      "firstExactCalls": [
+        6,
+        9,
+        9,
+        10,
+        10,
+        12,
+        9
+      ],
+      "rejectedTotal": 9,
+      "failedTotal": 13,
+      "meanDurationS": 79.743
+    }
+  ],
+  "fisher": {
+    "claude-haiku-4-5|2x8_vs_16x1": {
+      "arm": "2x8",
+      "baseline": "16x1",
+      "table": [
+        [
+          9,
+          1
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.00011907597046915969
+    },
+    "claude-haiku-4-5|4x4_vs_16x1": {
+      "arm": "4x4",
+      "baseline": "16x1",
+      "table": [
+        [
+          9,
+          1
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.00011907597046915969
+    },
+    "claude-haiku-4-5|8x2_vs_16x1": {
+      "arm": "8x2",
+      "baseline": "16x1",
+      "table": [
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.0030959752321981565
+    }
+  },
+  "lossPermutation": {
+    "claude-haiku-4-5|2x8_vs_16x1": {
+      "arm": "2x8",
+      "baseline": "16x1",
+      "armMean": 0.3,
+      "baselineMean": 5.7,
+      "p": 0.00001082508822446903
+    },
+    "claude-haiku-4-5|4x4_vs_16x1": {
+      "arm": "4x4",
+      "baseline": "16x1",
+      "armMean": 0.4,
+      "baselineMean": 5.7,
+      "p": 0.00008660070579575224
+    },
+    "claude-haiku-4-5|8x2_vs_16x1": {
+      "arm": "8x2",
+      "baseline": "16x1",
+      "armMean": 1.9,
+      "baselineMean": 5.7,
+      "p": 0.012015847929160623
+    }
+  },
+  "erroredRuns": []
+}
