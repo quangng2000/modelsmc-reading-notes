@@ -1,0 +1,18 @@
+{
+  "name": "paper-2-enumerator-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "lambda2-synth": "dist/src/cli.js"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "synth": "npm run build && node dist/src/cli.js",
+    "test": "npm run build && node --test dist/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.2",
+    "typescript": "5.9.3"
+  }
+}

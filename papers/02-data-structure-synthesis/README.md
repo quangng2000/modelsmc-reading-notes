@@ -124,6 +124,10 @@ input-output examples
 
 The important idea is not enumeration alone. It is the recursive conversion of one synthesis problem into smaller synthesis problems using the semantics of typed combinators.
 
+## Executable experiment
+
+The [small λ² synthesizer in TypeScript](prototype/README.md) makes a hypothesis AST, cost model, object-language type checker, evaluator, per-combinator deduction rules, a typed enumerator, and a best-first frontier executable. Type-compatible instances of three skeleton families — `map`, `filter`, and left `fold` — compete in one search ordered by total program cost, so the first returned program is minimum-cost across families, and a CLI (`lambda2-synth`) accepts JSON examples directly. The prototype handles lists of integer, Boolean, or string primitives with explicit signatures, but remains intentionally smaller than λ²: no nested lists, trees, pattern matching, recursion, or nested skeleton composition.
+
 ## Motivating examples
 
 | Program | Transformation | Reported synthesis time |

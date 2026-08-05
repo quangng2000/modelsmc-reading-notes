@@ -1,0 +1,16 @@
+{
+  "inputType": "list<string>",
+  "outputType": "list<bool>",
+  "examples": [
+    {
+      "input": ["yes", "no"],
+      "output": [true, false]
+    },
+    {
+      "input": ["maybe", "yes"],
+      "output": [false, true]
+    }
+  ],
+  "stringConstants": ["yes"],
+  "maxCost": 2
+}
