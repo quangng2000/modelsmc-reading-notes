@@ -199,7 +199,10 @@ function figureLineages(): string {
   const runs = summary.runs.filter(
     (run) => run.error === null && run.arm === "iterative" && run.lineageLosses.length > 0,
   );
-  const maxLoss = Math.max(24, ...runs.flatMap((run) => run.lineageLosses));
+  // Round the domain up to a multiple of 8 so the last gridline always bounds the
+  // data (a lineage can worsen past the seed loss before recovering).
+  const maxLoss =
+    Math.ceil(Math.max(24, ...runs.flatMap((run) => run.lineageLosses)) / 8) * 8;
   const maxSteps = Math.max(...runs.map((run) => run.lineageLosses.length));
   const yOf = (loss: number) => margin.top + plotHeight * (loss / maxLoss);
   const parts: string[] = [];
@@ -216,7 +219,7 @@ function figureLineages(): string {
     parts.push(
       `<text x="${x0 + panelWidth / 2}" y="${height - 8}" ${FONT} font-size="12" fill="${C.ink2}" text-anchor="middle">${LABELS[proposer]}</text>`,
     );
-    for (const tick of [0, 8, 16, 24]) {
+    for (let tick = 0; tick <= maxLoss; tick += 8) {
       const y = yOf(tick);
       parts.push(`<line x1="${x0}" y1="${y}" x2="${x0 + panelWidth}" y2="${y}" stroke="${C.grid}" stroke-width="1"/>`);
       if (panelIndex === 0) {

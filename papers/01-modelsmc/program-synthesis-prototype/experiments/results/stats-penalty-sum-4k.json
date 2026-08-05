@@ -1,0 +1,175 @@
+{
+  "cells": [
+    {
+      "proposer": "claude-sonnet-5",
+      "arm": "iterative",
+      "n": 10,
+      "exactCount": 10,
+      "successRate": 1,
+      "wilsonLow": 0.7224671969739421,
+      "wilsonHigh": 0.9999999999999999,
+      "meanBestLoss": 0,
+      "medianBestLoss": 0,
+      "bestLosses": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "firstExactCalls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "rejectedTotal": 1,
+      "failedTotal": 0,
+      "meanDurationS": 52.3987
+    },
+    {
+      "proposer": "claude-sonnet-5",
+      "arm": "one-shot",
+      "n": 10,
+      "exactCount": 10,
+      "successRate": 1,
+      "wilsonLow": 0.7224671969739421,
+      "wilsonHigh": 0.9999999999999999,
+      "meanBestLoss": 0,
+      "medianBestLoss": 0,
+      "bestLosses": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "firstExactCalls": [
+        4,
+        2,
+        1,
+        3,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1
+      ],
+      "rejectedTotal": 1,
+      "failedTotal": 9,
+      "meanDurationS": 68.437
+    },
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "iterative",
+      "n": 10,
+      "exactCount": 0,
+      "successRate": 0,
+      "wilsonLow": 0,
+      "wilsonHigh": 0.2775328030260577,
+      "meanBestLoss": 42.8,
+      "medianBestLoss": 46,
+      "bestLosses": [
+        38,
+        46,
+        46,
+        46,
+        46,
+        38,
+        38,
+        46,
+        38,
+        46
+      ],
+      "firstExactCalls": [],
+      "rejectedTotal": 0,
+      "failedTotal": 0,
+      "meanDurationS": 18.8661
+    },
+    {
+      "proposer": "claude-haiku-4-5",
+      "arm": "one-shot",
+      "n": 10,
+      "exactCount": 0,
+      "successRate": 0,
+      "wilsonLow": 0,
+      "wilsonHigh": 0.2775328030260577,
+      "meanBestLoss": 38,
+      "medianBestLoss": 38,
+      "bestLosses": [
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38
+      ],
+      "firstExactCalls": [],
+      "rejectedTotal": 0,
+      "failedTotal": 0,
+      "meanDurationS": 17.8582
+    }
+  ],
+  "fisher": {
+    "claude-sonnet-5": {
+      "table": [
+        [
+          10,
+          0
+        ],
+        [
+          10,
+          0
+        ]
+      ],
+      "p": 0.9999999999999929
+    },
+    "claude-haiku-4-5": {
+      "table": [
+        [
+          0,
+          10
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "p": 0.9999999999999929
+    }
+  },
+  "lossPermutation": {
+    "claude-sonnet-5": {
+      "oneShotMean": 0,
+      "iterativeMean": 0,
+      "p": 1
+    },
+    "claude-haiku-4-5": {
+      "oneShotMean": 38,
+      "iterativeMean": 42.8,
+      "p": 0.010835913312693499
+    }
+  },
+  "erroredRuns": []
+}

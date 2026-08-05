@@ -15,21 +15,61 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const TASK = "examples/foldr-bounded-square.json";
 const LOG_DIR = resolve(ROOT, "runs/experiments");
 const OUT_DIR = resolve(ROOT, "experiments/results");
 
+function stringFlag(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  if (index === -1) return undefined;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith("--")) throw new Error(`${name} requires a value`);
+  return value;
+}
+
+const TASK = stringFlag("--task") ?? "examples/foldr-bounded-square.json";
+const MAX_TOKENS = stringFlag("--max-tokens") ?? "2048";
+// Tag prefixes run ids and names the summary file, so several tasks can coexist.
+const TAG = stringFlag("--tag") ?? "";
+// Comma-separated proposer subset, e.g. --proposers claude-sonnet-5,claude-haiku-4-5
+const PROPOSER_FILTER = stringFlag("--proposers")?.split(",");
+
 interface Arm {
-  readonly arm: "one-shot" | "iterative";
+  readonly arm: string;
   readonly flags: readonly string[];
 }
-const ARMS: readonly Arm[] = [
+const DEFAULT_ARMS: readonly Arm[] = [
   { arm: "one-shot", flags: ["--particles", "4", "--iterations", "1", "--alpha", "0"] },
   {
     arm: "iterative",
     flags: ["--particles", "2", "--iterations", "2", "--alpha", "0", "--ess-threshold", "1"],
   },
 ];
+
+// --arms 16x1,8x2,4x4,2x8 sweeps the particles-x-iterations frontier at fixed budget.
+function parseArms(): readonly Arm[] {
+  const index = process.argv.indexOf("--arms");
+  if (index === -1) return DEFAULT_ARMS;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith("--")) throw new Error("--arms requires a value");
+  return value.split(",").map((token) => {
+    const match = /^(\d+)x(\d+)$/.exec(token.trim());
+    if (!match) throw new Error(`--arms entries must look like 8x2; received ${token}`);
+    return {
+      arm: `${match[1]}x${match[2]}`,
+      flags: [
+        "--particles",
+        match[1]!,
+        "--iterations",
+        match[2]!,
+        "--alpha",
+        "0",
+        "--ess-threshold",
+        "1",
+      ],
+    };
+  });
+}
+const ARMS = parseArms();
 
 interface ProposerSpec {
   readonly proposer: string;
@@ -117,7 +157,7 @@ function hasCompletedTrace(logFile: string): boolean {
 }
 
 function runOne(spec: ProposerSpec, arm: Arm, seed: number): Promise<RunResult> {
-  const runId = `${spec.proposer}_${arm.arm}_seed${seed}`;
+  const runId = `${TAG ? `${TAG}_` : ""}${spec.proposer}_${arm.arm}_seed${seed}`;
   const logFile = resolve(LOG_DIR, `${runId}.jsonl`);
   if (RESUME && hasCompletedTrace(logFile)) {
     return parseTrace(runId, spec, arm, seed, logFile, 0, 0, "");
@@ -131,7 +171,7 @@ function runOne(spec: ProposerSpec, arm: Arm, seed: number): Promise<RunResult> 
     "--seed",
     String(seed),
     "--max-tokens",
-    "2048",
+    MAX_TOKENS,
     "--timeout-ms",
     String(spec.timeoutMs),
     "--log-file",
@@ -249,7 +289,11 @@ async function runPool(spec: ProposerSpec): Promise<RunResult[]> {
 }
 
 async function main(): Promise<void> {
-  if (PROPOSERS.some((spec) => spec.flags.includes("anthropic")) && !process.env.ANTHROPIC_API_KEY) {
+  const active = PROPOSERS.filter(
+    (spec) => PROPOSER_FILTER === undefined || PROPOSER_FILTER.includes(spec.proposer),
+  );
+  if (active.length === 0) throw new Error("--proposers matched no configured proposer");
+  if (active.some((spec) => spec.flags.includes("anthropic")) && !process.env.ANTHROPIC_API_KEY) {
     // The anthropic cells would all fail without a key; stop early with a clear message.
     console.error("[matrix] ANTHROPIC_API_KEY is not set");
     process.exitCode = 2;
@@ -259,9 +303,9 @@ async function main(): Promise<void> {
   mkdirSync(OUT_DIR, { recursive: true });
   const startedAt = new Date().toISOString();
   // Proposer pools run concurrently with each other; each pool bounds its own concurrency.
-  const perProposer = await Promise.all(PROPOSERS.map((spec) => runPool(spec)));
+  const perProposer = await Promise.all(active.map((spec) => runPool(spec)));
   const runs = perProposer.flat();
-  const summaryPath = resolve(OUT_DIR, "summary.json");
+  const summaryPath = resolve(OUT_DIR, TAG ? `summary-${TAG}.json` : "summary.json");
   const existing = existsSync(summaryPath)
     ? (JSON.parse(readFileSync(summaryPath, "utf8")) as { runs?: RunResult[] })
     : {};

@@ -5,12 +5,22 @@
  * and prints a per-cell table plus within-proposer Fisher exact tests
  * (one-shot vs iterative success).
  *
- * Usage: npx tsx experiments/analyze.ts
+ * Usage: npx tsx experiments/analyze.ts [--summary results/summary-<tag>.json]
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 
 const OUT_DIR = resolve(import.meta.dirname, "results");
+const summaryArgIndex = process.argv.indexOf("--summary");
+const SUMMARY_PATH =
+  summaryArgIndex === -1
+    ? resolve(OUT_DIR, "summary.json")
+    : resolve(import.meta.dirname, process.argv[summaryArgIndex + 1]!);
+// stats.json for the default summary; stats-<tag>.json for tagged ones.
+const STATS_PATH = resolve(
+  OUT_DIR,
+  basename(SUMMARY_PATH).replace(/^summary/, "stats"),
+);
 
 interface RunResult {
   readonly runId: string;
@@ -132,7 +142,7 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 === 1 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2;
 }
 
-const summary = JSON.parse(readFileSync(resolve(OUT_DIR, "summary.json"), "utf8")) as {
+const summary = JSON.parse(readFileSync(SUMMARY_PATH, "utf8")) as {
   runs: RunResult[];
 };
 const validRuns = summary.runs.filter((run) => run.error === null && run.exact !== null);
@@ -201,7 +211,7 @@ for (const proposer of proposerOrder) {
 }
 
 writeFileSync(
-  resolve(OUT_DIR, "stats.json"),
+  STATS_PATH,
   JSON.stringify(
     { cells: stats, fisher, lossPermutation, erroredRuns: erroredRuns.map((run) => run.runId) },
     null,
