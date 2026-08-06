@@ -88,6 +88,7 @@ const rejectionCounts = new Map<string, number>();
 const sidecarUrl = flag("--sidecar-url", "http://127.0.0.1:8765");
 const genTokens = Number(flag("--gen-tokens", "200"));
 const proposalTemp = Number(flag("--proposal-temp", "1"));
+const initMaxAttempts = Number(flag("--init-max-attempts", "200"));
 const finalPopulations = new Map<string, CalibratedSmcResult>();
 
 for (const island of islands) {
@@ -110,6 +111,7 @@ for (const island of islands) {
     sidecar: island === "llm-feedback" ? createSidecarClient(sidecarUrl) : undefined,
     generateMaxTokens: genTokens,
     proposalTemperature: proposalTemp,
+    initMaxAttempts,
     onReject: (reason) => {
       const total = [...rejectionCounts.values()].reduce((sum, count) => sum + count, 0);
       rejectionCounts.set(reason, (rejectionCounts.get(reason) ?? 0) + 1);

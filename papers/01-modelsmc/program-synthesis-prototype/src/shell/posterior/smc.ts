@@ -68,6 +68,8 @@ export interface CalibratedSmcOptions {
   readonly generateMaxTokens?: number;
   /** Proposal temperature (tempered softmax, exact density); score calls use the same T. */
   readonly proposalTemperature?: number;
+  /** Retry budget for the fixed-prompt initialization draw (default 200). */
+  readonly initMaxAttempts?: number;
   readonly onReject?: (reason: string) => void;
   readonly trace?: (message: string) => void;
 }
@@ -147,8 +149,9 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
 
   const generateMaxTokens = options.generateMaxTokens ?? 700;
   const proposalTemperature = options.proposalTemperature ?? 1;
-  async function sidecarAccepted(prompt: string): Promise<AcceptedProposal> {
-    for (let attempt = 0; attempt < 200; attempt += 1) {
+  const initMaxAttempts = options.initMaxAttempts ?? 200;
+  async function sidecarAccepted(prompt: string, maxAttempts: number): Promise<AcceptedProposal> {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       llmDraws += 1;
       const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt, generateMaxTokens, proposalTemperature), task, sidecar!.encode);
       if ("rejected" in outcome) {
@@ -157,7 +160,10 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
       }
       return outcome;
     }
-    throw new Error("no accepted sidecar proposal in 200 attempts");
+    throw new Error(
+      `no accepted sidecar proposal in ${maxAttempts} attempts — the base prompt/cost-cap combination may be ` +
+        `infeasible for this proposer (e.g. the cost cap excludes every family the prompt invites)`,
+    );
   }
 
   // Initialization targeting pi_0 = prior.
@@ -172,7 +178,7 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
     } else if (options.moves === "llm-feedback") {
       // Fixed base prompt: the acceptance-conditioning constant is shared by
       // every init draw and cancels in self-normalization.
-      const proposal = await sidecarAccepted(basePrompt);
+      const proposal = await sidecarAccepted(basePrompt, initMaxAttempts);
       particles.push({
         proposal,
         logWeight: proposal.logPriorUnnormalized - proposal.logProposal,
