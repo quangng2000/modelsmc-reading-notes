@@ -22,20 +22,50 @@ export interface SidecarClient {
   encode(text: string): Promise<readonly number[]>;
 }
 
-export function createSidecarClient(baseUrl: string, requester: typeof fetch = fetch): SidecarClient {
+export interface SidecarClientOptions {
+  /** Per-request timeout in ms (default 120000). A stalled request aborts and is retried. */
+  readonly timeoutMs?: number;
+  /** How many times to retry a failed request before giving up (default 3). */
+  readonly retries?: number;
+}
+
+export function createSidecarClient(
+  baseUrl: string,
+  requester: typeof fetch = fetch,
+  options: SidecarClientOptions = {},
+): SidecarClient {
   const root = baseUrl.replace(/\/$/, "");
+  const timeoutMs = options.timeoutMs ?? 120_000;
+  const retries = options.retries ?? 3;
   async function post<T>(path: string, body: unknown): Promise<T> {
-    const response = await requester(`${root}${path}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      throw new Error(`sidecar ${path} HTTP ${response.status}: ${(await response.text()).slice(0, 200)}`);
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await requester(`${root}${path}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`sidecar ${path} HTTP ${response.status}: ${(await response.text()).slice(0, 200)}`);
+        }
+        const payload = (await response.json()) as T & { error?: string };
+        if (payload.error !== undefined) throw new Error(`sidecar ${path}: ${payload.error}`);
+        return payload;
+      } catch (error) {
+        // A 500 with a server-reported error is deterministic — don't retry it.
+        if (error instanceof Error && error.message.includes(`sidecar ${path}:`)) throw error;
+        lastError = error;
+      } finally {
+        clearTimeout(timer);
+      }
     }
-    const payload = (await response.json()) as T & { error?: string };
-    if (payload.error !== undefined) throw new Error(`sidecar ${path}: ${payload.error}`);
-    return payload;
+    throw new Error(
+      `sidecar ${path} failed after ${retries + 1} attempts: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+    );
   }
   return {
     async generate(prompt, maxTokens = 700, temperature = 1) {
