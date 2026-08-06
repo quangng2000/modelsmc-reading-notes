@@ -153,7 +153,7 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
   async function sidecarAccepted(prompt: string, maxAttempts: number, label: string): Promise<AcceptedProposal> {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       llmDraws += 1;
-      const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt, generateMaxTokens, proposalTemperature), task, sidecar!.encode);
+      const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt, generateMaxTokens, proposalTemperature), task);
       if ("rejected" in outcome) {
         options.onReject?.(outcome.rejected);
         continue;
@@ -236,7 +236,6 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
           const outcome = await evaluateSidecarDraw(
             await sidecar!.generate(promptForCurrent, generateMaxTokens, proposalTemperature),
             task,
-            sidecar!.encode,
           );
           if ("rejected" in outcome) {
             options.onReject?.(outcome.rejected);

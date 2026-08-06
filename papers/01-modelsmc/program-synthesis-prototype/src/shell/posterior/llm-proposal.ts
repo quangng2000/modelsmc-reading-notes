@@ -130,7 +130,17 @@ export function createOllamaDrawer(options: {
   };
 }
 
-/** Accept a raw draw iff its text is a designated serialization of an in-support program. */
+/**
+ * Accept a raw draw iff it parses as JSON, decodes to a program within the
+ * cost cap. NOT required to byte-match a canonical re-serialization: two
+ * JSON texts that decode to the same program (e.g. differing only in
+ * insignificant whitespace) both get their own true weight from their own
+ * actual draw.logProb, so accepting both is exact, not an approximation —
+ * enlarging the accepted-text set only changes which draws clear the gate,
+ * never the weight of one that does. This matters in practice: models
+ * frequently emit syntactically valid JSON with stray whitespace (e.g. a
+ * space after a comma) that a byte-exact check would reject for free.
+ */
 export function evaluateDraw(draw: RawDraw, task: ProposalTask): ProposalOutcome {
   const stripped = draw.text.endsWith("\n") ? draw.text.slice(0, -1) : draw.text;
   let parsed: unknown;
@@ -148,9 +158,6 @@ export function evaluateDraw(draw: RawDraw, task: ProposalTask): ProposalOutcome
     });
   } catch (error) {
     return { rejected: `decode: ${error instanceof Error ? error.message.slice(0, 80) : "?"}` };
-  }
-  if (stripped !== jsonStringify(programToJsonValue(program))) {
-    return { rejected: "non-canonical serialization" };
   }
   const score = scoreCalibrated(program, {
     inputType: task.inputType,
@@ -205,25 +212,21 @@ export function feedbackPrompt(task: ProposalTask, current: AcceptedProposal): s
 }
 
 /**
- * Accept a sidecar draw iff it stopped at EOS and its token ids equal the
- * canonical encoding of the canonical serialization (the designated atom).
+ * Accept a sidecar draw iff it stopped at EOS and its text decodes to an
+ * in-cap program (see evaluateDraw). The accepted particle's tokenIds are the
+ * draw's OWN generated ids — not a re-encoded canonical form — because those
+ * are exactly the ids the feedback kernel's reverse scoring must teacher-force
+ * to recover q(this text | the alternate prompt); scoring a different
+ * (canonical) id sequence would answer a different question.
  */
 export async function evaluateSidecarDraw(
   draw: SidecarDraw,
   task: ProposalTask,
-  encode: SidecarClient["encode"],
 ): Promise<ProposalOutcome> {
   if (!draw.stoppedAtEos) return { rejected: "length-capped (no EOS)" };
   const outcome = evaluateDraw({ text: draw.text, sumLogProb: draw.logQ, doneReason: "stop" }, task);
   if ("rejected" in outcome) return outcome;
-  const canonicalIds = await encode(jsonStringify(programToJsonValue(outcome.program)));
-  if (
-    canonicalIds.length !== draw.ids.length ||
-    canonicalIds.some((id, index) => id !== draw.ids[index])
-  ) {
-    return { rejected: "non-canonical tokenization" };
-  }
-  return { ...outcome, tokenIds: canonicalIds };
+  return { ...outcome, tokenIds: draw.ids };
 }
 
 /**
