@@ -64,6 +64,10 @@ export interface CalibratedSmcOptions {
   readonly drawer?: () => Promise<RawDraw>;
   /** Required for llm-feedback: exact generate/score/encode primitives. */
   readonly sidecar?: SidecarClient;
+  /** Generation length cap for sidecar draws (a capped draw is just a rejected move). */
+  readonly generateMaxTokens?: number;
+  /** Proposal temperature (tempered softmax, exact density); score calls use the same T. */
+  readonly proposalTemperature?: number;
   readonly onReject?: (reason: string) => void;
   readonly trace?: (message: string) => void;
 }
@@ -141,10 +145,12 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
   }
   const basePrompt = proposalPrompt(task);
 
+  const generateMaxTokens = options.generateMaxTokens ?? 700;
+  const proposalTemperature = options.proposalTemperature ?? 1;
   async function sidecarAccepted(prompt: string): Promise<AcceptedProposal> {
     for (let attempt = 0; attempt < 200; attempt += 1) {
       llmDraws += 1;
-      const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt), task, sidecar!.encode);
+      const outcome = await evaluateSidecarDraw(await sidecar!.generate(prompt, generateMaxTokens, proposalTemperature), task, sidecar!.encode);
       if ("rejected" in outcome) {
         options.onReject?.(outcome.rejected);
         continue;
@@ -220,7 +226,7 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
           llmDraws += 1;
           const promptForCurrent = feedbackPrompt(task, particle.proposal);
           const outcome = await evaluateSidecarDraw(
-            await sidecar!.generate(promptForCurrent),
+            await sidecar!.generate(promptForCurrent, generateMaxTokens, proposalTemperature),
             task,
             sidecar!.encode,
           );
@@ -232,6 +238,7 @@ export async function runCalibratedSmc(options: CalibratedSmcOptions): Promise<C
           const reverseLogQ = await sidecar!.score(
             feedbackPrompt(task, outcome),
             particle.proposal.tokenIds!,
+            proposalTemperature,
           );
           logAlpha =
             temperedLogTarget(outcome, gamma) +

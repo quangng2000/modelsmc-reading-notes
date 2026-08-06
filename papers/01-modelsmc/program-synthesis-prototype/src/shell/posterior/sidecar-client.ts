@@ -16,9 +16,9 @@ export interface SidecarDraw {
 }
 
 export interface SidecarClient {
-  generate(prompt: string, maxTokens?: number): Promise<SidecarDraw>;
+  generate(prompt: string, maxTokens?: number, temperature?: number): Promise<SidecarDraw>;
   /** Exact log q of "emit exactly these ids then stop" under the prompt. */
-  score(prompt: string, ids: readonly number[]): Promise<number>;
+  score(prompt: string, ids: readonly number[], temperature?: number): Promise<number>;
   encode(text: string): Promise<readonly number[]>;
 }
 
@@ -38,14 +38,14 @@ export function createSidecarClient(baseUrl: string, requester: typeof fetch = f
     return payload;
   }
   return {
-    async generate(prompt, maxTokens = 700) {
+    async generate(prompt, maxTokens = 700, temperature = 1) {
       const result = await post<{
         text: string;
         ids: number[];
         logq_content: number;
         logq_eos: number | null;
         eos: boolean;
-      }>("/generate", { prompt, max_tokens: maxTokens });
+      }>("/generate", { prompt, max_tokens: maxTokens, temperature });
       return {
         text: result.text,
         ids: result.ids,
@@ -55,10 +55,11 @@ export function createSidecarClient(baseUrl: string, requester: typeof fetch = f
         stoppedAtEos: result.eos,
       };
     },
-    async score(prompt, ids) {
+    async score(prompt, ids, temperature = 1) {
       const result = await post<{ logq_content: number; logq_eos: number }>("/score", {
         prompt,
         ids: [...ids],
+        temperature,
       });
       return result.logq_content + result.logq_eos;
     },

@@ -65,10 +65,17 @@ class Engine:
     def encode(self, text: str) -> list[int]:
         return self.llm.tokenize(text.encode("utf-8"), add_bos=False, special=False)
 
-    def _last_log_softmax(self) -> np.ndarray:
-        return log_softmax(np.asarray(self.llm.eval_logits[-1], dtype=np.float64))
+    def _last_log_softmax(self, temperature: float) -> np.ndarray:
+        # Read the last position's row from the preallocated numpy scores
+        # buffer. Never touch eval_logits: it materializes EVERY position's
+        # 152k-vocab logits as Python lists (~minutes per long prompt).
+        # Temperature is applied BEFORE the softmax, so the returned values
+        # are the exact log-density of the tempered sampling distribution;
+        # /score with the same temperature reproduces it identically.
+        logits = np.asarray(self.llm.scores[self.llm.n_tokens - 1], dtype=np.float64)
+        return log_softmax(logits / temperature)
 
-    def generate(self, prompt: str, max_tokens: int, seed: int | None) -> dict:
+    def generate(self, prompt: str, max_tokens: int, seed: int | None, temperature: float = 1.0) -> dict:
         rng = random.Random(seed)
         prompt_ids = self.render(prompt)
         self.llm.reset()
@@ -78,7 +85,7 @@ class Engine:
         logq_eos = None
         hit_eos = False
         for _ in range(max_tokens):
-            lsm = self._last_log_softmax()
+            lsm = self._last_log_softmax(temperature)
             probs = np.exp(lsm)
             probs = probs / float(np.sum(probs))
             cumulative = np.cumsum(probs)
@@ -103,7 +110,7 @@ class Engine:
             "eos": hit_eos,
         }
 
-    def score(self, prompt: str, ids: list[int]) -> dict:
+    def score(self, prompt: str, ids: list[int], temperature: float = 1.0) -> dict:
         """Teacher-forced density with the SAME eval pattern as generation
         (prompt as one batch, then one token per eval): Metal kernels differ
         by batch shape, so only this pattern reproduces the sampling density
@@ -115,10 +122,10 @@ class Engine:
         self.llm.eval(prompt_ids)
         logq_content = 0.0
         for token in ids:
-            lsm = self._last_log_softmax()
+            lsm = self._last_log_softmax(temperature)
             logq_content += float(lsm[int(token)])
             self.llm.eval([int(token)])
-        final = self._last_log_softmax()
+        final = self._last_log_softmax(temperature)
         return {"logq_content": logq_content, "logq_eos": float(final[self.eos])}
 
 
@@ -162,10 +169,18 @@ def main() -> None:
                             request["prompt"],
                             int(request.get("max_tokens", 700)),
                             request.get("seed"),
+                            float(request.get("temperature", 1.0)),
                         ),
                     )
                 elif self.path == "/score":
-                    self._reply(200, engine.score(request["prompt"], [int(i) for i in request["ids"]]))
+                    self._reply(
+                        200,
+                        engine.score(
+                            request["prompt"],
+                            [int(i) for i in request["ids"]],
+                            float(request.get("temperature", 1.0)),
+                        ),
+                    )
                 else:
                     self._reply(404, {"error": "not found"})
             except Exception as error:  # noqa: BLE001 — surface everything to the client

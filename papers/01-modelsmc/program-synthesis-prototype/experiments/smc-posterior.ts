@@ -86,6 +86,8 @@ const estimates = new Map<string, Map<string, number>>();
 const rejectionCounts = new Map<string, number>();
 
 const sidecarUrl = flag("--sidecar-url", "http://127.0.0.1:8765");
+const genTokens = Number(flag("--gen-tokens", "200"));
+const proposalTemp = Number(flag("--proposal-temp", "1"));
 const finalPopulations = new Map<string, CalibratedSmcResult>();
 
 for (const island of islands) {
@@ -106,7 +108,14 @@ for (const island of islands) {
         ? createOllamaDrawer({ model, baseUrl, prompt: proposalPrompt(task) })
         : undefined,
     sidecar: island === "llm-feedback" ? createSidecarClient(sidecarUrl) : undefined,
-    onReject: (reason) => rejectionCounts.set(reason, (rejectionCounts.get(reason) ?? 0) + 1),
+    generateMaxTokens: genTokens,
+    proposalTemperature: proposalTemp,
+    onReject: (reason) => {
+      const total = [...rejectionCounts.values()].reduce((sum, count) => sum + count, 0);
+      rejectionCounts.set(reason, (rejectionCounts.get(reason) ?? 0) + 1);
+      if (total < 12) console.log(`  [${island}] draw rejected: ${reason}`);
+      else if (total % 25 === 0) console.log(`  [${island}] ${total} draws rejected so far`);
+    },
     trace: (message) => console.log(`  [${island}] ${message}`),
   });
   finalPopulations.set(island, result);
