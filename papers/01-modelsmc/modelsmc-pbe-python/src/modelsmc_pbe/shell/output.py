@@ -21,6 +21,7 @@ class ProgramResultView:
     total_loss: float
     cost: int
     degraded: bool = False
+    details: tuple[str, ...] = ()
 
 
 def print_program_result(result: ProgramResultView, run_dir: Path) -> None:
@@ -29,6 +30,8 @@ def print_program_result(result: ProgramResultView, run_dir: Path) -> None:
     typer.echo(f"[result] mode: {result.mode}")
     typer.echo(f"[result] exact on every example: {str(result.exact).lower()}")
     typer.echo(f"[result] loss={result.total_loss:g} cost={result.cost}")
+    for detail in result.details:
+        typer.echo(f"[result] {detail}")
     if result.degraded:
         typer.secho(
             "[result] degraded: every provider request failed; ancestors were retained",

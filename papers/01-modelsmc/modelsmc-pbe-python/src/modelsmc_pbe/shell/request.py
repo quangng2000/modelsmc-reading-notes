@@ -26,6 +26,11 @@ class SynthesizeRequest:
     moves_per_stage: int = 1
     grammar_limit: int = 250_000
     score_batch_size: int = 512
+    candidate_batch_size: int = 128
+    hole_max_cost: int = 3
+    hole_state_limit: int = 250_000
+    support_limit: int = 250_000
+    proposal_epsilon: float = 0.05
     temperature: float = 0.7
     max_tokens: int = 4_096
     max_concurrency: int = 8

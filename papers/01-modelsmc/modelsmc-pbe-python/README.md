@@ -6,17 +6,18 @@ input-output examples. It contains the bounded program language, semantic
 scorer, search engines, LLM adapters, GPU-aware numerics, and structured
 logging in one installable project.
 
-The package has two deliberately different modes:
+The package has three deliberately different modes:
 
 | Mode | Proposal mechanism | What the weights mean |
 | --- | --- | --- |
 | `paper-search` | finite catalog or black-box LLM | Heuristic allocation scores from an uncorrected proposal kernel; **not** posterior probabilities |
 | `grammar-smc` | known finite skeleton prior | An SMC approximation to the declared finite-skeleton Gibbs target, checked against exact enumeration |
+| `importance-smc` | finite typed holes scored by Qwen through vLLM | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
 
-The second mode is calibrated to its computational target. It is not thereby a
-Bayesian posterior over all programs or over a real-world system: the skeleton
-is fixed and the soft PBE loss is not claimed to be a normalized observation
-model.
+The latter two modes are calibrated to their declared computational targets.
+They are not thereby Bayesian posteriors over every possible program or over a
+real-world system: their supports are bounded, and the soft PBE loss is not
+claimed to be a scientific observation model.
 
 See [DESIGN.md](DESIGN.md) for the algorithms and exact assurance boundary.
 
@@ -62,7 +63,7 @@ uv run modelsmc-pbe synthesize \
   --device cpu --trace
 ```
 
-### Qwen through Ollama
+### Uncorrected Qwen through Ollama (baseline only)
 
 Start Ollama in another terminal, ensure the model is installed, then run:
 
@@ -83,9 +84,11 @@ uv run modelsmc-pbe synthesize \
 ```
 
 Ollama controls the LLM's device placement. `--device` controls Torch work in
-this process; it does not move an Ollama model.
+this process; it does not move an Ollama model. Ollama is intentionally not
+accepted by `importance-smc`; this command is only the uncorrected search
+baseline.
 
-### Qwen or another model through vLLM
+### Uncorrected free-form generation through vLLM
 
 Start vLLM with a model and stable served name, for example:
 
@@ -105,6 +108,120 @@ uv run modelsmc-pbe synthesize \
   --particles 8 --iterations 8 \
   --max-concurrency 8 --device auto --trace
 ```
+
+This is still `paper-search`: it asks vLLM for a free-form complete AST and does
+not know the probability of that proposal.
+
+### Importance-corrected Qwen proposal
+
+`importance-smc` combines Paper 2's typed generalization and deduction with an
+explicit finite proposal law:
+
+```text
+examples
+  -> infer the signature and structural relationships
+  -> generate viable typed skeletons
+  -> refute impossible skeletons
+  -> derive typed examples for each hole
+  -> enumerate a bounded canonical candidate set for each hole
+  -> ask Qwen to score only those candidates
+  -> sample locally from a known categorical q
+  -> assemble, type-check, execute, and score complete programs
+  -> importance-weight and resample program particles
+```
+
+The sound skeleton refutations restrict the fixed support. Derived hole
+examples are supplied to Qwen as deduction guidance but do not hard-delete
+imperfect hole candidates; keeping them preserves a meaningful soft-loss
+target instead of reducing expression and map families to exact solutions only.
+
+Run this primary experiment against vLLM on the CUDA machine; no Ollama bridge
+is involved. Start vLLM with Qwen. `processed_logprobs` is also the required
+setting for any later experiment that samples output tokens directly. This
+mode uses teacher-forced prompt log probabilities, for which vLLM's raw and
+processed values coincide:
+
+```bash
+vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct \
+  --served-model-name qwen-coder \
+  --port 8000 \
+  --logprobs-mode processed_logprobs
+```
+
+Then run:
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/map-increment.json \
+  --mode importance-smc \
+  --proposal vllm \
+  --base-url http://localhost:8000/v1 \
+  --model qwen-coder \
+  --particles 128 --iterations 6 \
+  --alpha 0.25 --temperature 0.7 --proposal-epsilon 0.05 \
+  --hole-max-cost 3 --device auto --trace
+```
+
+For a provider-free probability-accounting control, replace `--proposal vllm`
+with `--proposal catalog`. Every finite hole candidate then receives equal
+energy.
+
+The Qwen path does **not** sample free-form JSON. For prompt `P` and canonical
+candidate `u`, it teacher-forces the complete concatenated prompt and obtains
+an energy from that prompt's tokenization
+
+$$
+s_\theta(P,u)=\sum_{r=2}^{|\operatorname{tok}(P\Vert u)|}
+\log p_\theta(t_r\mid t_{<r}).
+$$
+
+The shell constructs and samples its own categorical distribution
+
+$$
+q_j(u)=(1-\varepsilon)\operatorname{softmax}
+\left(\frac{s_\theta(P,u)}{\tau}\right)
++\frac{\varepsilon}{|\mathcal C_j|},
+\qquad \tau>0,\ \varepsilon>0.
+$$
+
+Family probability and every conditional hole probability are included in
+`log q`. The uniform component keeps every target program reachable and bounds
+otherwise extreme importance corrections. The clone transition is also
+accounted exactly:
+
+$$
+Q_\alpha(e'\mid e)
+=\alpha\mathbf 1[e'=e]+(1-\alpha)q_{\mathrm{Qwen}}(e'\mid e,D,F).
+$$
+
+If both cloning and Qwen can return the ancestor, both masses enter the
+denominator. Provider errors abort this strict mode; there is no hidden
+ancestor fallback. `alpha=1` is rejected because it destroys full support.
+
+Canonical ASTs and a one-to-one construction trace remove the otherwise
+intractable sum over whitespace, key order, prose, and alternative
+serializations. Because vLLM supplies scores rather than performing the draw,
+native top-p, output temperature, grammar masking, and EOS accounting do not
+enter this `q`; `--temperature` is the positive local categorical temperature.
+Scoring the complete prompt also avoids assuming that tokenizing `P` separately
+produces a token prefix of `P || u`, an assumption that fails for Qwen at some
+text boundaries.
+
+At stage `t`, the incremental potential is
+
+$$
+G_t(e_{t-1},e_t)
+=\frac{\widetilde\pi_{\beta_t}(e_t)}
+       {Q_\alpha(e_t\mid e_{t-1},D,F)},
+\quad
+\widetilde\pi_\beta(e)
+=\exp[-\beta\lambda_L\operatorname{loss}(e)-\lambda_C\operatorname{cost}(e)].
+$$
+
+The declared Feynman--Kac path target is the product of these stage targets,
+so its terminal marginal is the desired finite `pi_beta`. Accordingly, the
+reported accumulated log normalizer is for the **product path target**
+`product_t Z_beta_t`, not just the final posterior's `Z_1`.
 
 ### Calibrated finite-grammar control
 
@@ -143,6 +260,11 @@ mapper, and `foldr-filter-map` completes the particular fold/filter/map shape
 needed by the harder control. This conditioning makes exact enumeration and
 probability accounting possible.
 
+`importance-smc` has analogous `--hole-state-limit` and `--support-limit`
+ceilings. Its default `--hole-max-cost 3` keeps live Qwen scoring tractable and
+contains the `map (item + 1)` and fold-sum examples. Increasing the bound
+changes the declared finite target and can grow the catalog combinatorially.
+
 ## What happens at startup
 
 `paper-search` begins from one fixed model, `m0`, derived from the signature:
@@ -165,6 +287,12 @@ scorer-rejected AST retains its selected ancestor, records a typed warning, and
 increments separate response, provider-error, scorer-rejection, and accepted-
 proposal counters. `result.json` sets `degraded: true` when every provider call
 failed before returning an AST.
+
+That fallback policy applies only to heuristic `paper-search`.
+`importance-smc` never generates or parses a candidate response: it scores an
+already validated finite catalog, samples locally, and aborts if any score
+request fails. This is necessary because an unmeasured fallback would add
+unknown probability mass to the ancestor.
 
 ## Configuration and semantics
 
@@ -228,6 +356,11 @@ src/modelsmc_pbe/
   search/paper/   initial model, particles, objective, propagation, prompts, engine
   search/grammar_control/
                   support, target math, transitions, engine, result records
+  search/importance/
+                  fixed support, prompts, exact q, FK engine, reference metrics
+  induction/      typed hypotheses and structural relationships
+  deduction/      sound refutations and typed hole-example inference
+  enumeration/    complete increasing-cost typed expression catalogs
   core/           type checking, evaluation, cost, loss, rendering, batch scorer
   proposals/      catalog and OpenAI-compatible provider adapters
   grammar/        named, complete finite skeleton enumerators
@@ -252,7 +385,9 @@ formal guarantees transfer automatically to this reimplementation.
 The probabilistic shell, floating-point potentials, provider clients, and
 logging are also test-backed rather than formally verified. `grammar-smc` is
 calibrated because its finite target and proposal law are explicit, not because
-the implementation has a machine-checked proof.
+the implementation has a machine-checked proof. `importance-smc` has the same
+finite-target limitation; its extra claim is that its locally sampled proposal
+law is explicit and appears in the importance denominator.
 
 `auto` resolves Torch devices in the order CUDA, Apple MPS, then CPU. Explicitly
 requesting an unavailable accelerator fails instead of silently using CPU.

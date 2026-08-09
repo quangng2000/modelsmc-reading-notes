@@ -14,7 +14,7 @@ simulator discovery with a broad learned-likelihood stack. Here the state is a
 typed program AST and observations are fixed input-output examples, so a
 focused implementation makes the changed target explicit.
 
-## Two modes, two claims
+## Three modes, three claims
 
 ### `paper-search`: practical resample and revise
 
@@ -84,6 +84,110 @@ These weights are calibrated to the declared finite-skeleton Gibbs target. The
 claim does not extend to an unbounded program language or turn the soft loss
 into a real-world likelihood.
 
+### `importance-smc`: typed holes and an evaluable Qwen-energy proposal
+
+This mode fixes the proposal-density gap rather than assigning posterior
+meaning to free-form LLM output. Before sampling, it performs this fixed
+symbolic pipeline:
+
+1. infer the PBE signature and inspect structural list relationships;
+2. generate type-correct expression, `map`, and `foldr` skeletons;
+3. soundly refute inconsistent skeletons;
+4. derive typed input-output specifications for their holes;
+5. completely enumerate each hole through the declared structural-cost bound;
+6. assemble and semantically validate every complete construction;
+7. reject duplicate construction traces rather than hiding an AST alias sum.
+
+Deduction-derived hole examples guide Qwen's scores; they do not hard-filter
+otherwise valid candidates. The target support $\mathcal E_D$ therefore uses
+only sound skeleton refutations plus the explicit type, grammar, constant,
+cost, depth, node, and enumeration bounds. It is fixed before Qwen is queried
+or any particle is sampled.
+
+For each hole candidate $u$ and common prompt prefix $P$, vLLM supplies a
+teacher-forced energy for the complete prompt tokenization
+
+$$
+s_\theta(P,u)=\sum_{r=2}^{|\operatorname{tok}(P\Vert u)|}
+\log p_\theta(t_r\mid t_{<r}).
+$$
+
+The application—not vLLM's output sampler—normalizes and samples
+
+$$
+q_j(u\mid P,\mathcal C_j)
+=(1-\varepsilon)\operatorname{softmax}_{u\in\mathcal C_j}
+\left(s_\theta(P,u)/\tau\right)
++\varepsilon/|\mathcal C_j|,
+$$
+
+with $\tau>0$ and $\varepsilon>0$. A complete program has one family choice
+and an ordered sequence of hole choices, so
+
+$$
+\log q_{\mathrm{Qwen}}(e\mid a,D,F)
+=-\log H+\sum_j\log q_j(u_j\mid a,D,F,h,u_{<j}).
+$$
+
+Only choices with at least one scorer-approved completion are exposed at each
+step. Every complete construction has one trace, so this product is the
+program's probability rather than merely one contribution to it.
+
+Cloning is part of the same transition law:
+
+$$
+Q_\alpha(e'\mid e)
+=\alpha\mathbf1[e'=e]+(1-\alpha)q_{\mathrm{Qwen}}(e'\mid e,D,F).
+$$
+
+When $e'=e$, `logaddexp` combines both routes. When a sampled Qwen proposal is
+different, its log probability includes $\log(1-\alpha)$. The implementation
+requires $\alpha<1$, and provider failure aborts instead of adding unknown
+fallback mass.
+
+The finite unnormalized program target is
+
+$$
+\widetilde\pi_\beta(e)
+=\mathbf1[e\in\mathcal E_D]
+\exp[-\beta\lambda_L\mathrm{loss}(e)-\lambda_C\mathrm{cost}(e)].
+$$
+
+Repeated `pi/q` updates are given an explicit Feynman--Kac meaning. The path
+target is
+
+$$
+\gamma_t(e_{1:t})=\prod_{s=1}^{t}\widetilde\pi_{\beta_s}(e_s),
+$$
+
+the transition is $M_t=Q_\alpha$, and the incremental potential is
+
+$$
+G_t(e_{t-1},e_t)
+=\frac{\widetilde\pi_{\beta_t}(e_t)}
+       {Q_\alpha(e_t\mid e_{t-1},D,F)}.
+$$
+
+Thus $M_tG_t=\widetilde\pi_{\beta_t}$, and the current-program marginal is
+exactly the normalized finite target $\pi_{\beta_t}$. If resampling is skipped,
+the previous normalized path weight is multiplied by $G_t$. After systematic
+resampling, the base weight resets to $1/N$. Examples are fixed observations;
+only program particles are resampled.
+
+The path normalizer is $\prod_t Z_{\beta_t}$. Artifacts compare its SMC estimate
+with $\sum_t\log Z_{\beta_t}$ from exact enumeration and separately compare the
+terminal marginal using total variation, exact-program mass, mean loss, and
+mean cost. They do not mislabel the accumulated value as the single final
+posterior normalizer.
+
+This proposal is a finite categorical whose energies come from Qwen, not
+vLLM's free-form output distribution. Canonical serialization removes JSON
+aliases; no generated EOS, rationale, invalid output, native top-p, or output
+grammar mask enters its probability. Scoring the full prompt avoids a false
+assumption that separately tokenized `P` is a token-ID prefix of `P || u`;
+Qwen tokenizers can merge tokens across that boundary. Incompatible provider
+responses still abort the run.
+
 ## Initial state and proposal context
 
 The practical algorithm starts all $N$ particles from the same deterministic
@@ -110,6 +214,13 @@ The result separates proposal calls, responses, provider errors, scorer
 rejections, and accepted proposals. It reports `degraded: true` when every
 provider call fails before producing an AST. `exact` and `degraded` answer
 different questions.
+
+That recoverable fallback belongs only to `paper-search`. In
+`importance-smc`, every candidate is enumerated, canonical, typed, and known
+before provider I/O. vLLM only scores it. A timeout, malformed prompt-logprob
+path, token-boundary mismatch, or other provider failure aborts the calibrated
+run because retaining the ancestor without its exact rejection probability
+would change $Q_\alpha$.
 
 ## Configuration boundary
 
@@ -147,14 +258,14 @@ Dependencies point inward toward domain types and pure calculations:
 ```text
 shell/ ──────────┐
                  v
-search/paper/ + search/grammar_control/
-      |          |       |
-      v          v       v
- proposals/   smc/     core/
-      |          |       |
-      └──────────┴───────┘
-                 v
-          domain/ + runtime/
+search/paper/ + search/grammar_control/ + search/importance/
+      |                    |                    |
+      v                    v                    v
+ proposals/              smc/                 core/
+      |                    |                    |
+      └────────────────────┴────────────────────┘
+                           v
+       induction/ + deduction/ + enumeration/ + domain/ + runtime/
 
 observability/ is injected at orchestration boundaries.
 ```
@@ -164,6 +275,10 @@ observability/ is injected at orchestration boundaries.
   provider batches, prompts, counters, and orchestration.
 - `search/grammar_control/` separates support construction, target math,
   Markov transitions, result records, and annealing.
+- `search/importance/` separates fixed support, Qwen-energy prompts, exact
+  proposal accounting, Feynman--Kac updates, and reference metrics.
+- `induction/`, `deduction/`, and `enumeration/` implement the Paper-2-inspired
+  typed skeleton, refutation, hole-example, and increasing-cost front end.
 - `core/` owns deterministic program semantics and scoring, not search.
 - `grammar/` declares finite supports; it does not score programs.
 - `proposals/` owns provider transport and AST extraction, not semantics.
@@ -196,5 +311,6 @@ diagnostics remain observable.
 Tests cover configuration normalization, semantic type/evaluation/cost/loss
 behavior, AST bounds, device resolution, population numerics, grammar
 completeness, seeded lineage, independent provider failures, grammar-SMC
-agreement with enumeration, and artifact schemas. Live provider calls are not
-part of the suite.
+agreement with enumeration, importance proposal and clone-mixture accounting,
+symbolic induction and deduction, exact hole enumeration, and artifact schemas.
+Live provider calls are not part of the suite.

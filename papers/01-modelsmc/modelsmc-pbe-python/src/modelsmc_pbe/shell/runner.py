@@ -10,6 +10,7 @@ from modelsmc_pbe.runtime import DeviceInfo, resolve_device
 from modelsmc_pbe.shell.execution import (
     CompletedRun,
     execute_grammar_smc,
+    execute_importance_smc,
     execute_paper_search,
 )
 from modelsmc_pbe.shell.output import print_program_result
@@ -47,8 +48,8 @@ def _runtime_overrides(request: SynthesizeRequest) -> dict[str, object]:
 
 
 def _load_config(request: SynthesizeRequest) -> ExperimentConfig:
-    if request.mode not in {"paper-search", "grammar-smc"}:
-        raise ValueError("mode must be paper-search or grammar-smc")
+    if request.mode not in {"paper-search", "grammar-smc", "importance-smc"}:
+        raise ValueError("mode must be paper-search, grammar-smc, or importance-smc")
     return load_experiment_config(
         request.spec,
         smc_overrides=_smc_overrides(request),
@@ -60,7 +61,9 @@ def _selected_skeleton(
     request: SynthesizeRequest,
     config: ExperimentConfig,
 ) -> str | None:
-    if request.mode == "grammar-smc" or request.proposal == "catalog":
+    if request.mode == "grammar-smc" or (
+        request.mode == "paper-search" and request.proposal == "catalog"
+    ):
         return resolve_skeleton(config, request.skeleton)
     return None
 
@@ -74,25 +77,35 @@ def _create_logger(
     algorithm_config: dict[str, object] = {
         "experiment": config,
         "mode": request.mode,
-        "proposal": request.proposal if request.mode == "paper-search" else None,
+        "proposal": request.proposal if request.mode != "grammar-smc" else None,
         "skeleton": selected_skeleton,
-        "beta_max": request.beta_max if request.mode == "grammar-smc" else None,
+        "beta_max": (
+            request.beta_max
+            if request.mode in {"grammar-smc", "importance-smc"}
+            else None
+        ),
         "moves_per_stage": (
             request.moves_per_stage if request.mode == "grammar-smc" else None
         ),
         "grammar_limit": request.grammar_limit,
+        "hole_max_cost": request.hole_max_cost,
+        "hole_state_limit": request.hole_state_limit,
+        "support_limit": request.support_limit,
+        "proposal_epsilon": request.proposal_epsilon,
+        "candidate_batch_size": request.candidate_batch_size,
         "model": (
             request.model
-            if request.mode == "paper-search" and request.proposal != "catalog"
+            if request.mode != "grammar-smc" and request.proposal != "catalog"
             else None
         ),
         "base_url": request.base_url,
     }
-    claim = (
-        "heuristic_search_uncorrected_proposal_kernel"
-        if request.mode == "paper-search"
-        else "calibrated_finite_skeleton_conditioned_target"
-    )
+    claims = {
+        "paper-search": "heuristic_search_uncorrected_proposal_kernel",
+        "grammar-smc": "calibrated_finite_skeleton_conditioned_target",
+        "importance-smc": "importance_corrected_finite_deduction_refuted_target",
+    }
+    claim = claims[request.mode]
     return RunLogger.create(
         base_dir=config.runtime.artifacts_dir,
         run_name=f"{config.spec.name}-{request.mode}",
@@ -113,6 +126,8 @@ def _execute(
 ) -> CompletedRun:
     if request.mode == "grammar-smc":
         return execute_grammar_smc(request, config, device, logger)
+    if request.mode == "importance-smc":
+        return execute_importance_smc(request, config, device, logger)
     return execute_paper_search(request, config, device, logger)
 
 

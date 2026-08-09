@@ -16,10 +16,18 @@ SpecArgument = Annotated[
         help="PBE experiment JSON.",
     ),
 ]
-ModeOption = Annotated[str, typer.Option(help="paper-search or grammar-smc.")]
+ModeOption = Annotated[
+    str,
+    typer.Option(help="paper-search, grammar-smc, or importance-smc."),
+]
 ProposalOption = Annotated[
     str,
-    typer.Option(help="catalog, ollama, vllm, or openai-compatible."),
+    typer.Option(
+        help=(
+            "Proposal backend: importance-smc accepts vllm or catalog; "
+            "paper-search also accepts ollama or openai-compatible."
+        )
+    ),
 ]
 ModelOption = Annotated[str, typer.Option(help="Model served by Ollama or vLLM.")]
 BaseUrlOption = Annotated[
@@ -70,9 +78,37 @@ ScoreBatchSizeOption = Annotated[
     int,
     typer.Option(min=1, max=10_000, help="Semantic scoring batch size."),
 ]
+CandidateBatchSizeOption = Annotated[
+    int,
+    typer.Option(min=1, help="Canonical candidates per vLLM scoring request."),
+]
+HoleMaxCostOption = Annotated[
+    int,
+    typer.Option(min=1, help="Maximum exact structural cost of each enumerated hole."),
+]
+HoleStateLimitOption = Annotated[
+    int,
+    typer.Option(min=1, help="Fail if one complete typed hole catalog exceeds this size."),
+]
+SupportLimitOption = Annotated[
+    int,
+    typer.Option(min=1, help="Fail if complete program construction support exceeds this size."),
+]
+ProposalEpsilonOption = Annotated[
+    float,
+    typer.Option(
+        min=0.000001,
+        max=1.0,
+        help="Uniform mixture mass guaranteeing finite proposal support.",
+    ),
+]
 TemperatureOption = Annotated[
     float,
-    typer.Option(min=0.0, max=2.0, help="LLM proposal temperature."),
+    typer.Option(
+        min=0.0,
+        max=2.0,
+        help="Generation temperature, or local finite-categorical temperature.",
+    ),
 ]
 MaxTokensOption = Annotated[
     int,

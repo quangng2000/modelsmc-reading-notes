@@ -7,10 +7,14 @@ import os
 from modelsmc_pbe.config import ExperimentConfig
 from modelsmc_pbe.grammar import enumerate_skeleton
 from modelsmc_pbe.proposals import (
+    CandidateScorer,
     CatalogProposer,
     OpenAICompatibleConfig,
     OpenAICompatibleProposer,
     Proposer,
+    UniformCandidateScorer,
+    VLLMPromptLogprobConfig,
+    VLLMPromptLogprobScorer,
 )
 from modelsmc_pbe.shell.request import SynthesizeRequest
 from modelsmc_pbe.shell.skeletons import resolve_skeleton
@@ -66,5 +70,29 @@ def build_proposer(
             temperature=request.temperature,
             max_tokens=request.max_tokens,
             max_concurrency=request.max_concurrency,
+        )
+    )
+
+
+def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
+    """Build the strict finite-candidate scorer used by importance-SMC."""
+
+    if request.proposal == "catalog":
+        return UniformCandidateScorer()
+    if request.proposal != "vllm":
+        raise ValueError(
+            "importance-smc proposal must be catalog or vllm; Ollama and free-form "
+            "OpenAI-compatible output do not expose the required finite-candidate scores"
+        )
+    if not request.model.strip():
+        raise ValueError("--model is required for vLLM candidate scoring")
+    return VLLMPromptLogprobScorer(
+        VLLMPromptLogprobConfig(
+            model=request.model,
+            base_url=request.base_url or _DEFAULT_BASE_URLS["vllm"],
+            api_key=_api_key(request.api_key_env),
+            timeout_seconds=request.timeout_seconds,
+            max_concurrency=request.max_concurrency,
+            max_batch_size=request.candidate_batch_size,
         )
     )

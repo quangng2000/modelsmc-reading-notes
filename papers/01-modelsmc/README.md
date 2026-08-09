@@ -97,7 +97,13 @@ and structured logging in one Python project. Its `paper-search` mode follows
 ModelSMC's practical resample/clone/revise lifecycle but is explicitly
 heuristic because the black-box LLM proposal density is unknown. Its no-LLM
 `grammar-smc` control has a known finite-skeleton Gibbs target and compares the
-particle approximation with exact enumeration.
+particle approximation with exact enumeration. Its `importance-smc` experiment
+combines typed skeleton generalization, sound refutation, and hole-example
+deduction from Paper 2 with a finite Qwen-scored proposal. The shell samples
+that categorical proposal itself and includes its exact family, hole, and
+clone-mixture probability in the importance denominator. This removes the
+free-form JSON, unknown fallback, and unavailable proposal-density problems,
+while keeping the claim explicitly limited to the enumerated support.
 
 The Python package uses the authors' [official ModelSMC
 repository](https://github.com/mackelab/ModelSMC) as a reference but does not
