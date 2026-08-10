@@ -4,10 +4,10 @@
     "repository": "https://github.com/quangng2000/modelsmc-reading-notes",
     "revision": "578eba5c9c97456335bdc7dc9a51a50602b3809f"
   },
-  "release_label": "exploratory-pilots-v0.1.2",
+  "release_label": "exploratory-pilots-v0.1.3",
   "authors": [
     "Tri Nguyen",
-    "Dat Nguyen"
+    "Thanh-Dat Nguyen"
   ],
   "evidence_status": "exploratory-not-confirmatory",
   "warning": "These runs were created during method development, before the protocol was frozen, and must not be used for confirmatory significance claims.",

@@ -20,6 +20,7 @@ _ENDPOINT_PATTERN = re.compile(
 )
 _HOST_PATTERN = re.compile(r"[A-Za-z0-9-]+\.local")
 _EMAIL_PATTERN = re.compile(r"(?<![\w.+-])[\w.+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+_PUBLICATION_EMAILS = frozenset({"datnguyen@seas.harvard.edu"})
 _IPV4_PATTERN = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
 _BEARER_PATTERN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]{12,}=*")
 _TOKEN_PATTERN = re.compile(r"\b(?:hf_|sk-)[A-Za-z0-9_-]{12,}\b")
@@ -79,7 +80,14 @@ def _sanitize_string(value: str, project_root: Path) -> str:
     rendered = _WINDOWS_HOME_PATTERN.sub("<LOCAL_HOME>", rendered)
     rendered = _ENDPOINT_PATTERN.sub("<VLLM_ENDPOINT>", rendered)
     rendered = _HOST_PATTERN.sub("<LOCAL_HOST>", rendered)
-    rendered = _EMAIL_PATTERN.sub("<REDACTED_EMAIL>", rendered)
+    rendered = _EMAIL_PATTERN.sub(
+        lambda match: (
+            match.group(0)
+            if match.group(0).lower() in _PUBLICATION_EMAILS
+            else "<REDACTED_EMAIL>"
+        ),
+        rendered,
+    )
     rendered = _IPV4_PATTERN.sub("<REDACTED_IP>", rendered)
     rendered = _BEARER_PATTERN.sub("Bearer <REDACTED>", rendered)
     return _TOKEN_PATTERN.sub("<REDACTED_TOKEN>", rendered)
@@ -213,11 +221,15 @@ def _has_forbidden_content(text: str) -> bool:
         _WINDOWS_HOME_PATTERN,
         _ENDPOINT_PATTERN,
         _HOST_PATTERN,
-        _EMAIL_PATTERN,
         _BEARER_PATTERN,
         _TOKEN_PATTERN,
     )
-    return any(pattern.search(text) is not None for pattern in patterns)
+    if any(pattern.search(text) is not None for pattern in patterns):
+        return True
+    return any(
+        match.group(0).lower() not in _PUBLICATION_EMAILS
+        for match in _EMAIL_PATTERN.finditer(text)
+    )
 
 
 def validate_release(root: Path) -> ValidationResult:

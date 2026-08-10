@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from research.publish_pilots import build_release, validate_release
+from research.publish_pilots import _sanitize_string, build_release, validate_release
 
 PROJECT = Path(__file__).parents[2]
 
@@ -38,3 +38,15 @@ def test_release_builder_refuses_to_replace_existing_directory(tmp_path: Path) -
 
     with pytest.raises(FileExistsError):
         build_release(PROJECT, destination)
+
+
+def test_release_preserves_only_the_verified_publication_email() -> None:
+    private_email = "someone" + "@" + "example.com"
+    rendered = _sanitize_string(
+        f"public=datnguyen@seas.harvard.edu private={private_email}",
+        PROJECT,
+    )
+
+    assert "datnguyen@seas.harvard.edu" in rendered
+    assert private_email not in rendered
+    assert "<REDACTED_EMAIL>" in rendered

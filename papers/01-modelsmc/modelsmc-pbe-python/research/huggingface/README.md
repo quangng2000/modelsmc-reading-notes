@@ -13,9 +13,10 @@ tags:
 
 This dataset archives the evidence package for **Deduce, Propose, Correct:
 Probability-Accountable LLM Guidance for Typed Program Inference**.
-The manuscript authors are **Tri Nguyen** and **Dat Nguyen**.
+The manuscript authors are **Tri Nguyen** and **Thanh-Dat Nguyen**. The latter's
+verified affiliations are Harvard University and Basis Research Institute.
 
-The `exploratory-pilots-v0.1.2` release is intentionally labeled
+The `exploratory-pilots-v0.1.3` release is intentionally labeled
 **exploratory, not confirmatory**. It contains the eight matched seed-23 pilot
 runs declared in `pilot_release.json`, including inexact outcomes rather than
 only successful examples. It must not be used to infer population success

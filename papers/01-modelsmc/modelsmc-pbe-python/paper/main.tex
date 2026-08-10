@@ -7,7 +7,11 @@
 \usepackage{lastpage}
 \usepackage{microtype}
 \usepackage{xspace}
-\hypersetup{hidelinks}
+\hypersetup{
+  hidelinks,
+  pdftitle={Deduce, Propose, Correct: Probability-Accountable LLM Guidance for Typed Program Inference},
+  pdfauthor={Tri Nguyen and Thanh-Dat Nguyen}
+}
 
 \newcommand{\method}{\textsc{DPC}\xspace}
 \newcommand{\programs}{\mathcal{E}}
@@ -17,14 +21,20 @@
 \newcommand{\qd}{q_{\mathrm{ded}}}
 \newcommand{\qlm}{q_{\mathrm{LM}}}
 
-\ShortHeadings{Auditable LLM Program Inference}{Tri Nguyen and Dat Nguyen}
+\ShortHeadings{Auditable LLM Program Inference}{Tri Nguyen and Thanh-Dat Nguyen}
 \firstpageno{1}
 
 \begin{document}
 
 \title{Deduce, Propose, Correct:\\Probability-Accountable LLM Guidance for Typed Program Inference}
 
-\author{\name Tri Nguyen \and \name Dat Nguyen}
+\author{\hfill
+  \begin{tabular}{c@{\hspace{0.9in}}c}
+    {\normalsize\bf Tri Nguyen} & {\normalsize\bf Thanh-Dat Nguyen} \\
+    ~ & {\small\rm Harvard University} \\
+    ~ & {\small\rm Basis Research Institute} \\
+    ~ & {\small\tt datnguyen@seas.harvard.edu}
+  \end{tabular}\hfill}
 
 \maketitle
 
