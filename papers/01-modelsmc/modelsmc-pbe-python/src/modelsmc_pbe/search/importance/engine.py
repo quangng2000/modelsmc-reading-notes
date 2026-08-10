@@ -1,4 +1,4 @@
-"""Feynman--Kac SMC with an exact finite Qwen-energy proposal density."""
+"""Feynman--Kac SMC with an exact finite deduction/Qwen proposal density."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from modelsmc_pbe.smc import (
     systematic_resample,
 )
 
-from .proposal import FiniteLLMProposalKernel
+from .proposal import FiniteGuidedProposalKernel
 from .records import (
     ImportancePopulation,
     ImportanceSMCOptions,
@@ -52,6 +52,10 @@ class ImportanceSMCEngine:
     ) -> None:
         if generator.device.type != "cpu":
             raise ValueError("importance-smc requires a CPU generator")
+        if config.smc.alpha >= 1.0:
+            raise ValueError(
+                "importance-smc requires alpha < 1 so every target state remains reachable"
+            )
         self._config = config
         self._options = options
         self._scorer = scorer
@@ -69,12 +73,12 @@ class ImportanceSMCEngine:
             emit=self._emit,
         ).build()
         target = FiniteImportanceTarget.build(
-            support.states,
+            support,
             smc=self._config.smc,
             device=self._device,
         )
         population = self._initialize(target)
-        kernel = FiniteLLMProposalKernel(
+        kernel = FiniteGuidedProposalKernel(
             config=self._config,
             options=self._options,
             support=support,
@@ -90,9 +94,7 @@ class ImportanceSMCEngine:
             weights_before = torch.tensor(population.weights, dtype=torch.float64)
             ess_before = effective_sample_size(weights_before)
             relative_ess = relative_effective_sample_size(weights_before)
-            ancestor_states, base_weights, resampled = self._ancestors(
-                population, relative_ess
-            )
+            ancestor_states, base_weights, resampled = self._ancestors(population, relative_ess)
             proposals = await kernel.sample_many(
                 ancestor_states,
                 stage=stage,
@@ -116,9 +118,7 @@ class ImportanceSMCEngine:
                 weights=tuple(float(value) for value in normalized.weights.tolist()),
                 ancestor_state_indices=ancestor_states,
                 log_q_mixture=tuple(float(value) for value in log_q.tolist()),
-                log_incremental_weight=tuple(
-                    float(value) for value in incremental.tolist()
-                ),
+                log_incremental_weight=tuple(float(value) for value in incremental.tolist()),
                 cloned=tuple(proposal.cloned for proposal in proposals),
             )
             diagnostic = ImportanceStageDiagnostic(
@@ -130,8 +130,7 @@ class ImportanceSMCEngine:
                 clones=sum(proposal.cloned for proposal in proposals),
                 unique_programs=len(set(population.state_indices)),
                 exact_programs=sum(
-                    support.states[index].score.exact_program
-                    for index in population.state_indices
+                    support.states[index].score.exact_program for index in population.state_indices
                 ),
                 ess_after=effective_sample_size(normalized.weights),
                 mean_log_q=float(log_q.mean().item()),
@@ -149,15 +148,23 @@ class ImportanceSMCEngine:
             target=target,
             beta_max=self._options.beta_max,
             proposal_source=kernel.source,
+            deduction_mix=self._options.deduction_mix,
+            deduction_strength=self._options.deduction_strength,
+            llm_energy_normalization=self._options.llm_energy_normalization,
+            deduction_guide=kernel.final_deduction_guide,
             stages=tuple(diagnostics),
             log_path_z_estimate=log_path_z_estimate,
             log_path_z_reference=log_path_z_reference,
+            scored_candidates=kernel.scored_candidates,
+            max_scored_candidates=self._options.max_scored_candidates,
+            score_ledger=kernel.score_ledger,
         )
         self._emit(
             "importance_smc.completed",
             message="importance-corrected finite-support SMC completed",
             support_states=result.support_states,
             exact_programs=result.exact_programs,
+            deduction_guide_exact_mass=result.deduction_guide_exact_mass,
             particle_exact_mass=result.reference.particle_exact_mass,
             enumeration_exact_mass=result.reference.enumeration_exact_mass,
             total_variation=result.reference.total_variation_distance,

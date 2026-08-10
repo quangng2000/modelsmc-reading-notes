@@ -30,6 +30,25 @@ def render_hypothesis(hypothesis: TypedSkeleton) -> str:
             f"map(({item.name}: {item.value_type.value}) => ?mapper: "
             f"{mapper.output_type.value}, {input_variable.name})"
         )
+    if hypothesis.kind in {
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+        SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP,
+    }:
+        predicate = hypothesis.hole("predicate")
+        mapped_label = (
+            "piecewise_mapped_value"
+            if hypothesis.kind is SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP
+            else "mapped_value"
+        )
+        mapped_value = hypothesis.hole(mapped_label)
+        item = predicate.parameters[0]
+        return (
+            f"({input_variable.name}: {input_variable.value_type.value}) => "
+            f"foldr(({item.name}: {item.value_type.value}, acc: List<Int>) => "
+            f"if ?predicate: {predicate.output_type.value} then "
+            f"?{mapped_label}: {mapped_value.output_type.value} :: acc else acc, "
+            f"[], {input_variable.name})"
+        )
     initial = hypothesis.hole("initial")
     reducer = hypothesis.hole("reducer")
     item, accumulator = reducer.parameters

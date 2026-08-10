@@ -8,6 +8,16 @@ from typing import cast
 from modelsmc_pbe.domain.models import PBESpec, TypeSignature
 from modelsmc_pbe.induction import SkeletonKind, TypedSkeleton
 
+from .evidence import (
+    conflicting_examples as _conflict,
+)
+from .evidence import (
+    deduplicate_examples as _deduplicate,
+)
+from .evidence import (
+    source_union as _source_union,
+)
+from .filter_map import deduce_foldr_filter_map
 from .records import (
     DeductionFact,
     DeductionFactKind,
@@ -35,59 +45,6 @@ def _validate_hypothesis(spec: PBESpec, hypothesis: TypedSkeleton) -> TypeSignat
     ):
         raise ValueError("hypothesis signature does not match the PBE specification")
     return signature
-
-
-def _source_union(*groups: tuple[int, ...]) -> tuple[int, ...]:
-    return tuple(dict.fromkeys(index for group in groups for index in group))
-
-
-def _deduplicate(examples: Iterable[HoleExample]) -> tuple[HoleExample, ...]:
-    unique: dict[tuple[tuple[TypedValue, ...], TypedValue], HoleExample] = {}
-    for example in examples:
-        key = (example.inputs, example.output)
-        previous = unique.get(key)
-        if previous is None:
-            unique[key] = example
-        else:
-            unique[key] = HoleExample(
-                hole=example.hole,
-                inputs=example.inputs,
-                output=example.output,
-                source_examples=_source_union(previous.source_examples, example.source_examples),
-            )
-    return tuple(unique.values())
-
-
-def _conflict(
-    examples: tuple[HoleExample, ...],
-    *,
-    kind: RefutationKind,
-    subject: str,
-) -> Refutation | None:
-    outputs: dict[tuple[TypedValue, ...], HoleExample] = {}
-    for example in examples:
-        previous = outputs.get(example.inputs)
-        if previous is None:
-            outputs[example.inputs] = example
-            continue
-        if previous.output == example.output:
-            continue
-        arguments = tuple(render_typed_value(value) for value in example.inputs)
-        if not arguments:
-            rendered_arguments = "()"
-        elif len(arguments) == 1:
-            rendered_arguments = arguments[0]
-        else:
-            rendered_arguments = "(" + ", ".join(arguments) + ")"
-        return Refutation(
-            kind=kind,
-            source_examples=_source_union(previous.source_examples, example.source_examples),
-            detail=(
-                f"a deterministic {subject} cannot map {rendered_arguments} to both "
-                f"{render_typed_value(previous.output)} and {render_typed_value(example.output)}"
-            ),
-        )
-    return None
 
 
 def _inconsistent_top_level(
@@ -210,9 +167,7 @@ def _map(spec: PBESpec, hypothesis: TypedSkeleton, signature: TypeSignature) -> 
         DeductionFact(
             kind=DeductionFactKind.MAPPER_EXAMPLES,
             hole=mapper,
-            source_examples=_source_union(
-                *(example.source_examples for example in examples)
-            ),
+            source_examples=_source_union(*(example.source_examples for example in examples)),
             derived_examples=len(examples),
         ),
     ]
@@ -297,17 +252,13 @@ def _foldr(spec: PBESpec, hypothesis: TypedSkeleton, signature: TypeSignature) -
         DeductionFact(
             kind=DeductionFactKind.FOLDR_INITIAL_EXAMPLES,
             hole=initial,
-            source_examples=_source_union(
-                *(example.source_examples for example in merged_initial)
-            ),
+            source_examples=_source_union(*(example.source_examples for example in merged_initial)),
             derived_examples=len(merged_initial),
         ),
         DeductionFact(
             kind=DeductionFactKind.FOLDR_SUFFIX_EXAMPLES,
             hole=reducer,
-            source_examples=_source_union(
-                *(example.source_examples for example in merged_reducer)
-            ),
+            source_examples=_source_union(*(example.source_examples for example in merged_reducer)),
             derived_examples=len(merged_reducer),
         ),
     ]
@@ -345,7 +296,14 @@ def deduce_hypothesis(spec: PBESpec, hypothesis: TypedSkeleton) -> DeductionRepo
         return _expression(spec, hypothesis, signature)
     if hypothesis.kind is SkeletonKind.MAP:
         return _map(spec, hypothesis, signature)
-    return _foldr(spec, hypothesis, signature)
+    if hypothesis.kind in {
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+        SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP,
+    }:
+        return deduce_foldr_filter_map(spec, hypothesis, signature)
+    if hypothesis.kind is SkeletonKind.FOLD_RIGHT:
+        return _foldr(spec, hypothesis, signature)
+    raise ValueError(f"unsupported skeleton kind {hypothesis.kind.value!r}")
 
 
 def deduce_hypotheses(

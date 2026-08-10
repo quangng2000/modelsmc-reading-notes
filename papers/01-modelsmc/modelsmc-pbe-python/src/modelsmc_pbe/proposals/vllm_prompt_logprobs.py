@@ -13,6 +13,7 @@ import httpx
 from modelsmc_pbe.domain.ast import AstNode
 from modelsmc_pbe.proposals.base import ProposalError
 from modelsmc_pbe.proposals.candidate_scoring import (
+    CandidateKind,
     CandidateLogprobSemantics,
     CandidateScoreBatch,
     CandidateScoreRequest,
@@ -45,9 +46,9 @@ class VLLMPromptLogprobConfig:
     max_concurrency: int = 8
     max_batch_size: int = 128
     add_special_tokens: bool = True
-    semantics: CandidateLogprobSemantics = (
-        CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT
-    )
+    model_revision: str | None = None
+    tokenizer_revision: str | None = None
+    semantics: CandidateLogprobSemantics = CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT
     extra_body: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -63,6 +64,14 @@ class VLLMPromptLogprobConfig:
                 raise ValueError(f"{name} must be a positive integer")
         if not isinstance(self.add_special_tokens, bool):
             raise TypeError("add_special_tokens must be a boolean")
+        for name, revision_value in (
+            ("model_revision", self.model_revision),
+            ("tokenizer_revision", self.tokenizer_revision),
+        ):
+            if revision_value is not None and (
+                not isinstance(revision_value, str) or not revision_value.strip()
+            ):
+                raise ValueError(f"{name} must be a nonempty string when provided")
         if self.semantics is not CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT:
             raise ValueError("vLLM candidate scoring requires full-prompt semantics")
         if not isinstance(self.extra_body, dict):
@@ -94,9 +103,13 @@ class VLLMPromptLogprobScorer:
         return f"{self.config.base_url.rstrip('/')}/completions"
 
     async def score_candidates(self, request: CandidateScoreRequest) -> CandidateScoreBatch:
-        expressions = tuple(
-            parse_canonical_expression_content(candidate, request)
-            for candidate in request.candidates
+        expressions: tuple[AstNode | None, ...] = (
+            tuple(
+                parse_canonical_expression_content(candidate, request)
+                for candidate in request.candidates
+            )
+            if request.candidate_kind is CandidateKind.EXPRESSION
+            else tuple(None for _ in request.candidates)
         )
         if self._client is not None:
             return await self._score_with_client(request, expressions, self._client)
@@ -117,7 +130,7 @@ class VLLMPromptLogprobScorer:
     async def _score_with_client(
         self,
         request: CandidateScoreRequest,
-        expressions: tuple[AstNode, ...],
+        expressions: tuple[AstNode | None, ...],
         client: httpx.AsyncClient,
     ) -> CandidateScoreBatch:
         chunks = [
@@ -136,13 +149,15 @@ class VLLMPromptLogprobScorer:
             source=self.name,
             model=self.config.model,
             semantics=self.config.semantics,
+            model_revision=self.config.model_revision,
+            tokenizer_revision=self.config.tokenizer_revision,
         )
 
     async def _score_chunk(
         self,
         prefix: str,
         candidates: Sequence[str],
-        expressions: Sequence[AstNode],
+        expressions: Sequence[AstNode | None],
         client: httpx.AsyncClient,
     ) -> tuple[CandidateSequenceScore, ...]:
         prompts = [prefix + candidate for candidate in candidates]

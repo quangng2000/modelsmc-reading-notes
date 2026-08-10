@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import torch
 
+from modelsmc_pbe.proposals import LLMEnergyNormalization
+
 from .records import (
     IMPORTANCE_SMC_CLAIM,
+    ImportanceFamilySummary,
+    ImportanceHypothesisSummary,
     ImportanceParticle,
     ImportancePopulation,
     ImportanceReferenceMetrics,
@@ -15,6 +19,7 @@ from .records import (
     ImportanceStateSummary,
     ImportanceSupport,
 )
+from .score_ledger import LLMScoreWaveLedger
 from .target import FiniteImportanceTarget
 
 
@@ -48,13 +53,21 @@ def assemble_importance_result(
     target: FiniteImportanceTarget,
     beta_max: float,
     proposal_source: str,
+    deduction_mix: float,
+    deduction_strength: float,
+    llm_energy_normalization: LLMEnergyNormalization,
+    deduction_guide: torch.Tensor,
     stages: tuple[ImportanceStageDiagnostic, ...],
     log_path_z_estimate: float,
     log_path_z_reference: float,
+    scored_candidates: int,
+    max_scored_candidates: int,
+    score_ledger: tuple[LLMScoreWaveLedger, ...],
 ) -> ImportanceSMCResult:
     """Project the final path particles onto programs and compare exactly."""
 
     exact = target.distribution(beta_max).weights
+    prior = target.distribution(0.0).weights
     empirical = _empirical(population, len(support.states))
     particle_exact_mass = float(empirical[target.exact_mask].sum().item())
     enumeration_exact_mass = float(exact[target.exact_mask].sum().item())
@@ -104,18 +117,69 @@ def assemble_importance_result(
         )
         for index, state_index in enumerate(population.state_indices)
     )
+    families = tuple(
+        ImportanceFamilySummary(
+            family=family.hypothesis.kind.value,
+            states=len(family.state_indices),
+            exact_programs=sum(
+                support.states[index].score.exact_program for index in family.state_indices
+            ),
+            prior_mass=float(prior[list(family.state_indices)].sum().item()),
+            deduction_guide_mass=float(
+                deduction_guide[list(family.state_indices)].sum().item()
+            ),
+            posterior_mass=float(exact[list(family.state_indices)].sum().item()),
+            particle_mass=float(empirical[list(family.state_indices)].sum().item()),
+        )
+        for family in support.families
+    )
+    state_counts = {
+        family.hypothesis_index: len(family.state_indices)
+        for family in support.families
+    }
+    hypotheses = tuple(
+        ImportanceHypothesisSummary(
+            family=report.hypothesis.kind.value,
+            viable=report.viable,
+            states=state_counts.get(index, 0),
+            refutation_kind=(
+                None if report.refutation is None else report.refutation.kind.value
+            ),
+            refutation_sources=(
+                () if report.refutation is None else report.refutation.source_examples
+            ),
+            refutation_detail=(
+                None if report.refutation is None else report.refutation.detail
+            ),
+        )
+        for index, report in enumerate(support.deductions)
+    )
     return ImportanceSMCResult(
         mode="importance-smc",
         probabilistic_claim=IMPORTANCE_SMC_CLAIM,
         proposal_source=proposal_source,
+        deduction_mix=deduction_mix,
+        deduction_strength=deduction_strength,
+        llm_energy_normalization=llm_energy_normalization,
+        conditioned_skeleton=support.conditioned_skeleton,
+        multi_family=support.multi_family,
+        aliased_programs=support.aliased_programs,
         support_states=len(support.states),
         generated_hypotheses=len(support.induction.hypotheses),
         viable_hypotheses=len(support.families),
         refuted_hypotheses=sum(not report.viable for report in support.deductions),
         exact_programs=support.exact_programs,
+        deduction_guide_exact_mass=float(
+            deduction_guide[target.exact_mask].sum().item()
+        ),
         hole_catalogs=support.hole_catalogs,
+        hypotheses=hypotheses,
+        families=families,
         sampled_best=summary,
         reference=reference,
         stages=stages,
         final_particles=particles,
+        scored_candidates=scored_candidates,
+        max_scored_candidates=max_scored_candidates,
+        score_ledger=score_ledger,
     )

@@ -84,25 +84,77 @@ These weights are calibrated to the declared finite-skeleton Gibbs target. The
 claim does not extend to an unbounded program language or turn the soft loss
 into a real-world likelihood.
 
-### `importance-smc`: typed holes and an evaluable Qwen-energy proposal
+### `importance-smc`: typed holes and an evaluable deduction/Qwen proposal
 
 This mode fixes the proposal-density gap rather than assigning posterior
 meaning to free-form LLM output. Before sampling, it performs this fixed
 symbolic pipeline:
 
 1. infer the PBE signature and inspect structural list relationships;
-2. generate type-correct expression, `map`, and `foldr` skeletons;
+2. generate type-correct expression, `map`, `foldr`, conditioned
+   `foldr-filter-map`, and signed piecewise filter/map skeletons;
 3. soundly refute inconsistent skeletons;
 4. derive typed input-output specifications for their holes;
-5. completely enumerate each hole through the declared structural-cost bound;
+5. completely enumerate each generic hole through its structural-cost bound,
+   or every canonical choice in a declared factorized skeleton;
 6. assemble and semantically validate every complete construction;
-7. reject duplicate construction traces rather than hiding an AST alias sum.
+7. assign exact cross-family aliases to a declared canonical owner, count the
+   discarded traces, and reject every unexpected duplicate.
 
-Deduction-derived hole examples guide Qwen's scores; they do not hard-filter
-otherwise valid candidates. The target support $\mathcal E_D$ therefore uses
-only sound skeleton refutations plus the explicit type, grammar, constant,
-cost, depth, node, and enumeration bounds. It is fixed before Qwen is queried
-or any particle is sampled.
+Deduction-derived hole examples enter both the prompt and a separate, exactly
+normalized proposal guide; they do not hard-filter otherwise valid candidates.
+The target support $\mathcal E_D$ therefore uses
+only sound skeleton refutations, a deterministic bounded-catalog selection
+policy, plus the explicit type, grammar, constant, cost, depth, node, and
+enumeration bounds. It is fixed before Qwen is queried or any particle is
+sampled.
+
+In multi-family `auto` mode, structural inspection does not commit to one
+family. It retains every generated type-correct hypothesis, and deduction
+removes hypotheses contradicted by the examples. The two specialized
+filter/map hypotheses share one abstract shape but declare different bounded
+mapper catalogs. Auto retains the simple arithmetic catalog when one candidate
+satisfies every derived mapped-value example; otherwise it retains the signed
+piecewise catalog. This is an explicit finite-support policy, not a refutation
+of the omitted abstract higher-order family. The deduction/Qwen mixture then
+scores the surviving family before its holes. Explicitly naming a family
+remains a reproducible single-family ablation.
+
+For the hardest included task, deduction refutes `map` because list length is
+not preserved. The surviving support contains expression, generic `foldr`, and
+the specialized skeleton
+
+$$
+\operatorname{foldr}\Bigl(
+  \lambda item,acc.\ \mathbf{if}\ p(item)\ \mathbf{then}\ v(item)::acc\ \mathbf{else}\ acc,
+  [],xs
+\Bigr).
+$$
+
+Suffix deduction derives examples for $p:\mathrm{Int}\to\mathrm{Bool}$ and
+$v:\mathrm{Int}\to\mathrm{Int}$. With eight integer constants, their exact
+catalogs contain 600 and 60 choices respectively, giving 36,000 unique complete
+programs. Together with the bounded expression and generic-fold families, the
+default full support contains 36,198 programs. The two ordered hole choices
+preserve sequential proposal factorization while avoiding an intractable
+generic reducer catalog.
+
+The signed-window task uses the refinement
+
+$$
+\operatorname{foldr}\Bigl(
+  \lambda item,acc.\ \mathbf{if}\ p(item)\ \mathbf{then}\
+  g(item)::acc\ \mathbf{else}\ acc,
+  [],xs
+\Bigr),
+$$
+
+where $g$ is one canonical zero-sign conditional with two distinct branches.
+Each branch is identity, negation, squaring, or a declared constant. With eight
+constants, $g$ has $2\cdot11\cdot10=220$ choices; together with 600 outer
+predicates this yields 132,000 specialized programs. Keeping $g$ as one typed
+hole makes direct mapped-value deductions sound: the engine never invents an
+unknown branch label merely to manufacture independent subproblems.
 
 For each hole candidate $u$ and common prompt prefix $P$, vLLM supplies a
 teacher-forced energy for the complete prompt tokenization
@@ -112,45 +164,98 @@ s_\theta(P,u)=\sum_{r=2}^{|\operatorname{tok}(P\Vert u)|}
 \log p_\theta(t_r\mid t_{<r}).
 $$
 
-The application—not vLLM's output sampler—normalizes and samples
+The configurable model energy is either this total (the backward-compatible
+default) or the arithmetic mean over the scored full-prompt positions. The
+latter is a length-normalized energy, not a candidate-suffix probability: no
+separate token boundary for textual `P` is assumed. Run results retain a
+replayable, deduplicated score ledger with the full prefix plus digest, every
+canonical candidate token path, total and configured energy, local
+component/mixture probabilities, selections, score semantics, model identity,
+and optional model/tokenizer revisions. Provider credentials and endpoints are
+not copied into that ledger.
+
+Write the configured energy as
+$\widetilde{s}_\theta(P,u)\in\{s_\theta(P,u),s_\theta(P,u)/n(P,u)\}$, where
+$n(P,u)$ counts scored full-prompt positions.
+
+The application—not vLLM's output sampler—first normalizes the model component
 
 $$
-q_j(u\mid P,\mathcal C_j)
-=(1-\varepsilon)\operatorname{softmax}_{u\in\mathcal C_j}
-\left(s_\theta(P,u)/\tau\right)
-+\varepsilon/|\mathcal C_j|,
+q_{\mathrm{LLM},j}(u\mid P,\mathcal C_j)
+=\operatorname{softmax}_{u\in\mathcal C_j}
+\left(\widetilde{s}_\theta(P,u)/\tau\right),
 $$
 
-with $\tau>0$ and $\varepsilon>0$. A complete program has one family choice
-and an ordered sequence of hole choices, so
+with $\tau>0$. For a retained program $e$, let $D(e)$ count the deduplicated
+derived hole examples violated by its fillings. The stage-$t$ deduction guide is
 
 $$
-\log q_{\mathrm{Qwen}}(e\mid a,D,F)
-=-\log H+\sum_j\log q_j(u_j\mid a,D,F,h,u_{<j}).
+r_t(e)\propto p_0(e)\exp\!\left[-\kappa_{\max}
+\frac{\beta_t}{\beta_{\max}}D(e)\right].
 $$
 
+Here $p_0$ is the same equal-family, within-family Occam prior used by the
+target. Exact sums of $r_t$ over each proposal subtree define $r_{t,A}(c)$ for
+each family or sequential hole choice $c$ at node $A$. The sampled categorical is
+
+$$
+q_A(c)=(1-\varepsilon)\left[(1-\lambda)q_{\mathrm{LLM},A}(c)
++\lambda r_{t,A}(c)\right]+\frac{\varepsilon}{|A|}.
+$$
+
+Thus deduction cannot be overwhelmed by cumulative JSON token log-probability,
+while every finite state remains reachable. A complete program has one family
+choice and an ordered sequence of hole choices:
+
+$$
+q_{\mathrm{construct}}(e\mid a,D,F)
+=q_H(h\mid a,D,F)\prod_j q_j(u_j\mid a,D,F,h,u_{<j}).
+$$
+
+When one family survives, $q_H=1$ and no provider family-scoring call is made.
 Only choices with at least one scorer-approved completion are exposed at each
-step. Every complete construction has one trace, so this product is the
-program's probability rather than merely one contribution to it.
+step. Identical scoring requests across resampled paths are evaluated once and
+fanned back out, reducing paid model work without changing `q`.
+After deduplication, a run-wide candidate-prompt budget is reserved before each
+scoring wave. A wave that would cross the configured ceiling fails before any
+provider request; completed artifacts persist both used and allowed prompts.
+
+Every accepted complete program has one owned trace. Exact overlaps between
+the specialized family and generic `foldr` belong to the specialized family;
+discarded aliases are counted. Non-overlapping generic folds remain eligible,
+and every other duplicate is an invariant failure rather than silently dropped
+probability mass.
 
 Cloning is part of the same transition law:
 
 $$
 Q_\alpha(e'\mid e)
-=\alpha\mathbf1[e'=e]+(1-\alpha)q_{\mathrm{Qwen}}(e'\mid e,D,F).
+=\alpha\mathbf1[e'=e]+(1-\alpha)q_{\mathrm{construct}}(e'\mid e,D,F).
 $$
 
-When $e'=e$, `logaddexp` combines both routes. When a sampled Qwen proposal is
+When $e'=e$, `logaddexp` combines both routes. When a sampled construction is
 different, its log probability includes $\log(1-\alpha)$. The implementation
 requires $\alpha<1$, and provider failure aborts instead of adding unknown
 fallback mass.
 
-The finite unnormalized program target is
+Let $\mathcal E_h$ be the retained states owned by surviving family $h$. The
+base prior uses a uniform family prior and a normalized Occam prior within each
+family:
+
+$$
+p_0(e)
+=\frac{1}{H}
+ \frac{\exp[-\lambda_C\mathrm{cost}(e)]}
+      {\sum_{u\in\mathcal E_{h(e)}}\exp[-\lambda_C\mathrm{cost}(u)]}.
+$$
+
+Thus every family has prior mass $1/H$ even when catalog sizes differ. The
+finite unnormalized program target is
 
 $$
 \widetilde\pi_\beta(e)
-=\mathbf1[e\in\mathcal E_D]
-\exp[-\beta\lambda_L\mathrm{loss}(e)-\lambda_C\mathrm{cost}(e)].
+=\mathbf1[e\in\mathcal E_D]p_0(e)
+ \exp[-\beta\lambda_L\mathrm{loss}(e)].
 $$
 
 Repeated `pi/q` updates are given an explicit Feynman--Kac meaning. The path
@@ -180,10 +285,13 @@ terminal marginal using total variation, exact-program mass, mean loss, and
 mean cost. They do not mislabel the accumulated value as the single final
 posterior normalizer.
 
-This proposal is a finite categorical whose energies come from Qwen, not
-vLLM's free-form output distribution. Canonical serialization removes JSON
+The model component uses finite-candidate energies from Qwen, not vLLM's
+free-form output distribution; it is mixed with the exact deduction guide.
+Canonical serialization removes JSON
 aliases; no generated EOS, rationale, invalid output, native top-p, or output
-grammar mask enters its probability. Scoring the full prompt avoids a false
+grammar mask enters its probability. The server is configured for processed
+prompt log probabilities; the client requests zero output tokens and applies
+its own positive local categorical temperature. Scoring the full prompt avoids a false
 assumption that separately tokenized `P` is a token-ID prefix of `P || u`;
 Qwen tokenizers can merge tokens across that boundary. Incompatible provider
 responses still abort the run.
@@ -275,7 +383,7 @@ observability/ is injected at orchestration boundaries.
   provider batches, prompts, counters, and orchestration.
 - `search/grammar_control/` separates support construction, target math,
   Markov transitions, result records, and annealing.
-- `search/importance/` separates fixed support, Qwen-energy prompts, exact
+- `search/importance/` separates fixed support, Qwen/deduction guides, exact
   proposal accounting, Feynman--Kac updates, and reference metrics.
 - `induction/`, `deduction/`, and `enumeration/` implement the Paper-2-inspired
   typed skeleton, refutation, hole-example, and increasing-cost front end.

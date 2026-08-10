@@ -56,6 +56,11 @@ class DeductionFactKind(StrEnum):
     MAPPER_EXAMPLES = "mapper-examples"
     FOLDR_INITIAL_EXAMPLES = "foldr-initial-examples"
     FOLDR_SUFFIX_EXAMPLES = "foldr-suffix-examples"
+    FOLDR_FILTER_PREDICATE_EXAMPLES = "foldr-filter-predicate-examples"
+    FOLDR_FILTER_MAPPED_VALUE_EXAMPLES = "foldr-filter-mapped-value-examples"
+    FOLDR_FILTER_PIECEWISE_MAPPED_VALUE_EXAMPLES = (
+        "foldr-filter-piecewise-mapped-value-examples"
+    )
     HOLE_UNDERCONSTRAINED = "hole-underconstrained"
 
 
@@ -113,6 +118,9 @@ class RefutationKind(StrEnum):
     MAP_FUNCTION_CONFLICT = "map-function-conflict"
     FOLDR_INITIAL_CONFLICT = "foldr-initial-conflict"
     FOLDR_REDUCER_CONFLICT = "foldr-reducer-conflict"
+    FOLDR_FILTER_MAP_SHAPE_MISMATCH = "foldr-filter-map-shape-mismatch"
+    FOLDR_FILTER_PREDICATE_CONFLICT = "foldr-filter-predicate-conflict"
+    FOLDR_FILTER_MAPPED_VALUE_CONFLICT = "foldr-filter-mapped-value-conflict"
 
 
 @dataclass(frozen=True, slots=True)

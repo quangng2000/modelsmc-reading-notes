@@ -8,10 +8,10 @@ from collections.abc import Sequence
 from modelsmc_pbe.config import ExperimentConfig
 from modelsmc_pbe.deduction import DeductionReport, render_deduction_guidance
 from modelsmc_pbe.domain import ValueType, canonical_key
-from modelsmc_pbe.induction import HoleSpec, render_hole_type
+from modelsmc_pbe.induction import HoleSpec, render_hole_type, render_hypothesis
 from modelsmc_pbe.proposals import ExpressionScope, HoleSpecification
 
-from .records import HoleFilling, ImportanceState
+from .records import FamilySupport, HoleFilling, ImportanceState
 
 
 def proposal_hole(hole: HoleSpec, *, input_type: ValueType) -> HoleSpecification:
@@ -29,7 +29,7 @@ def proposal_hole(hole: HoleSpec, *, input_type: ValueType) -> HoleSpecification
     )
 
 
-def _feedback(ancestor: ImportanceState, *, limit: int = 6) -> str:
+def ancestor_feedback(ancestor: ImportanceState, *, limit: int = 6) -> str:
     failures = [item for item in ancestor.score.evaluations if not item.exact]
     if not failures:
         return (
@@ -45,6 +45,52 @@ def _feedback(ancestor: ImportanceState, *, limit: int = 6) -> str:
         for item in failures[:limit]
     )
     return "\n".join(lines)
+
+
+def family_candidate(family: FamilySupport) -> str:
+    """Return the canonical JSON continuation representing one skeleton family."""
+
+    return json.dumps(family.hypothesis.kind.value, ensure_ascii=False)
+
+
+def family_prompt_prefix(
+    *,
+    config: ExperimentConfig,
+    families: Sequence[FamilySupport],
+    ancestor: ImportanceState,
+    stage: int,
+    beta: float,
+) -> str:
+    """Build a common prefix for finite structural-hypothesis scoring."""
+
+    task = config.spec.model_dump(mode="json", by_alias=True)
+    choices = [
+        {
+            "candidate": family_candidate(family),
+            "hypothesis": render_hypothesis(family.hypothesis),
+            "deduction": render_deduction_guidance(family.deduction),
+            "completePrograms": len(family.state_indices),
+        }
+        for family in families
+    ]
+    rendered_choices = json.dumps(
+        choices,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return (
+        "Choose one viable typed structural hypothesis for a "
+        "programming-by-example task.\n"
+        "The continuation after SKELETON_JSON= must be exactly one candidate JSON "
+        "string from ViableSkeletons: no Markdown, prose, or rationale.\n"
+        f"Task={json.dumps(task, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}\n"
+        f"ViableSkeletons={rendered_choices}\n"
+        f"AncestorAST={canonical_key(ancestor.program)}\n"
+        f"AncestorFeedback={ancestor_feedback(ancestor)}\n"
+        f"SMCStage={stage}; beta={beta:.12g}; finiteCandidates={len(families)}\n"
+        "SKELETON_JSON="
+    )
 
 
 def hole_prompt_prefix(
@@ -80,7 +126,7 @@ def hole_prompt_prefix(
         f"Variables={json.dumps(variables, sort_keys=True, separators=(',', ':'))}\n"
         f"AllowedIntegerConstants={json.dumps(config.spec.integer_constants)}\n"
         f"AncestorAST={canonical_key(ancestor.program)}\n"
-        f"AncestorFeedback={_feedback(ancestor)}\n"
+        f"AncestorFeedback={ancestor_feedback(ancestor)}\n"
         f"PreviousFillings={json.dumps(partial, sort_keys=True, separators=(',', ':'))}\n"
         f"SMCStage={stage}; beta={beta:.12g}; finiteCandidates={candidate_count}\n"
         "CANDIDATE_AST_JSON="

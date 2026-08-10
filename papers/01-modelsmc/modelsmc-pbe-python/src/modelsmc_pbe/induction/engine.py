@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from modelsmc_pbe.domain.models import PBESpec, TypeSignature
+from modelsmc_pbe.domain.models import PBESpec, TypeSignature, ValueType
 
 from .records import (
     HoleSpec,
@@ -86,6 +86,68 @@ def _foldr_hypothesis(signature: TypeSignature) -> TypedSkeleton | None:
     )
 
 
+def _foldr_filter_map_hypothesis(signature: TypeSignature) -> TypedSkeleton | None:
+    if (
+        signature.input_type is not ValueType.INT_LIST
+        or signature.output_type is not ValueType.INT_LIST
+    ):
+        return None
+    item = TypedVariable("item", ValueType.INT)
+    return TypedSkeleton(
+        kind=SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+        input_variable=TypedVariable("xs", ValueType.INT_LIST),
+        output_type=ValueType.INT_LIST,
+        holes=(
+            HoleSpec(
+                name="predicate",
+                parameters=(item,),
+                output_type=ValueType.BOOL,
+            ),
+            HoleSpec(
+                name="mapped_value",
+                parameters=(item,),
+                output_type=ValueType.INT,
+            ),
+        ),
+    )
+
+
+def _foldr_filter_piecewise_map_hypothesis(
+    signature: TypeSignature,
+) -> TypedSkeleton | None:
+    """Generate the signed piecewise refinement with the same sound hole types.
+
+    The mapped-value hole remains one ``Int -> Int`` expression.  Its bounded
+    catalog—not the type system—requires a conditional sign split, which lets
+    deduction derive direct function examples without assuming which branch an
+    unknown predicate should take.
+    """
+
+    if (
+        signature.input_type is not ValueType.INT_LIST
+        or signature.output_type is not ValueType.INT_LIST
+    ):
+        return None
+    item = TypedVariable("item", ValueType.INT)
+    return TypedSkeleton(
+        kind=SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP,
+        input_variable=TypedVariable("xs", ValueType.INT_LIST),
+        output_type=ValueType.INT_LIST,
+        holes=(
+            HoleSpec(
+                name="predicate",
+                parameters=(item,),
+                output_type=ValueType.BOOL,
+            ),
+            HoleSpec(
+                name="piecewise_mapped_value",
+                parameters=(item,),
+                output_type=ValueType.INT,
+            ),
+        ),
+    )
+
+
 def _structural_facts(spec: PBESpec, signature: TypeSignature) -> tuple[StructuralFact, ...]:
     if (
         list_element_type(signature.input_type) is None
@@ -101,9 +163,7 @@ def _structural_facts(spec: PBESpec, signature: TypeSignature) -> tuple[Structur
         input_value = cast(list[int] | list[bool], example.input_value)
         output_value = cast(list[int] | list[bool], example.output_value)
         destination = (
-            supporting_lengths
-            if len(input_value) == len(output_value)
-            else contradicting_lengths
+            supporting_lengths if len(input_value) == len(output_value) else contradicting_lengths
         )
         destination.append(index)
         if not input_value:
@@ -143,6 +203,8 @@ def induce_hypotheses(spec: PBESpec) -> InductionReport:
         _expression_hypothesis(signature),
         _map_hypothesis(signature),
         _foldr_hypothesis(signature),
+        _foldr_filter_map_hypothesis(signature),
+        _foldr_filter_piecewise_map_hypothesis(signature),
     )
     return InductionReport(
         signature=signature,

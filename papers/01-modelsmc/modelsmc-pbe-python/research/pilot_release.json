@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "release_label": "exploratory-pilots-v0.1",
+  "evidence_status": "exploratory-not-confirmatory",
+  "warning": "These runs were created during method development, before the protocol was frozen, and must not be used for confirmatory significance claims.",
+  "model": {
+    "repository": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "revision": "b2cff646eb4bb1d68355c01b18ae02e7cf42d120",
+    "served_alias": "qwen-coder"
+  },
+  "runtime": {
+    "vllm_version": "0.11.0",
+    "container": "vllm/vllm-openai:v0.11.0",
+    "container_index_digest": "sha256:014a95f21c9edf6abe0aea6b07353f96baa4ec291c427bb1176dc7c93a85845c",
+    "container_linux_amd64_digest": "sha256:d8d39b59e909d2378ac4feeb191f7e7b6f1342477dc66b7c47cec89e9985ad8a",
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "logprob_mode": "processed_logprobs"
+  },
+  "matched_runs": [
+    {
+      "task": "foldr-signed-window",
+      "arm": "U",
+      "seed": 23,
+      "path": "20260810T164733Z-hidden-signed-window-transformation-importance-smc-52bb9e3c"
+    },
+    {
+      "task": "foldr-signed-window",
+      "arm": "D",
+      "seed": 23,
+      "path": "20260810T164733Z-hidden-signed-window-transformation-importance-smc-d21527d7"
+    },
+    {
+      "task": "foldr-signed-window",
+      "arm": "Q",
+      "seed": 23,
+      "path": "20260810T164546Z-hidden-signed-window-transformation-importance-smc-fbcc7341"
+    },
+    {
+      "task": "foldr-signed-window",
+      "arm": "QD",
+      "seed": 23,
+      "path": "20260810T163536Z-hidden-signed-window-transformation-importance-smc-def04bef"
+    },
+    {
+      "task": "foldr-bounded-square",
+      "arm": "Q",
+      "seed": 23,
+      "path": "20260810T164755Z-hidden-bounded-list-transformation-importance-smc-f02d6d98"
+    },
+    {
+      "task": "foldr-bounded-square",
+      "arm": "QD",
+      "seed": 23,
+      "path": "20260810T164755Z-hidden-bounded-list-transformation-importance-smc-71b940b3"
+    },
+    {
+      "task": "map-increment",
+      "arm": "Q",
+      "seed": 23,
+      "path": "20260810T164842Z-map-increment-over-a-recursive-integer-list-importance-smc-b4922d51"
+    },
+    {
+      "task": "map-increment",
+      "arm": "QD",
+      "seed": 23,
+      "path": "20260810T164842Z-map-increment-over-a-recursive-integer-list-importance-smc-0090d6b2"
+    }
+  ]
+}

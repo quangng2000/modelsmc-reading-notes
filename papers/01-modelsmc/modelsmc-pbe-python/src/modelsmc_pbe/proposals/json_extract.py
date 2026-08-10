@@ -116,6 +116,8 @@ def parse_canonical_expression_content(
 ) -> AstNode:
     """Parse and type-check one direct expression AST for a declared hole."""
 
+    if request.hole is None:
+        raise ProposalError("expression candidate request has no declared hole")
     record = _canonical_object(content, "canonical expression candidate")
     wrapper = {"kind": "ExpressionProgram", "body": record}
     try:

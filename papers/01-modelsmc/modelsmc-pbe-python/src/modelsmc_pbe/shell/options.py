@@ -30,6 +30,14 @@ ProposalOption = Annotated[
     ),
 ]
 ModelOption = Annotated[str, typer.Option(help="Model served by Ollama or vLLM.")]
+ModelRevisionOption = Annotated[
+    str | None,
+    typer.Option(help="Archival model revision or commit; does not change provider loading."),
+]
+TokenizerRevisionOption = Annotated[
+    str | None,
+    typer.Option(help="Archival tokenizer revision; does not change provider loading."),
+]
 BaseUrlOption = Annotated[
     str | None,
     typer.Option(help="Override the OpenAI-compatible /v1 base URL."),
@@ -40,7 +48,12 @@ ApiKeyEnvOption = Annotated[
 ]
 SkeletonOption = Annotated[
     str,
-    typer.Option(help="Finite grammar skeleton, or auto."),
+    typer.Option(
+        help=(
+            "Skeleton policy: importance auto keeps every viable family; general uses "
+            "generic families; an explicit name conditions on one family."
+        )
+    ),
 ]
 ParticlesOption = Annotated[
     int | None,
@@ -64,7 +77,7 @@ SeedOption = Annotated[
 ]
 BetaMaxOption = Annotated[
     float,
-    typer.Option(min=0.0, help="Final inverse temperature for grammar SMC."),
+    typer.Option(min=0.0, help="Final inverse temperature for calibrated SMC modes."),
 ]
 MovesPerStageOption = Annotated[
     int,
@@ -82,6 +95,13 @@ CandidateBatchSizeOption = Annotated[
     int,
     typer.Option(min=1, help="Canonical candidates per vLLM scoring request."),
 ]
+MaxScoredCandidatesOption = Annotated[
+    int,
+    typer.Option(
+        min=1,
+        help="Abort before total finite candidate scores exceed this run budget.",
+    ),
+]
 HoleMaxCostOption = Annotated[
     int,
     typer.Option(min=1, help="Maximum exact structural cost of each enumerated hole."),
@@ -92,7 +112,20 @@ HoleStateLimitOption = Annotated[
 ]
 SupportLimitOption = Annotated[
     int,
-    typer.Option(min=1, help="Fail if complete program construction support exceeds this size."),
+    typer.Option(
+        min=1,
+        help="Fail if complete program construction traces exceed this size.",
+    ),
+]
+MaterializeReferenceOption = Annotated[
+    bool,
+    typer.Option(
+        "--materialize-reference",
+        help=(
+            "Materialize and score every complete importance-support state to run the "
+            "exact finite reference control. Disabled by default."
+        ),
+    ),
 ]
 ProposalEpsilonOption = Annotated[
     float,
@@ -102,12 +135,36 @@ ProposalEpsilonOption = Annotated[
         help="Uniform mixture mass guaranteeing finite proposal support.",
     ),
 ]
+DeductionMixOption = Annotated[
+    float,
+    typer.Option(
+        min=0.0,
+        max=1.0,
+        help="Mass assigned to the exact deduction guide before the uniform floor.",
+    ),
+]
+DeductionStrengthOption = Annotated[
+    float,
+    typer.Option(
+        min=0.0,
+        help="Final penalty per violated derived hole example in the deduction guide.",
+    ),
+]
 TemperatureOption = Annotated[
     float,
     typer.Option(
         min=0.0,
         max=2.0,
         help="Generation temperature, or local finite-categorical temperature.",
+    ),
+]
+LLMEnergyNormalizationOption = Annotated[
+    str,
+    typer.Option(
+        help=(
+            "Qwen finite energy: total-full-prompt-logprob or "
+            "mean-full-prompt-conditional-logprob."
+        )
     ),
 ]
 MaxTokensOption = Annotated[

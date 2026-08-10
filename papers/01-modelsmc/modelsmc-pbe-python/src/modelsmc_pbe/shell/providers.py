@@ -94,5 +94,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
             timeout_seconds=request.timeout_seconds,
             max_concurrency=request.max_concurrency,
             max_batch_size=request.candidate_batch_size,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
         )
     )

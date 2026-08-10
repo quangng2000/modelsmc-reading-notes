@@ -14,6 +14,8 @@ class SkeletonKind(StrEnum):
     EXPRESSION = "expression"
     MAP = "map"
     FOLD_RIGHT = "foldr"
+    FOLD_RIGHT_FILTER_MAP = "foldr-filter-map"
+    FOLD_RIGHT_FILTER_PIECEWISE_MAP = "foldr-filter-piecewise-map"
 
 
 class StructuralRelation(StrEnum):

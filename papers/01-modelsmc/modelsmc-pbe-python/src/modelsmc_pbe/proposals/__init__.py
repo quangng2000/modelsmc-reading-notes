@@ -8,11 +8,14 @@ from modelsmc_pbe.proposals.base import (
     Proposer,
 )
 from modelsmc_pbe.proposals.candidate_scoring import (
+    CandidateKind,
     CandidateLogprobSemantics,
     CandidateScoreBatch,
     CandidateScorer,
     CandidateScoreRequest,
     CandidateSequenceScore,
+    LLMEnergyNormalization,
+    llm_energy,
 )
 from modelsmc_pbe.proposals.catalog import CatalogProposer, ScriptedProposer
 from modelsmc_pbe.proposals.hole import ExpressionScope, HoleSpecification
@@ -27,6 +30,7 @@ from modelsmc_pbe.proposals.vllm_prompt_logprobs import (
 )
 
 __all__ = [
+    "CandidateKind",
     "CandidateLogprobSemantics",
     "CandidateScoreBatch",
     "CandidateScoreRequest",
@@ -35,6 +39,7 @@ __all__ = [
     "CatalogProposer",
     "ExpressionScope",
     "HoleSpecification",
+    "LLMEnergyNormalization",
     "OpenAICompatibleConfig",
     "OpenAICompatibleProposer",
     "ProgramProposal",
@@ -46,4 +51,5 @@ __all__ = [
     "UniformCandidateScorer",
     "VLLMPromptLogprobConfig",
     "VLLMPromptLogprobScorer",
+    "llm_energy",
 ]

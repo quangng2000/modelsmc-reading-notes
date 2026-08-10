@@ -12,7 +12,7 @@ The package has three deliberately different modes:
 | --- | --- | --- |
 | `paper-search` | finite catalog or black-box LLM | Heuristic allocation scores from an uncorrected proposal kernel; **not** posterior probabilities |
 | `grammar-smc` | known finite skeleton prior | An SMC approximation to the declared finite-skeleton Gibbs target, checked against exact enumeration |
-| `importance-smc` | finite typed holes scored by Qwen through vLLM | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
+| `importance-smc` | finite typed holes scored by a deduction/Qwen defensive mixture | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
 
 The latter two modes are calibrated to their declared computational targets.
 They are not thereby Bayesian posteriors over every possible program or over a
@@ -112,7 +112,7 @@ uv run modelsmc-pbe synthesize \
 This is still `paper-search`: it asks vLLM for a free-form complete AST and does
 not know the probability of that proposal.
 
-### Importance-corrected Qwen proposal
+### Importance-corrected deduction/Qwen proposal
 
 `importance-smc` combines Paper 2's typed generalization and deduction with an
 explicit finite proposal law:
@@ -120,26 +120,31 @@ explicit finite proposal law:
 ```text
 examples
   -> infer the signature and structural relationships
-  -> generate viable typed skeletons
-  -> refute impossible skeletons
+  -> infer typed structural skeletons
+  -> refute incompatible skeletons
   -> derive typed examples for each hole
-  -> enumerate a bounded canonical candidate set for each hole
+  -> enumerate finite canonical choices for small holes
   -> ask Qwen to score only those candidates
-  -> sample locally from a known categorical q
-  -> assemble, type-check, execute, and score complete programs
-  -> importance-weight and resample program particles
+  -> combine Qwen scores with exact deduction-subtree marginals
+  -> sample locally from the fully known categorical q
+  -> assemble, type-check, and execute complete programs
+  -> apply importance correction
+  -> let SMC resample promising program particles
 ```
 
 The sound skeleton refutations restrict the fixed support. Derived hole
-examples are supplied to Qwen as deduction guidance but do not hard-delete
-imperfect hole candidates; keeping them preserves a meaningful soft-loss
-target instead of reducing expression and map families to exact solutions only.
+examples also define a soft, normalized deduction guide, but do not hard-delete
+imperfect candidates. The target is unchanged; only the proposal improves.
+This preserves generalization and a meaningful soft-loss target while stopping
+Qwen's cumulative JSON token scores from overwhelming sound symbolic evidence.
 
 Run this primary experiment against vLLM on the CUDA machine; no Ollama bridge
-is involved. Start vLLM with Qwen. `processed_logprobs` is also the required
-setting for any later experiment that samples output tokens directly. This
-mode uses teacher-forced prompt log probabilities, for which vLLM's raw and
-processed values coincide:
+is involved. Start vLLM with Qwen and request `processed_logprobs`; vLLM's
+[engine documentation](https://docs.vllm.ai/en/stable/configuration/engine_args/)
+defines that mode as values after configured logit processors. The client
+generates no output tokens and sends no top-p rule; it treats those
+teacher-forced values as finite-candidate energies, then applies the positive
+local categorical `--temperature` itself:
 
 ```bash
 vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct \
@@ -148,23 +153,130 @@ vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct \
   --logprobs-mode processed_logprobs
 ```
 
-Then run:
+For the paid-GPU transport check, deliberately condition on the
+`foldr-filter-map` family first. This is a controlled ablation: it tests Qwen's
+two finite scoring waves and the importance denominator without paying for
+family selection or irrelevant generic catalogs. Start with one particle and
+one stage:
 
 ```bash
 uv run modelsmc-pbe synthesize \
-  examples/map-increment.json \
+  examples/foldr-bounded-square.json \
   --mode importance-smc \
   --proposal vllm \
-  --base-url http://localhost:8000/v1 \
+  --skeleton foldr-filter-map \
+  --base-url http://127.0.0.1:18000/v1 \
   --model qwen-coder \
-  --particles 128 --iterations 6 \
-  --alpha 0.25 --temperature 0.7 --proposal-epsilon 0.05 \
-  --hole-max-cost 3 --device auto --trace
+  --model-revision b2cff646eb4bb1d68355c01b18ae02e7cf42d120 \
+  --tokenizer-revision b2cff646eb4bb1d68355c01b18ae02e7cf42d120 \
+  --particles 1 --iterations 1 \
+  --alpha 0 --temperature 0.7 --proposal-epsilon 0.05 \
+  --deduction-mix 0.5 --deduction-strength 2 \
+  --candidate-batch-size 128 --max-concurrency 8 \
+  --max-scored-candidates 1000 \
+  --support-limit 40000 --timeout-seconds 600 \
+  --device cpu --trace
 ```
 
+Port `18000` is the local end of the RunPod SSH tunnel used in this experiment.
+When the CLI runs on the same machine as vLLM, use
+`--base-url http://127.0.0.1:8000/v1` instead.
+
+The conditioned skeleton is
+
+```text
+foldr(
+  (item, acc) =>
+    if ?predicate(item)
+    then ?mapped_value(item) :: acc
+    else acc,
+  [],
+  xs
+)
+```
+
+With the example's eight constants, deduction exposes 600 canonical predicate
+choices and 60 mapped-value choices. Their Cartesian product contains 36,000
+complete programs and exactly two syntactic exact solutions. Qwen is not asked
+to generate an AST: it ranks the 600 choices and then the 60 choices
+conditioned on the selected predicate. At candidate batch size 128, that costs
+at most six vLLM HTTP batches for one distinct ancestor path. Identical requests
+created by resampling are deduplicated before provider I/O.
+
+Once that smoke succeeds, exercise generalization with `--skeleton auto`:
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/foldr-bounded-square.json \
+  --mode importance-smc \
+  --proposal vllm \
+  --skeleton auto \
+  --base-url http://127.0.0.1:18000/v1 \
+  --model qwen-coder \
+  --particles 2 --iterations 1 \
+  --alpha 0 --temperature 0.7 --proposal-epsilon 0.05 \
+  --deduction-mix 0.5 --deduction-strength 2 \
+  --candidate-batch-size 128 --max-concurrency 8 \
+  --max-scored-candidates 2000 \
+  --hole-max-cost 3 --support-limit 40000 \
+  --timeout-seconds 600 --device cpu --trace
+```
+
+Here `auto` does **not** commit to a family from list lengths. It keeps all
+type-correct hypotheses, lets deduction refute only impossible ones, and uses
+the deduction/Qwen mixture to score families and holes. When both specialized
+filter/map catalogs have the same abstract type, auto deterministically keeps
+the smallest catalog capable of satisfying every sound mapped-value example:
+simple arithmetic for this task, or the signed piecewise catalog when simple
+arithmetic cannot fit. For this
+task the bounded support contains 36,198 programs: 18 expression programs,
+36,000 specialized filter/map folds, and 180 generic folds; `map` is refuted.
+The support contains the same two exact programs. `--skeleton general` is the
+legacy generic-only comparison, while an explicit named skeleton is a
+single-family ablation.
+
+The harder signed-window task requires an actual conditional mapper:
+
+```text
+filter to -2 <= item <= 2
+negative item    -> -item
+nonnegative item -> item * item
+```
+
+Run the provider-free accounting control first:
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/foldr-signed-window.json \
+  --mode importance-smc --proposal catalog --skeleton auto \
+  --particles 4 --iterations 1 --alpha 0 \
+  --deduction-mix 0.75 --deduction-strength 3 \
+  --max-scored-candidates 3292 \
+  --hole-max-cost 3 --support-limit 150000 \
+  --device cpu --trace
+```
+
+With eight declared constants, the selected specialized family has 600 window
+predicates and 220 canonical signed piecewise mappers, hence 132,000 complete
+programs and four syntactic exact solutions. Expression and generic-fold
+families bring auto support to 132,198 states; `map` is refuted and the simple
+filter/map catalog is excluded because none of its 60 arithmetic mappings fits
+all derived `item -> output` examples. A single distinct Qwen path scores at
+most 3 family choices, 600 predicates, and 220 mappers: 823 candidate
+continuations. Replace `catalog` with `vllm` and provide the same vLLM options
+used above only after this local control succeeds.
+
+`--max-scored-candidates` is a general run-wide scoring ceiling, not a
+batch-size hint. With vLLM, each teacher-forced canonical candidate prompt
+consumes one unit of paid model work; with `catalog`, the same ceiling limits local
+control work. The shell rejects a whole scoring wave before scorer I/O if it
+would cross the ceiling, and persists both usage and limit. Raising particles
+or iterations therefore requires an explicit budget decision.
+
 For a provider-free probability-accounting control, replace `--proposal vllm`
-with `--proposal catalog`. Every finite hole candidate then receives equal
-energy.
+with `--proposal catalog`. The model component is then uniform, while the same
+explicit deduction guide remains active; pass `--deduction-mix 0` to recover
+the old fully uniform construction proposal.
 
 The Qwen path does **not** sample free-form JSON. For prompt `P` and canonical
 candidate `u`, it teacher-forces the complete concatenated prompt and obtains
@@ -175,47 +287,102 @@ s_\theta(P,u)=\sum_{r=2}^{|\operatorname{tok}(P\Vert u)|}
 \log p_\theta(t_r\mid t_{<r}).
 $$
 
-The shell constructs and samples its own categorical distribution
+`--llm-energy-normalization total-full-prompt-logprob` (the default) uses
+$s_\theta$ unchanged. The publication ablation
+`mean-full-prompt-conditional-logprob` instead uses $s_\theta/n(P,u)$, where
+$n(P,u)$ is the number of scored positions. Both are explicit finite energies
+over the complete teacher-forced `P || u` token path; the mean mode is **not**
+described as a candidate-only likelihood because tokenization can merge across
+the text boundary. Write the configured energy as
+$\widetilde{s}_\theta(P,u)\in\{s_\theta(P,u),s_\theta(P,u)/n(P,u)\}$.
+Every run persists a compact score ledger containing the
+prefix and its SHA-256 digest, canonical candidates, token IDs/log-probabilities,
+the total and configured energy, pre-mixture Qwen probabilities, final mixture
+probabilities, and selections. `--model-revision` and `--tokenizer-revision`
+add archival identifiers to the manifest and vLLM ledger without changing
+server behavior.
+
+For a retained program $e$, let $D(e)$ be the number of deduplicated derived
+hole examples violated by its fillings. The stage-dependent guide is
 
 $$
-q_j(u)=(1-\varepsilon)\operatorname{softmax}
-\left(\frac{s_\theta(P,u)}{\tau}\right)
+r_t(e)\propto p_0(e)\exp\!\left[-\kappa_{\max}
+\frac{\beta_t}{\beta_{\max}}D(e)\right],
+$$
+
+where $p_0$ is the equal-family, within-family Occam prior. Exact subtree sums
+of $r_t$ give $r_{t,j}(u)$ for every currently reachable family or hole choice.
+The shell samples
+
+$$
+q_j(u)=(1-\varepsilon)\left[(1-\lambda)
+\operatorname{softmax}\!\left(\frac{\widetilde{s}_\theta(P,u)}{\tau}\right)
++\lambda r_{t,j}(u)\right]
 +\frac{\varepsilon}{|\mathcal C_j|},
 \qquad \tau>0,\ \varepsilon>0.
 $$
 
-Family probability and every conditional hole probability are included in
-`log q`. The uniform component keeps every target program reachable and bounds
-otherwise extreme importance corrections. The clone transition is also
-accounted exactly:
+A complete proposal therefore has
+
+$$
+q_{\mathrm{construct}}(e\mid a,D,F)
+=q_H(h\mid a,D,F)
+ \prod_j q_j(u_j\mid h,u_{<j},a,D,F).
+$$
+
+The family probability and every conditional hole probability are included in
+`log q`. With only one surviving family, the shell sets $q_H=1$ locally and
+skips the paid no-op provider request. The uniform component keeps every target
+program reachable and bounds otherwise extreme importance corrections. The
+clone transition is also accounted exactly:
 
 $$
 Q_\alpha(e'\mid e)
-=\alpha\mathbf 1[e'=e]+(1-\alpha)q_{\mathrm{Qwen}}(e'\mid e,D,F).
+=\alpha\mathbf 1[e'=e]+(1-\alpha)q_{\mathrm{construct}}(e'\mid e,D,F).
 $$
 
-If both cloning and Qwen can return the ancestor, both masses enter the
+If both cloning and the guided construction can return the ancestor, both masses enter the
 denominator. Provider errors abort this strict mode; there is no hidden
 ancestor fallback. `alpha=1` is rejected because it destroys full support.
 
-Canonical ASTs and a one-to-one construction trace remove the otherwise
-intractable sum over whitespace, key order, prose, and alternative
-serializations. Because vLLM supplies scores rather than performing the draw,
-native top-p, output temperature, grammar masking, and EOS accounting do not
+Canonical ASTs and a deterministic family-ownership rule remove the otherwise
+intractable sum over whitespace, key order, prose, alternative serializations,
+and cross-family traces. The specialized filter/map family owns an exact
+canonical overlap with generic `foldr`; the discarded alias is counted, while
+non-overlapping generic folds remain in support. Any other duplicate trace is
+an invariant failure. Because vLLM supplies scores rather than performing the
+draw, native top-p, output temperature, grammar masking, and EOS accounting do not
 enter this `q`; `--temperature` is the positive local categorical temperature.
 Scoring the complete prompt also avoids assuming that tokenizing `P` separately
 produces a token prefix of `P || u`, an assumption that fails for Qwen at some
 text boundaries.
+
+For surviving family supports $\mathcal E_h$, the base program prior first
+assigns equal mass to every family, then applies the Occam preference within
+that family:
+
+$$
+p_0(e)
+=\frac{1}{H}
+  \frac{\exp[-\lambda_C\operatorname{cost}(e)]}
+       {\sum_{u\in\mathcal E_{h(e)}}
+        \exp[-\lambda_C\operatorname{cost}(u)]}.
+$$
+
+This prevents a large catalog from receiving more prior mass merely because it
+contains more programs. The finite target is
+
+$$
+\widetilde\pi_\beta(e)
+=p_0(e)\exp[-\beta\lambda_L\operatorname{loss}(e)].
+$$
 
 At stage `t`, the incremental potential is
 
 $$
 G_t(e_{t-1},e_t)
 =\frac{\widetilde\pi_{\beta_t}(e_t)}
-       {Q_\alpha(e_t\mid e_{t-1},D,F)},
-\quad
-\widetilde\pi_\beta(e)
-=\exp[-\beta\lambda_L\operatorname{loss}(e)-\lambda_C\operatorname{cost}(e)].
+       {Q_\alpha(e_t\mid e_{t-1},D,F)}.
 $$
 
 The declared Feynman--Kac path target is the product of these stage targets,
@@ -257,13 +424,19 @@ A skeleton is a named, bounded hypothesis family, not a Python language
 restriction or a general-purpose synthesis grammar. `expression-arithmetic`
 completes one scalar arithmetic body, `map-arithmetic` completes an arithmetic
 mapper, and `foldr-filter-map` completes the particular fold/filter/map shape
-needed by the harder control. This conditioning makes exact enumeration and
-probability accounting possible.
+needed by the bounded-square control. `foldr-filter-piecewise-map` retains the
+same outer fold but admits a canonical zero-sign conditional whose distinct
+branches are identity, negation, squaring, or a declared constant. This
+conditioning makes exact enumeration and probability accounting possible.
 
 `importance-smc` has analogous `--hole-state-limit` and `--support-limit`
-ceilings. Its default `--hole-max-cost 3` keeps live Qwen scoring tractable and
-contains the `map (item + 1)` and fold-sum examples. Increasing the bound
-changes the declared finite target and can grow the catalog combinatorially.
+ceilings. Every attempted construction trace, including a counted alias, uses
+that ceiling. `--hole-max-cost` controls generic support. Named conditioned
+skeletons instead use their complete factorized catalogs; for
+`foldr-filter-map`, `--support-limit` must therefore be at least 36,000 with
+eight constants. Multi-family `auto` needs at least 36,198 at the default hole
+cost. The signed piecewise family requires 132,000, and its auto support needs
+132,198. Increasing any declared bound changes the finite target.
 
 ## What happens at startup
 
@@ -338,7 +511,7 @@ Every run that passes startup validation creates
 | --- | --- |
 | `manifest.json` | normalized configuration, git state, package versions, seed, requested/resolved device, and probabilistic claim |
 | `events.jsonl` | append-only run, ESS, resampling, proposal, scoring, fallback, timing, and failure events |
-| `result.json` | champion plus aggregate and degradation diagnostics |
+| `result.json` | champion, generated/viable/refuted families, support and mass summaries, and degradation diagnostics |
 | `final_particles.jsonl` | final ASTs, weights, scores, sources, and ancestry |
 
 Raw prompts and free-form model rationale are omitted by default; their hashes

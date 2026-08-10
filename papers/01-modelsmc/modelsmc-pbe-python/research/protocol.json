@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "protocol_id": "modelsmc-pbe-u-d-q-qd-v1",
+  "status": "draft-preregistration-not-yet-frozen",
+  "study_scope": {
+    "primary_question": "Do deduction and finite-choice Qwen scores improve exact program discovery under a fixed proposal-score budget?",
+    "primary_endpoint": "paired intention-to-treat exact-discovery rate",
+    "secondary_endpoints": [
+      "held-out exact correctness",
+      "candidate scores to first exact program",
+      "wall time",
+      "final and minimum ESS",
+      "total-variation distance to finite enumeration",
+      "absolute log-normalizer error"
+    ],
+    "confirmatory_caveat": "All benchmark task families were visible during system development. Confirmatory labels apply only to fresh, frozen seed-by-arm replications created after this protocol is frozen; they do not establish unseen-task generalization.",
+    "failure_policy": "Every planned cell remains in the analysis. Timeout, provider failure, invalid output, missing artifact, or non-exact training result counts as failure for the primary endpoint.",
+    "multiplicity": "Report all arm contrasts; treat QD versus U as primary and D versus U, Q versus U, and QD versus D/Q as secondary.",
+    "exploratory_policy": "Exploratory tasks and any runs produced before the protocol hash is frozen may guide engineering but cannot support confirmatory claims."
+  },
+  "seeds": [101, 211, 307, 401, 503],
+  "caps": {
+    "particles": 8,
+    "iterations": 3,
+    "alpha": 0.0,
+    "ess_threshold": 1.0,
+    "max_scored_candidates": 10000,
+    "support_limit": 250000,
+    "hole_state_limit": 250000,
+    "hole_max_cost": 3,
+    "wall_time_seconds": 1200,
+    "provider_timeout_seconds": 300
+  },
+  "shared_arguments": {
+    "beta_max": 1.0,
+    "candidate_batch_size": 128,
+    "deduction_strength": 4.0,
+    "proposal_epsilon": 0.05,
+    "temperature": 0.7
+  },
+  "provider": {
+    "model": "qwen-coder",
+    "base_url_env": "MODELSMC_VLLM_BASE_URL",
+    "api_key_env": null
+  },
+  "arms": [
+    {
+      "id": "U",
+      "proposal": "catalog",
+      "deduction_mix": 0.0,
+      "description": "Uniform finite-catalog proposal; no Qwen and no deduction guide."
+    },
+    {
+      "id": "D",
+      "proposal": "catalog",
+      "deduction_mix": 0.75,
+      "description": "Finite-catalog proposal mixed with the deduction guide; no Qwen."
+    },
+    {
+      "id": "Q",
+      "proposal": "vllm",
+      "deduction_mix": 0.0,
+      "description": "Qwen finite-choice scores with a uniform support floor; no deduction guide."
+    },
+    {
+      "id": "QD",
+      "proposal": "vllm",
+      "deduction_mix": 0.75,
+      "description": "Qwen finite-choice scores mixed with deduction and a uniform support floor."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "affine-int",
+      "spec": "../examples/affine-int.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "affine_2x_plus_1", "seed": 1101, "count": 32, "minimum": -20, "maximum": 20, "max_length": null, "corpus_sha256": "54c26b716060f894412db81c996d30b301e0e0704a051dac8bc024b1a32a0f86"}
+    },
+    {
+      "id": "negative-int-to-bool",
+      "spec": "../examples/negative-int-to-bool.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "negative_int", "seed": 1102, "count": 32, "minimum": -20, "maximum": 20, "max_length": null, "corpus_sha256": "6253a20cd3efce8bc7a46d56c32d312316e99f5f5f008d470c0b4d3dfcea7aa2"}
+    },
+    {
+      "id": "map-increment",
+      "spec": "../examples/map-increment.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "map_increment", "seed": 1201, "count": 64, "minimum": -8, "maximum": 8, "max_length": 8, "corpus_sha256": "f057e48ec296cd5d391306422a5d9785b038d054e4c162494dfcff39a2a85bbf"}
+    },
+    {
+      "id": "foldr-sum",
+      "spec": "../examples/foldr-sum.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "list_sum", "seed": 1202, "count": 64, "minimum": -8, "maximum": 8, "max_length": 8, "corpus_sha256": "29e89b36295573bae435e182e8b5a8961630491d9db4a4f6e5ab6d148bc7f215"}
+    },
+    {
+      "id": "foldr-filter-positive",
+      "spec": "../examples/foldr-filter-positive.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "filter_positive", "seed": 1203, "count": 64, "minimum": -8, "maximum": 8, "max_length": 8, "corpus_sha256": "ccfad171ee226935a7f7a2b59cf6e75309e233a4b7192e5a294d305588831362"}
+    },
+    {
+      "id": "foldr-bounded-square",
+      "spec": "../examples/foldr-bounded-square.json",
+      "analysis_label": "confirmatory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "bounded_square", "seed": 1301, "count": 96, "minimum": -8, "maximum": 8, "max_length": 10, "corpus_sha256": "5feffbc541338171f35b407caf437b16d3938d7cf60c38b12b1b6a149ee69fc6"}
+    },
+    {
+      "id": "foldr-signed-window",
+      "spec": "../examples/foldr-signed-window.json",
+      "analysis_label": "confirmatory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "signed_window", "seed": 1302, "count": 96, "minimum": -8, "maximum": 8, "max_length": 10, "corpus_sha256": "78e36c34e7991d6c0ba8e1bd55ec46b96d745742a59c77d656bf420a3711393c"}
+    },
+    {
+      "id": "foldr-window-penalty-sum",
+      "spec": "../examples/foldr-window-penalty-sum.json",
+      "analysis_label": "confirmatory",
+      "seen_during_development": true,
+      "heldout": {"oracle": "window_penalty_sum", "seed": 1303, "count": 96, "minimum": -8, "maximum": 8, "max_length": 10, "corpus_sha256": "43ea73b426199642b0a2122081c4b24c595e0147a3849e41ef588dcc55a9db8a"}
+    }
+  ]
+}

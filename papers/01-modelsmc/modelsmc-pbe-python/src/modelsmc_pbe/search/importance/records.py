@@ -9,12 +9,16 @@ from modelsmc_pbe.core import ScoredProgram
 from modelsmc_pbe.deduction import DeductionReport
 from modelsmc_pbe.domain import ProgramAst
 from modelsmc_pbe.domain.ast import AstNode
+from modelsmc_pbe.grammar import SkeletonName, available_skeletons
 from modelsmc_pbe.induction import InductionReport, TypedSkeleton
+from modelsmc_pbe.proposals import LLMEnergyNormalization
+
+from .score_ledger import LLMScoreWaveLedger
 
 IMPORTANCE_SMC_CLAIM = (
-    "calibrated SMC for an explicit finite, typed, deduction-refuted program support; "
-    "the complete finite proposal law is evaluated and included in the importance "
-    "denominator"
+    "calibrated SMC for an explicit finite, typed, deduction-refuted program support "
+    "with a normalized within-family Occam prior; the deduction/Qwen defensive proposal "
+    "is evaluated completely and included in the importance denominator"
 )
 
 
@@ -24,6 +28,10 @@ class EmptyImportanceSupportError(RuntimeError):
 
 class ImportanceSupportLimitExceeded(RuntimeError):
     """Raised instead of silently truncating complete construction support."""
+
+
+class ImportanceProposalBudgetExceeded(RuntimeError):
+    """Raised before candidate scoring would exceed the declared run budget."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +44,15 @@ class ImportanceSMCOptions:
     score_batch_size: int = 512
     proposal_temperature: float = 0.7
     proposal_epsilon: float = 0.05
+    deduction_mix: float = 0.5
+    deduction_strength: float = 2.0
     beta_max: float = 1.0
+    max_scored_candidates: int = 1_000_000
+    conditioned_skeleton: SkeletonName | None = None
+    multi_family: bool = False
+    llm_energy_normalization: LLMEnergyNormalization = (
+        LLMEnergyNormalization.TOTAL_FULL_PROMPT_LOGPROB
+    )
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -44,6 +60,7 @@ class ImportanceSMCOptions:
             ("hole_state_limit", self.hole_state_limit),
             ("support_limit", self.support_limit),
             ("score_batch_size", self.score_batch_size),
+            ("max_scored_candidates", self.max_scored_candidates),
         ):
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ValueError(f"{name} must be a positive integer")
@@ -51,13 +68,31 @@ class ImportanceSMCOptions:
             raise ValueError("score_batch_size must not exceed 10000")
         if not math.isfinite(self.proposal_temperature) or self.proposal_temperature <= 0:
             raise ValueError("proposal_temperature must be finite and greater than zero")
-        if (
-            not math.isfinite(self.proposal_epsilon)
-            or not 0.0 < self.proposal_epsilon <= 1.0
-        ):
+        if not math.isfinite(self.proposal_epsilon) or not 0.0 < self.proposal_epsilon <= 1.0:
             raise ValueError("proposal_epsilon must be finite and in (0, 1]")
+        if not math.isfinite(self.deduction_mix) or not 0.0 <= self.deduction_mix <= 1.0:
+            raise ValueError("deduction_mix must be finite and in [0, 1]")
+        if not math.isfinite(self.deduction_strength) or self.deduction_strength < 0.0:
+            raise ValueError("deduction_strength must be finite and nonnegative")
         if not math.isfinite(self.beta_max) or self.beta_max <= 0:
             raise ValueError("beta_max must be finite and greater than zero")
+        if (
+            self.conditioned_skeleton is not None
+            and self.conditioned_skeleton not in available_skeletons()
+        ):
+            choices = ", ".join(available_skeletons())
+            raise ValueError(
+                f"unknown conditioned skeleton {self.conditioned_skeleton!r}; "
+                f"expected one of: {choices}"
+            )
+        if not isinstance(self.multi_family, bool):
+            raise TypeError("multi_family must be a boolean")
+        if self.multi_family and self.conditioned_skeleton is not None:
+            raise ValueError(
+                "multi-family support and a single conditioned skeleton are mutually exclusive"
+            )
+        if not isinstance(self.llm_energy_normalization, LLMEnergyNormalization):
+            raise TypeError("llm_energy_normalization must be an LLMEnergyNormalization")
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +157,9 @@ class ImportanceSupport:
     hole_catalogs: tuple[HoleCatalogSummary, ...]
     constructed_programs: int
     rejected_programs: int
+    conditioned_skeleton: SkeletonName | None
+    multi_family: bool
+    aliased_programs: int
 
     @property
     def exact_programs(self) -> int:
@@ -130,11 +168,11 @@ class ImportanceSupport:
 
 @dataclass(frozen=True, slots=True)
 class ProposedState:
-    """One exact draw from the clone/finite-Qwen mixture kernel."""
+    """One exact draw from the clone/finite-guided mixture kernel."""
 
     state_index: int
     ancestor_state_index: int
-    log_q_llm: float
+    log_q_construct: float
     log_q_mixture: float
     cloned: bool
     family: str
@@ -190,6 +228,31 @@ class ImportanceReferenceMetrics:
 
 
 @dataclass(frozen=True, slots=True)
+class ImportanceFamilySummary:
+    """Prior, exact-target, and particle mass for one surviving family."""
+
+    family: str
+    states: int
+    exact_programs: int
+    prior_mass: float
+    deduction_guide_mass: float
+    posterior_mass: float
+    particle_mass: float
+
+
+@dataclass(frozen=True, slots=True)
+class ImportanceHypothesisSummary:
+    """Persisted induction/deduction outcome for one generated family."""
+
+    family: str
+    viable: bool
+    states: int
+    refutation_kind: str | None
+    refutation_sources: tuple[int, ...]
+    refutation_detail: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class ImportanceStateSummary:
     """Best program present in the final weighted population."""
 
@@ -223,21 +286,33 @@ class ImportanceParticle:
 
 @dataclass(frozen=True, slots=True)
 class ImportanceSMCResult:
-    """Complete output of one finite Qwen-energy importance-SMC run."""
+    """Complete output of one finite guided importance-SMC run."""
 
     mode: str
     probabilistic_claim: str
     proposal_source: str
+    deduction_mix: float
+    deduction_strength: float
+    llm_energy_normalization: LLMEnergyNormalization
+    conditioned_skeleton: SkeletonName | None
+    multi_family: bool
+    aliased_programs: int
     support_states: int
     generated_hypotheses: int
     viable_hypotheses: int
     refuted_hypotheses: int
     exact_programs: int
+    deduction_guide_exact_mass: float
     hole_catalogs: tuple[HoleCatalogSummary, ...]
+    hypotheses: tuple[ImportanceHypothesisSummary, ...]
+    families: tuple[ImportanceFamilySummary, ...]
     sampled_best: ImportanceStateSummary
     reference: ImportanceReferenceMetrics
     stages: tuple[ImportanceStageDiagnostic, ...]
     final_particles: tuple[ImportanceParticle, ...]
+    scored_candidates: int
+    max_scored_candidates: int
+    score_ledger: tuple[LLMScoreWaveLedger, ...]
 
     @property
     def exact(self) -> bool:

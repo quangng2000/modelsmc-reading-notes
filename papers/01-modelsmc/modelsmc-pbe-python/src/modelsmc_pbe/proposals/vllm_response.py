@@ -26,7 +26,7 @@ def decode_candidate_scores(
     response: httpx.Response,
     prompts: Sequence[str],
     candidates: Sequence[str],
-    expressions: Sequence[AstNode],
+    expressions: Sequence[AstNode | None],
 ) -> tuple[CandidateSequenceScore, ...]:
     """Decode one complete teacher-forced prompt per canonical candidate."""
 
@@ -117,7 +117,7 @@ def _parse_token_id(value: object, path: str) -> int:
 
 def _candidate_score(
     candidate: str,
-    expression: AstNode,
+    expression: AstNode | None,
     full: _PromptPath,
 ) -> CandidateSequenceScore:
     if not full.token_ids:

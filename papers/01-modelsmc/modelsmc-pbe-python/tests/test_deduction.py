@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from modelsmc_pbe.config import load_experiment_config
 from modelsmc_pbe.deduction import (
     DeductionFactKind,
     RefutationKind,
@@ -11,6 +14,8 @@ from modelsmc_pbe.deduction import (
 )
 from modelsmc_pbe.domain import PBESpec
 from modelsmc_pbe.induction import SkeletonKind, induce_hypotheses
+
+PROJECT_DIR = Path(__file__).resolve().parents[1]
 
 
 def _spec(examples: list[dict[str, object]], output: str) -> PBESpec:
@@ -176,6 +181,106 @@ def test_foldr_refutes_conflicting_empty_input_as_initial_conflict() -> None:
     assert report.refutation is not None
     assert report.refutation.kind is RefutationKind.FOLDR_INITIAL_CONFLICT
     assert report.refutation.source_examples == (1, 2)
+
+
+def test_foldr_filter_map_derives_predicate_and_mapped_value_suffix_examples() -> None:
+    spec = load_experiment_config(PROJECT_DIR / "examples" / "foldr-bounded-square.json").spec
+
+    report = _report(spec, SkeletonKind.FOLD_RIGHT_FILTER_MAP)
+
+    assert report.viable is True
+    predicate_examples = {
+        int(example.inputs[0].value): bool(example.output.value)
+        for example in report.examples_for("predicate")
+    }
+    mapped_examples = {
+        int(example.inputs[0].value): int(example.output.value)
+        for example in report.examples_for("mapped_value")
+    }
+    assert predicate_examples == {
+        -3: False,
+        -2: False,
+        -1: True,
+        0: True,
+        1: True,
+        2: True,
+        3: False,
+        4: False,
+    }
+    assert mapped_examples == {-1: 1, 0: 0, 1: 1, 2: 4}
+    assert tuple(fact.kind for fact in report.facts) == (
+        DeductionFactKind.FOLDR_FILTER_PREDICATE_EXAMPLES,
+        DeductionFactKind.FOLDR_FILTER_MAPPED_VALUE_EXAMPLES,
+    )
+
+
+def test_piecewise_filter_map_derives_direct_mapper_examples_without_branch_guessing() -> None:
+    spec = load_experiment_config(PROJECT_DIR / "examples" / "foldr-signed-window.json").spec
+
+    report = _report(spec, SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP)
+
+    assert report.viable is True
+    predicate_examples = {
+        int(example.inputs[0].value): bool(example.output.value)
+        for example in report.examples_for("predicate")
+    }
+    mapped_examples = {
+        int(example.inputs[0].value): int(example.output.value)
+        for example in report.examples_for("piecewise_mapped_value")
+    }
+    assert predicate_examples == {
+        -3: False,
+        -2: True,
+        -1: True,
+        0: True,
+        1: True,
+        2: True,
+        3: False,
+        4: False,
+    }
+    assert mapped_examples == {-2: 2, -1: 1, 0: 0, 1: 1, 2: 4}
+    assert tuple(fact.kind for fact in report.facts) == (
+        DeductionFactKind.FOLDR_FILTER_PREDICATE_EXAMPLES,
+        DeductionFactKind.FOLDR_FILTER_PIECEWISE_MAPPED_VALUE_EXAMPLES,
+    )
+
+
+def test_foldr_filter_map_refutes_impossible_shapes_and_context_dependence() -> None:
+    shape = _report(
+        _spec([{"input": [], "output": [1]}], "List<Int>"),
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+    )
+    predicate = _report(
+        _spec(
+            [
+                {"input": [], "output": []},
+                {"input": [1], "output": []},
+                {"input": [2], "output": []},
+                {"input": [1, 2], "output": [7]},
+            ],
+            "List<Int>",
+        ),
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+    )
+    mapped_value = _report(
+        _spec(
+            [
+                {"input": [], "output": []},
+                {"input": [1], "output": [2]},
+                {"input": [2], "output": []},
+                {"input": [1, 2], "output": [3]},
+            ],
+            "List<Int>",
+        ),
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+    )
+
+    assert shape.refutation is not None
+    assert shape.refutation.kind is RefutationKind.FOLDR_FILTER_MAP_SHAPE_MISMATCH
+    assert predicate.refutation is not None
+    assert predicate.refutation.kind is RefutationKind.FOLDR_FILTER_PREDICATE_CONFLICT
+    assert mapped_value.refutation is not None
+    assert mapped_value.refutation.kind is RefutationKind.FOLDR_FILTER_MAPPED_VALUE_CONFLICT
 
 
 def test_duplicate_top_level_input_refutes_every_hypothesis() -> None:

@@ -9,16 +9,21 @@ import pytest
 
 from modelsmc_pbe.domain import ValueType, canonical_key
 from modelsmc_pbe.proposals import (
+    CandidateKind,
     CandidateLogprobSemantics,
     CandidateScoreBatch,
     CandidateScorer,
     CandidateScoreRequest,
+    CandidateSequenceScore,
     ExpressionScope,
     HoleSpecification,
+    LLMEnergyNormalization,
     ProposalError,
     ProposalRequest,
+    UniformCandidateScorer,
     VLLMPromptLogprobConfig,
     VLLMPromptLogprobScorer,
+    llm_energy,
 )
 from modelsmc_pbe.proposals.json_extract import (
     parse_canonical_expression_content,
@@ -125,6 +130,8 @@ def test_vllm_scores_finite_candidates_in_batches_and_preserves_order() -> None:
                     model="Qwen/Qwen3-Coder",
                     base_url="http://gpu.test/v1/",
                     max_batch_size=2,
+                    model_revision="b2cff646",
+                    tokenizer_revision="tokenizer-test",
                 ),
                 client=client,
             )
@@ -137,6 +144,8 @@ def test_vllm_scores_finite_candidates_in_batches_and_preserves_order() -> None:
     assert [score.sequence_logprob for score in result.scores] == [-0.55, -1.55, -1.55]
     assert result.scores[1].token_ids == (10, 11, 21, 22)
     assert result.semantics is CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT
+    assert result.model_revision == "b2cff646"
+    assert result.tokenizer_revision == "tokenizer-test"
     assert len(seen_bodies) == 2
     assert all(len(cast(list[str], body["prompt"])) <= 2 for body in seen_bodies)
     assert all(body["max_tokens"] == 0 for body in seen_bodies)
@@ -176,6 +185,23 @@ def test_vllm_scores_the_full_prompt_without_a_token_boundary_assumption() -> No
     assert result.scores[0].sequence_logprob == pytest.approx(-0.5)
 
 
+def test_full_prompt_energy_normalization_defaults_to_total_and_can_use_mean() -> None:
+    score = CandidateSequenceScore(
+        candidate=canonical_key(ITEM),
+        expression=None,
+        token_ids=(10, 11, 12, 13),
+        token_logprobs=(-0.1, -0.2, -0.3, -0.4),
+        sequence_logprob=-1.0,
+    )
+
+    assert llm_energy(
+        score, LLMEnergyNormalization.TOTAL_FULL_PROMPT_LOGPROB
+    ) == pytest.approx(-1.0)
+    assert llm_energy(
+        score, LLMEnergyNormalization.MEAN_FULL_PROMPT_CONDITIONAL_LOGPROB
+    ) == pytest.approx(-0.25)
+
+
 @pytest.mark.parametrize(
     "override",
     [
@@ -197,3 +223,63 @@ def test_vllm_candidate_config_rejects_invalid_semantics_and_limits(
 def test_candidate_request_rejects_duplicate_serializations() -> None:
     with pytest.raises(ValueError, match="unique"):
         _request(ITEM, ITEM)
+
+
+def test_skeleton_candidates_are_opaque_and_do_not_require_an_expression_hole() -> None:
+    request = CandidateScoreRequest(
+        prompt_prefix="Choose one viable typed family: ",
+        candidates=('{"family":"expression"}', '{"family":"foldr-filter-map"}'),
+        hole=None,
+        integer_constants=(-2, 3),
+        candidate_kind=CandidateKind.SKELETON,
+    )
+
+    batch = asyncio.run(UniformCandidateScorer().score_candidates(request))
+
+    assert tuple(score.candidate for score in batch.scores) == request.candidates
+    assert all(score.expression is None for score in batch.scores)
+    with pytest.raises(TypeError, match="require a HoleSpecification"):
+        CandidateScoreRequest(
+            prompt_prefix="Expression: ",
+            candidates=(canonical_key(ITEM),),
+            hole=None,
+            integer_constants=(0,),
+        )
+
+
+def test_vllm_teacher_forces_opaque_skeleton_candidates() -> None:
+    request = CandidateScoreRequest(
+        prompt_prefix="SKELETON_JSON=",
+        candidates=('"expression"', '"foldr-filter-map"'),
+        hole=None,
+        integer_constants=(-2, 3),
+        candidate_kind=CandidateKind.SKELETON,
+    )
+
+    def handler(http_request: httpx.Request) -> httpx.Response:
+        prompts = cast(list[str], json.loads(http_request.content)["prompt"])
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "index": index,
+                        "text": prompt,
+                        "prompt_logprobs": [None, _entry(100 + index, -0.5 - index)],
+                    }
+                    for index, prompt in enumerate(prompts)
+                ]
+            },
+        )
+
+    async def run() -> CandidateScoreBatch:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            scorer = VLLMPromptLogprobScorer(
+                VLLMPromptLogprobConfig(model="qwen-coder"), client=client
+            )
+            return await scorer.score_candidates(request)
+
+    batch = asyncio.run(run())
+
+    assert [score.sequence_logprob for score in batch.scores] == [-0.5, -1.5]
+    assert all(score.expression is None for score in batch.scores)

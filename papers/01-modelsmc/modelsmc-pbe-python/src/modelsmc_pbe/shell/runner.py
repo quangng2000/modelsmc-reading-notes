@@ -15,7 +15,11 @@ from modelsmc_pbe.shell.execution import (
 )
 from modelsmc_pbe.shell.output import print_program_result
 from modelsmc_pbe.shell.request import SynthesizeRequest
-from modelsmc_pbe.shell.skeletons import resolve_skeleton
+from modelsmc_pbe.shell.skeletons import (
+    importance_uses_multiple_families,
+    resolve_importance_skeleton,
+    resolve_skeleton,
+)
 
 
 def _smc_overrides(request: SynthesizeRequest) -> dict[str, object]:
@@ -26,9 +30,7 @@ def _smc_overrides(request: SynthesizeRequest) -> dict[str, object]:
         "clone_probability": request.alpha,
         "seed": request.seed,
     }
-    overrides.update(
-        (name, value) for name, value in optional_values.items() if value is not None
-    )
+    overrides.update((name, value) for name, value in optional_values.items() if value is not None)
     if request.ess_threshold is not None:
         if request.ess_threshold <= 0:
             raise ValueError("ESS threshold must be greater than zero")
@@ -65,6 +67,10 @@ def _selected_skeleton(
         request.mode == "paper-search" and request.proposal == "catalog"
     ):
         return resolve_skeleton(config, request.skeleton)
+    if request.mode == "importance-smc":
+        if importance_uses_multiple_families(request.skeleton):
+            return "multi-family"
+        return resolve_importance_skeleton(config, request.skeleton)
     return None
 
 
@@ -78,26 +84,35 @@ def _create_logger(
         "experiment": config,
         "mode": request.mode,
         "proposal": request.proposal if request.mode != "grammar-smc" else None,
+        "requested_skeleton": request.skeleton,
         "skeleton": selected_skeleton,
         "beta_max": (
-            request.beta_max
-            if request.mode in {"grammar-smc", "importance-smc"}
-            else None
+            request.beta_max if request.mode in {"grammar-smc", "importance-smc"} else None
         ),
-        "moves_per_stage": (
-            request.moves_per_stage if request.mode == "grammar-smc" else None
-        ),
+        "moves_per_stage": (request.moves_per_stage if request.mode == "grammar-smc" else None),
         "grammar_limit": request.grammar_limit,
+        "score_batch_size": request.score_batch_size,
         "hole_max_cost": request.hole_max_cost,
         "hole_state_limit": request.hole_state_limit,
         "support_limit": request.support_limit,
+        "materialize_reference": request.materialize_reference,
+        "temperature": request.temperature,
+        "llm_energy_normalization": request.llm_energy_normalization,
         "proposal_epsilon": request.proposal_epsilon,
+        "deduction_mix": request.deduction_mix,
+        "deduction_strength": request.deduction_strength,
         "candidate_batch_size": request.candidate_batch_size,
+        "max_scored_candidates": request.max_scored_candidates,
+        "max_tokens": request.max_tokens,
+        "max_concurrency": request.max_concurrency,
+        "timeout_seconds": request.timeout_seconds,
         "model": (
             request.model
             if request.mode != "grammar-smc" and request.proposal != "catalog"
             else None
         ),
+        "model_revision": request.model_revision,
+        "tokenizer_revision": request.tokenizer_revision,
         "base_url": request.base_url,
     }
     claims = {
@@ -106,6 +121,8 @@ def _create_logger(
         "importance-smc": "importance_corrected_finite_deduction_refuted_target",
     }
     claim = claims[request.mode]
+    if request.mode == "importance-smc" and not request.materialize_reference:
+        claim = "importance_corrected_lazy_factorized_construction_target"
     return RunLogger.create(
         base_dir=config.runtime.artifacts_dir,
         run_name=f"{config.spec.name}-{request.mode}",

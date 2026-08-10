@@ -36,6 +36,29 @@ def assemble_program(
             "kind": "MapProgram",
             "mapper": fillings["mapper"],
         }
+    elif hypothesis.kind in {
+        SkeletonKind.FOLD_RIGHT_FILTER_MAP,
+        SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP,
+    }:
+        mapped_hole = (
+            "piecewise_mapped_value"
+            if hypothesis.kind is SkeletonKind.FOLD_RIGHT_FILTER_PIECEWISE_MAP
+            else "mapped_value"
+        )
+        candidate = {
+            "kind": "FoldRightProgram",
+            "initial": {"kind": "EmptyIntList"},
+            "reducer": {
+                "kind": "IfThenElse",
+                "condition": fillings["predicate"],
+                "thenExpr": {
+                    "kind": "PrependInt",
+                    "head": fillings[mapped_hole],
+                    "tail": {"kind": "Accumulator"},
+                },
+                "elseExpr": {"kind": "Accumulator"},
+            },
+        }
     else:
         candidate = {
             "kind": "FoldRightProgram",
