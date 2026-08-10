@@ -13,10 +13,10 @@ ModelSMC-PBE study.
 - `jmlr2e.sty` is the unmodified official JMLR style file at upstream commit
   `f413f638b407af76074813f8f88a82a7a5a81e9d`.
 
-The checked-in manuscript identifies Tri Nguyen as the author. Before an arXiv
-or journal submission, add the author's affiliation, corresponding address,
-and final funding/compute disclosure. Do not submit the exploratory pilot table
-as confirmatory evidence.
+The checked-in manuscript identifies Tri Nguyen and Dat Nguyen as co-authors.
+Before an arXiv or journal submission, add the authors' affiliations,
+corresponding address, and final funding/compute disclosure. Do not submit the
+exploratory pilot table as confirmatory evidence.
 
 The intended commands are:
 
