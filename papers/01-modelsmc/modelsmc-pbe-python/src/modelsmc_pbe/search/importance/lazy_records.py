@@ -216,6 +216,7 @@ class LazyImportanceSMCResult:
     refuted_hypotheses: int
     hole_catalogs: tuple[HoleCatalogSummary, ...]
     families: tuple[LazyFamilySummary, ...]
+    best_visited: LazyStateSummary
     sampled_best: LazyStateSummary
     search: LazySearchMetrics
     reference: None
@@ -227,4 +228,6 @@ class LazyImportanceSMCResult:
 
     @property
     def exact(self) -> bool:
-        return self.sampled_best.exact_program
+        """Whether search ever visited an exact program, even if it was later lost."""
+
+        return self.best_visited.exact_program

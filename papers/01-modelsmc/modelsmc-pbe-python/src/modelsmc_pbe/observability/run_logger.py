@@ -145,6 +145,23 @@ class RunLogger:
 
         return self._artifacts.write_final_particles(particles)
 
+    def record_metrics(self, name: str, metrics: Any) -> None:
+        """Persist one named run-level metric summary in the sealed manifest."""
+
+        if not name.strip():
+            raise ValueError("metric summary name must not be empty")
+        with self._lock:
+            if self._finished:
+                raise RuntimeError("cannot record metrics after the run is finished")
+            summaries = self._manifest.setdefault("metrics", {})
+            if not isinstance(summaries, dict):  # pragma: no cover - manifest invariant
+                raise RuntimeError("manifest metrics field is not an object")
+            if name in summaries:
+                raise ValueError(f"metric summary {name!r} was already recorded")
+            summaries[name] = jsonable(
+                metrics, include_raw_payloads=self._include_raw_payloads
+            )
+
     def finish(self, *, result: Any, final_particles: Iterable[Any]) -> None:
         """Write final artifacts and seal a successful run."""
 

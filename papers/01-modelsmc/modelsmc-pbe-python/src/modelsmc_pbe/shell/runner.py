@@ -111,9 +111,13 @@ def _create_logger(
             if request.mode != "grammar-smc" and request.proposal != "catalog"
             else None
         ),
+        "model_repository": request.model_repository,
         "model_revision": request.model_revision,
         "tokenizer_revision": request.tokenizer_revision,
+        "vllm_server_config": request.vllm_server_config,
         "base_url": request.base_url,
+        "score_cache_dir": request.score_cache_dir,
+        "score_cache_mode": request.score_cache_mode,
     }
     claims = {
         "paper-search": "heuristic_search_uncorrected_proposal_kernel",

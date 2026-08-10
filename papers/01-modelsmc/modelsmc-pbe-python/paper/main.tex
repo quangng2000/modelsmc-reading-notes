@@ -4,8 +4,10 @@
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{graphicx}
 \usepackage{lastpage}
 \usepackage{microtype}
+\usepackage{placeins}
 \usepackage{xspace}
 \hypersetup{
   hidelinks,
@@ -53,11 +55,14 @@ deduction, and uniform support yields an explicit proposal that includes family,
 hole, construction-trace, and cloning probabilities and can therefore be
 importance-corrected. Exact enumeration supplies an oracle for finite-target
 diagnostics, while a separate lazy path measures online program evaluations.
-Exploratory experiments reveal an important negative result: raw full-prompt
-Qwen energies often prefer short incorrect abstract syntax trees, while
-deduction rescues hard transformations. The framework is designed to make such
-failures measurable rather than to treat any passing sample as evidence that an
-LLM improved synthesis.
+In an exploratory one-seed grid spanning 3B, 7B, 14B, and 32B Qwen2.5-Coder
+checkpoints, Qwen-only search failed both tasks at every size, whereas the
+Qwen-plus-deduction arm found held-out-correct programs in every cell. Checkpoint
+size did not separate discovery outcomes, and cache disposition prevents a
+checkpoint-efficiency comparison. Under these conditions, success is
+attributable to defensive deduction; it does not establish
+independent Qwen value, checkpoint scaling, faster synthesis, or an
+SMC/resampling benefit.
 \end{abstract}
 
 \begin{keywords}
@@ -293,28 +298,32 @@ LLM or SMC synthesis success.
 \label{sec:experiments}
 
 % [P-EXP-01]
-Our primary factorial comparison has four proposal arms: uniform (U),
+Our planned factorial comparison has four proposal arms: uniform (U),
 deduction plus uniform (D), Qwen (Q), and Qwen plus deduction (Q+D). All arms
 share type inference, sound refutation, finite catalogs, target, seeds,
 particles, iterations, and proposal-score caps. Paired contrasts D$-$U,
 Q$-$U, Q+D$-$D, and Q+D$-$Q isolate the soft guides. The current protocol does
 not include a separate uncorrected arm or a one-stage versus multi-stage
 resampling ablation; either would require an additional pre-registered matrix.
+The exploratory Gate-2 slice reported below contains only the paired Q and Q+D
+arms and therefore cannot estimate a deduction-only or resampling effect.
 
 % [P-EXP-02]
 Each run archives exact training consistency, held-out semantic correctness,
-per-stage newly and cumulatively realized traces, total finite candidate choices
-scored, wall time, ESS, resampling, final particles, and failures. The current
-aggregator exposes training and held-out outcomes, loss, cost, ESS, reference
-diagnostics when available, total candidate scores, and wall time; it does not
-yet derive weight variance or executions and scores to first success. The seed,
-rather than a particle, is the independent unit. The draft protocol defines
-paired intention-to-treat exact discovery as the primary endpoint, orders the
-arm contrasts for multiplicity reporting, and counts failed provider runs as
-failures. It does not yet freeze or implement confidence intervals, hypothesis
-tests, or adjusted $p$-values; these and any missing secondary endpoint must be
-implemented before the protocol is frozen and before a result is called
-confirmatory.
+per-stage newly and cumulatively realized traces, finite choices scored, cache
+hits and misses, provider-scored token positions and wait, wall time, ESS,
+resampling, final particles, and failures. Figure~\ref{fig:provider-work}
+separates new provider work from cached score reuse. The reported grid uses the
+frozen exploratory transport-amendment protocol with SHA-256
+\texttt{56c59086\allowbreak 4d456f88\allowbreak 4c82bf62\allowbreak
+ada3c11c\allowbreak 1c2504d2\allowbreak 1b021e65\allowbreak
+0bc32300\allowbreak 7553fc60}.
+After an HTTP 524 on the 32B endpoint, this amendment changed only candidate
+transport batch size from 128 to 32; all reported cells share the amended hash,
+and superseded preflight cells are excluded. The seed, not a particle, is the
+independent unit. Because this slice has one seed and no implemented confidence
+intervals, hypothesis tests, or multiplicity adjustment, it is exploratory and
+cannot support a population or checkpoint-size claim.
 
 % [P-EXP-03]
 Table~\ref{tab:benchmarks} summarizes the current controlled benchmark. The
@@ -331,47 +340,63 @@ broad synthesis claim.
 \input{generated/benchmark_table}
 \end{table}
 
-\section{Exploratory Pilot Findings}
+\FloatBarrier
+
+\section{Exploratory Gate-2 Findings}
 \label{sec:pilot}
 
 % [P-RES-01]
-Table~\ref{tab:pilot} reports matched exploratory, oracle-backed runs, not
-confirmatory estimates or online speed measurements. The hardest signed-window
-support contains 132,198 states and four exact ASTs. With four particles and one
-stage, the deduction-guided arms assigned terminal particle mass to an exact
-program, while uniform and Qwen-only did not. On bounded square, Qwen-only
-selected no exact program whereas the combined arm selected two. These outcomes
-measure proposal behavior after support construction and motivated the
-pre-registered repeated-seed protocol; they are not used to estimate population
-success rates or faster synthesis.
+Figure~\ref{fig:gate2-outcomes} reports the complete exploratory Gate-2 slice:
+four Qwen2.5-Coder checkpoints, two tasks, paired Q and Q+D arms, seed 101, four
+particles, and one SMC stage. Q failed exact training discovery in all eight
+cells; its held-out accuracy was 0 on map increment and $1/3$ on signed window.
+Q+D found a training-exact program with held-out accuracy 1.0 in all eight
+cells. Thus, within this fixed seed and grid, adding defensive deduction changed
+every discovery outcome. These 16 cells contain only one independent seed---the
+four particles are not replicates---so they neither estimate success rates nor
+establish a general model effect.
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{Exploratory oracle-backed seed-23 pilots. ``Scores'' counts finite candidate choices scored; TV compares the four-particle terminal measure with exact enumeration. Neither column measures online synthesis speed.}
-\label{tab:pilot}
-\input{generated/pilot_table}
-\end{table}
+\includegraphics[width=\textwidth]{generated/figures/gate2-size-transport32/outcome_matrix.pdf}
+\caption{Training and held-out outcomes for the complete exploratory Gate-2
+grid under one amended protocol hash. Each tile is a raw one-seed cell; crosses
+and checks are not estimates with confidence intervals.}
+\label{fig:gate2-outcomes}
+\end{figure}
+
+\FloatBarrier
 
 % [P-RES-02]
-The score decomposition supplies a sharper negative result. In the exact
-signed-window particle, Qwen assigned probabilities approximately $0.0034$ to
-the correct family, $9.3\times10^{-10}$ to the selected exact window predicate,
-and $1.0\times10^{-11}$ to the exact piecewise mapper. The deduction component
-assigned approximately $1.0$, $0.392$, and $0.419$, respectively. Therefore the
-combined exact selection is evidence for the defensive symbolic mixture, not evidence
-that Qwen discovered the hard program.
+Checkpoint size did not separate outcomes: the 3B, 7B, 14B, and 32B columns
+show the same Q failure and Q+D success pattern on both tasks. Because the paired
+arms differ by the deduction mixture, this pattern shows that defensive
+deduction dominated discovery under these tested conditions. It does not show
+that Qwen added value independently of deduction: Gate 2 contains no D arm, and
+one seed cannot estimate a Qwen-by-size interaction. Nor does a one-stage grid
+identify a benefit from SMC resampling.
 
 % [P-RES-03]
-Raw full-prompt sequence sums strongly favor short AST serializations. On map
-increment, Qwen-only placed nearly all weighted mass on the empty-list
-expression, and the four-particle combined run also missed the exact map. We
-therefore pre-register energy-semantics ablations rather than silently replacing
-the score after inspecting results. Total full-prompt energy is the historical
-baseline, and mean full-prompt energy is the implemented full-path
-length-normalization ablation. Explicitly token-bounded continuation energy
-remains future work; it requires a provider/tokenizer protocol that establishes
-the boundary before it can be evaluated as a declared finite energy with its
-own exact $q$.
+The outcome invariance does not imply equal computational behavior. The
+provider-work panel is an accounting diagnostic, not a checkpoint timing
+comparison: the 32B map cells are fully warm replays of superseded preflight
+scores, the 32B signed-window cells reuse part of that cache, and other cells
+have different cold or mixed dispositions. Cached scores are replayed evidence,
+not new model work, so raw waits across these cells cannot estimate checkpoint
+efficiency. The grid used mean full-prompt energies; those energies remain
+application-level scores, not candidate-suffix or AST probabilities.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{generated/figures/gate2-size-transport32/provider_work.pdf}
+\caption{Provider work for the complete exploratory Gate-2 grid. Token
+positions and provider wait count cache misses only; cached reuse is shown
+separately and is not new provider work. The plot reports raw cells, not a
+speed comparison or a checkpoint-scaling estimate.}
+\label{fig:provider-work}
+\end{figure}
+
+\FloatBarrier
 
 \section{Related Work}
 \label{sec:related}
@@ -412,7 +437,7 @@ code.
 
 % [P-LIM-02]
 The lazy implementation avoids executing complete programs that are never
-sampled, but current pilots do not establish lower wall time or fewer total
+sampled, but the one-seed grid does not establish lower wall time or fewer total
 resources because symbolic catalog construction and Qwen scoring also have
 cost. The method can also amplify biases encoded in prompts or the model. A
 uniform floor preserves mathematical support, not social fairness
@@ -430,9 +455,11 @@ clear account of what the model proposed, what symbolic reasoning removed or
 favored, and how selection changed the resulting measure. \method turns typed
 PBE into a finite construction problem whose LLM energies, deduction guide,
 uniform support, and importance correction are separately inspectable. The
-current pilots show why that decomposition matters: Qwen can harm search, and
-deduction can rescue it. Confirmatory benchmarks must determine where the LLM
-adds value and where classical search remains preferable.
+exploratory grid shows why that decomposition matters: Q alone failed every
+reported cell, whereas the defensive Q+D mixture succeeded. This finding
+attributes discovery to deduction under the tested conditions, not to Qwen
+alone, checkpoint size, or SMC resampling. Repeated-seed benchmarks with the D
+control must determine whether and where the LLM adds value.
 
 % [P-ACK-01]
 \acks{This draft received no declared external funding. Compute was
@@ -460,12 +487,12 @@ normalized and has full support over the declared finite trace space.
 % [P-APP-02]
 Reference enumeration discovers whether exact programs exist while computing
 the oracle. Consequently, an oracle-backed run demonstrates probability
-accounting and estimator diagnostics, not faster synthesis. The current pilot
-table is explicitly oracle-backed and makes no online discovery claim. Any
-future online result must use the lazy path, count every newly realized trace
-from initialization and proposal stages, and remain separate from the
-oracle. An exact state first observed during reference construction is never
-credited to Qwen or SMC discovery.
+accounting and estimator diagnostics, not faster synthesis. The Gate-2 outcome
+grid reports lazy search-success endpoints and no oracle TV or normalizer
+metrics. Any oracle comparison must remain external to that search, and both
+modes must count or label their realized traces separately. An exact state first
+observed during reference construction is never credited to Qwen or SMC
+discovery.
 
 \bibliography{references}
 

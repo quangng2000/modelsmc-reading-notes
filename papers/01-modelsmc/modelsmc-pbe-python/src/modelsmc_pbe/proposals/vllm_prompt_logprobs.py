@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -16,8 +17,11 @@ from modelsmc_pbe.proposals.candidate_scoring import (
     CandidateKind,
     CandidateLogprobSemantics,
     CandidateScoreBatch,
+    CandidateScoreOrigin,
+    CandidateScoreProvenance,
     CandidateScoreRequest,
     CandidateSequenceScore,
+    ProviderScoreMetrics,
 )
 from modelsmc_pbe.proposals.json_extract import parse_canonical_expression_content
 from modelsmc_pbe.proposals.vllm_response import decode_candidate_scores
@@ -97,12 +101,36 @@ class VLLMPromptLogprobScorer:
         self.config = config
         self._client = client
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        self._http_requests = 0
+        self._http_failures = 0
+        self._scored_token_positions = 0
+        self._http_request_seconds_sum = 0.0
 
     @property
     def endpoint(self) -> str:
         return f"{self.config.base_url.rstrip('/')}/completions"
 
+    def provider_metrics(self) -> ProviderScoreMetrics:
+        """Return actual HTTP request and token-position telemetry."""
+
+        return ProviderScoreMetrics(
+            http_requests=self._http_requests,
+            http_failures=self._http_failures,
+            scored_token_positions=self._scored_token_positions,
+            http_request_seconds_sum=self._http_request_seconds_sum,
+        )
+
     async def score_candidates(self, request: CandidateScoreRequest) -> CandidateScoreBatch:
+        if self._client is not None:
+            return await self._score_request_with_client(request, self._client)
+        async with httpx.AsyncClient() as client:
+            return await self._score_request_with_client(request, client)
+
+    async def _score_request_with_client(
+        self,
+        request: CandidateScoreRequest,
+        client: httpx.AsyncClient,
+    ) -> CandidateScoreBatch:
         expressions: tuple[AstNode | None, ...] = (
             tuple(
                 parse_canonical_expression_content(candidate, request)
@@ -111,10 +139,7 @@ class VLLMPromptLogprobScorer:
             if request.candidate_kind is CandidateKind.EXPRESSION
             else tuple(None for _ in request.candidates)
         )
-        if self._client is not None:
-            return await self._score_with_client(request, expressions, self._client)
-        async with httpx.AsyncClient() as client:
-            return await self._score_with_client(request, expressions, client)
+        return await self._score_with_client(request, expressions, client)
 
     async def score_many(self, requests: list[CandidateScoreRequest]) -> list[CandidateScoreBatch]:
         if self._client is not None:
@@ -122,9 +147,10 @@ class VLLMPromptLogprobScorer:
                 await asyncio.gather(*(self.score_candidates(request) for request in requests))
             )
         async with httpx.AsyncClient() as client:
-            temporary = VLLMPromptLogprobScorer(self.config, client=client)
             return list(
-                await asyncio.gather(*(temporary.score_candidates(request) for request in requests))
+                await asyncio.gather(
+                    *(self._score_request_with_client(request, client) for request in requests)
+                )
             )
 
     async def _score_with_client(
@@ -151,6 +177,7 @@ class VLLMPromptLogprobScorer:
             semantics=self.config.semantics,
             model_revision=self.config.model_revision,
             tokenizer_revision=self.config.tokenizer_revision,
+            provenance=CandidateScoreProvenance(CandidateScoreOrigin.PROVIDER),
         )
 
     async def _score_chunk(
@@ -162,6 +189,8 @@ class VLLMPromptLogprobScorer:
     ) -> tuple[CandidateSequenceScore, ...]:
         prompts = [prefix + candidate for candidate in candidates]
         async with self._semaphore:
+            self._http_requests += 1
+            started = time.perf_counter()
             try:
                 response = await client.post(
                     self.endpoint,
@@ -170,13 +199,23 @@ class VLLMPromptLogprobScorer:
                     timeout=self.config.timeout_seconds,
                 )
             except httpx.TimeoutException as error:
+                self._http_failures += 1
                 raise ProposalError(
                     f"vLLM candidate scoring timed out after "
                     f"{self.config.timeout_seconds:g} seconds"
                 ) from error
             except httpx.HTTPError as error:
+                self._http_failures += 1
                 raise ProposalError(f"vLLM candidate scoring request failed: {error}") from error
-        return decode_candidate_scores(response, prompts, candidates, expressions)
+            finally:
+                self._http_request_seconds_sum += time.perf_counter() - started
+        try:
+            scores = decode_candidate_scores(response, prompts, candidates, expressions)
+        except ProposalError:
+            self._http_failures += 1
+            raise
+        self._scored_token_positions += sum(len(score.token_logprobs) for score in scores)
+        return scores
 
     def _payload(self, prompts: list[str]) -> dict[str, Any]:
         payload: dict[str, Any] = {

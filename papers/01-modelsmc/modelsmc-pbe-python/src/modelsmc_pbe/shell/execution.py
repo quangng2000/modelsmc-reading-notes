@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 
 from modelsmc_pbe.config import ExperimentConfig
 from modelsmc_pbe.core import ProgramScorer
 from modelsmc_pbe.observability import RunLogger
-from modelsmc_pbe.proposals import LLMEnergyNormalization
+from modelsmc_pbe.proposals import (
+    CachedCandidateScorer,
+    CandidateScorer,
+    LLMEnergyNormalization,
+    ProviderMetricSource,
+)
 from modelsmc_pbe.runtime import DeviceInfo, seed_everything
 from modelsmc_pbe.search import PaperSearchEngine
 from modelsmc_pbe.search.grammar_smc import GrammarSMCEngine, GrammarSMCOptions
@@ -36,6 +43,57 @@ class CompletedRun:
     view: ProgramResultView
 
 
+@contextmanager
+def _candidate_score_metrics(scorer: CandidateScorer, logger: RunLogger) -> Iterator[None]:
+    """Persist cache/provider accounting even when a scoring run fails."""
+
+    try:
+        yield
+    finally:
+        if isinstance(scorer, ProviderMetricSource):
+            provider_metrics = asdict(scorer.provider_metrics())
+            logger.record_metrics("candidate_score_provider", provider_metrics)
+            logger.event(
+                "candidate_score_provider.summary",
+                message="candidate-score provider I/O accounting",
+                level="info",
+                **provider_metrics,
+            )
+        if isinstance(scorer, CachedCandidateScorer):
+            metrics = scorer.metrics()
+            summary = {
+                "mode": scorer.mode.value,
+                "cache_dir": str(scorer.cache_dir),
+                **asdict(metrics),
+            }
+            logger.record_metrics("candidate_score_cache", summary)
+            logger.event(
+                "candidate_score_cache.summary",
+                message="persistent candidate-score cache accounting",
+                level="info",
+                **summary,
+            )
+        else:
+            summary = {
+                "mode": "off",
+                "cache_dir": None,
+                "lookup_requests": 0,
+                "lookup_candidates": 0,
+                "hit_requests": 0,
+                "hit_candidates": 0,
+                "miss_requests": 0,
+                "miss_candidates": 0,
+                "provider_invocations": 0,
+                "provider_score_requests": 0,
+                "provider_candidates": 0,
+                "provider_failures": 0,
+                "cache_served_scored_tokens": 0,
+                "provider_scored_tokens": 0,
+                "provider_await_wall_seconds": 0.0,
+            }
+            logger.record_metrics("candidate_score_cache", summary)
+
+
 def execute_importance_smc(
     request: SynthesizeRequest,
     config: ExperimentConfig,
@@ -61,12 +119,10 @@ def execute_importance_smc(
         max_scored_candidates=request.max_scored_candidates,
         conditioned_skeleton=resolve_importance_skeleton(config, request.skeleton),
         multi_family=importance_uses_multiple_families(request.skeleton),
-        llm_energy_normalization=LLMEnergyNormalization(
-            request.llm_energy_normalization
-        ),
+        llm_energy_normalization=LLMEnergyNormalization(request.llm_energy_normalization),
     )
     candidate_scorer = build_candidate_scorer(request)
-    with ProgramScorer(config) as scorer:
+    with _candidate_score_metrics(candidate_scorer, logger), ProgramScorer(config) as scorer:
         if not request.materialize_reference:
             lazy = asyncio.run(
                 LazyImportanceSMCEngine(
@@ -78,7 +134,7 @@ def execute_importance_smc(
                     logger=logger,
                 ).run()
             )
-            lazy_best = lazy.sampled_best
+            lazy_best = lazy.best_visited
             family_details = tuple(
                 "family "
                 f"{family.family}: traces={family.support_states} "

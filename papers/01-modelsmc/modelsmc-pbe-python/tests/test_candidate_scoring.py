@@ -7,6 +7,7 @@ from typing import cast
 import httpx
 import pytest
 
+import modelsmc_pbe.proposals.vllm_prompt_logprobs as vllm_module
 from modelsmc_pbe.domain import ValueType, canonical_key
 from modelsmc_pbe.proposals import (
     CandidateKind,
@@ -183,6 +184,39 @@ def test_vllm_scores_the_full_prompt_without_a_token_boundary_assumption() -> No
 
     assert result.scores[0].token_ids == (99, 20)
     assert result.scores[0].sequence_logprob == pytest.approx(-0.5)
+
+
+def test_vllm_score_many_retains_metrics_with_an_internally_owned_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _request(ITEM)
+
+    def handler(http_request: httpx.Request) -> httpx.Response:
+        prompts = cast(list[str], json.loads(http_request.content)["prompt"])
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "index": 0,
+                        "text": prompts[0],
+                        "prompt_logprobs": [None, _entry(20, -0.3)],
+                    }
+                ]
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(vllm_module.httpx, "AsyncClient", lambda: client)
+    scorer = VLLMPromptLogprobScorer(VLLMPromptLogprobConfig(model="test-model"))
+
+    asyncio.run(scorer.score_many([request]))
+
+    metrics = scorer.provider_metrics()
+    assert metrics.http_requests == 1
+    assert metrics.http_failures == 0
+    assert metrics.scored_token_positions == 1
+    assert metrics.http_request_seconds_sum >= 0.0
 
 
 def test_full_prompt_energy_normalization_defaults_to_total_and_can_use_mean() -> None:

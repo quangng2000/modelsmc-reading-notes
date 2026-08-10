@@ -15,7 +15,18 @@ from time import monotonic
 from typing import Any
 
 from research.heldout import evaluate_result, unavailable_evaluation, write_json_atomic
-from research.protocol import AnalysisLabel, ArmName, ArmSpec, Protocol, TaskSpec, load_protocol
+from research.protocol import (
+    AnalysisLabel,
+    ArmName,
+    ArmSpec,
+    Caps,
+    ModelSpec,
+    Protocol,
+    StageSpec,
+    TaskSpec,
+    effective_caps,
+    load_protocol,
+)
 
 
 def _now() -> str:
@@ -29,40 +40,145 @@ class CellPlan:
     arm: ArmName
     seed: int
     analysis_label: AnalysisLabel
+    model_scope: str
+    model_id: str | None
+    model_alias: str | None
+    model_hf_repository: str | None
+    model_architecture: str | None
+    model_parameterization: str | None
+    model_total_parameters_billion: float | None
+    model_active_parameters_billion: float | None
+    model_dtype: str | None
+    model_quantization: str | None
+    model_revision: str | None
+    tokenizer_revision: str | None
+
+
+def _require_known(
+    requested: set[Any] | None, declared: set[Any], name: str
+) -> None:
+    if requested is None:
+        return
+    unknown = requested - declared
+    if unknown:
+        raise ValueError(f"unknown {name}: {sorted(unknown, key=str)!r}")
+
+
+def find_stage(protocol: Protocol, stage_id: str | None) -> StageSpec | None:
+    if stage_id is None:
+        return None
+    try:
+        return next(stage for stage in protocol.stages if stage.stage_id == stage_id)
+    except StopIteration as error:
+        choices = ", ".join(stage.stage_id for stage in protocol.stages) or "<none>"
+        raise ValueError(f"unknown stage {stage_id!r}; expected one of: {choices}") from error
 
 
 def build_plan(
     protocol: Protocol,
     *,
+    stage: StageSpec | None = None,
     labels: set[str] | None = None,
     task_ids: set[str] | None = None,
     arms: set[str] | None = None,
     seeds: set[int] | None = None,
+    model_ids: set[str] | None = None,
 ) -> tuple[CellPlan, ...]:
-    """Build the deterministic task-major, arm-major, seed-major matrix."""
+    """Build a deterministic matrix without duplicating size-invariant controls."""
+
+    declared_labels = {task.label for task in protocol.tasks}
+    declared_tasks = {task.task_id for task in protocol.tasks}
+    declared_arms = {arm.name for arm in protocol.arms}
+    declared_seeds = set(protocol.seeds)
+    declared_models = {model.model_id for model in protocol.models}
+    _require_known(labels, declared_labels, "analysis labels")
+    _require_known(task_ids, declared_tasks, "tasks")
+    _require_known(arms, declared_arms, "arms")
+    _require_known(seeds, declared_seeds, "seeds")
+    _require_known(model_ids, declared_models, "models")
+
+    stage_tasks = set(stage.task_ids) if stage else None
+    stage_arms = set(stage.arms) if stage else None
+    stage_seeds = set(stage.seeds) if stage else None
+    stage_models = set(stage.model_ids) if stage else None
 
     selected_tasks = [
         task
         for task in protocol.tasks
         if (labels is None or task.label in labels)
         and (task_ids is None or task.task_id in task_ids)
+        and (stage_tasks is None or task.task_id in stage_tasks)
     ]
-    selected_arms = [arm for arm in protocol.arms if arms is None or arm.name in arms]
-    selected_seeds = [seed for seed in protocol.seeds if seeds is None or seed in seeds]
-    if not selected_tasks or not selected_arms or not selected_seeds:
+    selected_arms = [
+        arm
+        for arm in protocol.arms
+        if (arms is None or arm.name in arms)
+        and (stage_arms is None or arm.name in stage_arms)
+    ]
+    selected_seeds = [
+        seed
+        for seed in protocol.seeds
+        if (seeds is None or seed in seeds)
+        and (stage_seeds is None or seed in stage_seeds)
+    ]
+    selected_models = [
+        model
+        for model in protocol.models
+        if (model_ids is None or model.model_id in model_ids)
+        and (stage_models is None or model.model_id in stage_models)
+    ]
+    if not selected_tasks or not selected_arms or not selected_seeds or not selected_models:
         raise ValueError("matrix selection is empty")
-    plans = [
-        CellPlan(
-            cell_id=f"{task.task_id}--{arm.name}--seed-{seed}",
-            task_id=task.task_id,
-            arm=arm.name,
-            seed=seed,
-            analysis_label=task.label,
-        )
-        for task in selected_tasks
-        for arm in selected_arms
-        for seed in selected_seeds
-    ]
+    plans: list[CellPlan] = []
+    for task in selected_tasks:
+        for arm in selected_arms:
+            for seed in selected_seeds:
+                models: Sequence[ModelSpec | None] = (
+                    selected_models if arm.proposal == "vllm" else (None,)
+                )
+                for model in models:
+                    model_token = model.model_id if model is not None else "size-invariant"
+                    plans.append(
+                        CellPlan(
+                            cell_id=(
+                                f"{task.task_id}--{arm.name}--{model_token}--seed-{seed}"
+                            ),
+                            task_id=task.task_id,
+                            arm=arm.name,
+                            seed=seed,
+                            analysis_label=task.label,
+                            model_scope=(
+                                "model-specific" if model is not None else "size-invariant"
+                            ),
+                            model_id=model.model_id if model is not None else None,
+                            model_alias=model.alias if model is not None else None,
+                            model_hf_repository=(
+                                model.hf_repository if model is not None else None
+                            ),
+                            model_architecture=(
+                                model.architecture if model is not None else None
+                            ),
+                            model_parameterization=(
+                                model.parameterization if model is not None else None
+                            ),
+                            model_total_parameters_billion=(
+                                model.total_parameters_billion if model is not None else None
+                            ),
+                            model_active_parameters_billion=(
+                                model.active_parameters_billion if model is not None else None
+                            ),
+                            model_dtype=(model.dtype if model is not None else None),
+                            model_quantization=(
+                                model.quantization if model is not None else None
+                            ),
+                            model_revision=(
+                                model.model_revision if model is not None else None
+                            ),
+                            tokenizer_revision=(
+                                model.tokenizer_revision if model is not None else None
+                            ),
+                        )
+                    )
     return tuple(plans)
 
 
@@ -76,11 +192,12 @@ def command_for(
     arm: ArmSpec,
     plan: CellPlan,
     *,
+    caps: Caps,
     executable: str,
     artifacts_dir: Path,
     base_url: str | None,
 ) -> list[str]:
-    caps = protocol.caps
+    model_alias = plan.model_alias or "size-invariant-catalog-control"
     command = [
         executable,
         "synthesize",
@@ -90,7 +207,7 @@ def command_for(
         "--proposal",
         arm.proposal,
         "--model",
-        protocol.provider.model,
+        model_alias,
         "--skeleton",
         "auto",
         "--particles",
@@ -122,6 +239,24 @@ def command_for(
     for name, value in sorted(protocol.shared_arguments.items()):
         command.extend((_flag(name), str(value)))
     if arm.proposal == "vllm":
+        if not all(
+            (
+                plan.model_hf_repository,
+                plan.model_revision,
+                plan.tokenizer_revision,
+            )
+        ):
+            raise ValueError(f"arm {arm.name} requires pinned model identity")
+        command.extend(
+            (
+                "--model-repository",
+                str(plan.model_hf_repository),
+                "--model-revision",
+                str(plan.model_revision),
+                "--tokenizer-revision",
+                str(plan.tokenizer_revision),
+            )
+        )
         if base_url is None:
             raise ValueError(
                 f"arm {arm.name} requires --base-url or {protocol.provider.base_url_env}"
@@ -129,6 +264,21 @@ def command_for(
         command.extend(("--base-url", base_url))
         if protocol.provider.api_key_env:
             command.extend(("--api-key-env", protocol.provider.api_key_env))
+        if protocol.provider.score_cache_mode != "off":
+            assert protocol.provider.score_cache_dir is not None
+            assert protocol.provider.vllm_server_config is not None
+            command.extend(
+                (
+                    "--score-cache-dir",
+                    str(protocol.provider.score_cache_dir),
+                    "--score-cache-mode",
+                    protocol.provider.score_cache_mode,
+                    "--vllm-server-config",
+                    protocol.provider.vllm_server_config,
+                )
+            )
+    if protocol.materialize_reference:
+        command.append("--materialize-reference")
     return command
 
 
@@ -166,6 +316,7 @@ def execute_cell(
     plan: CellPlan,
     *,
     output_dir: Path,
+    caps: Caps,
     executable: str,
     base_url: str | None,
 ) -> dict[str, Any]:
@@ -182,6 +333,7 @@ def execute_cell(
         task,
         arm,
         plan,
+        caps=caps,
         executable=executable,
         artifacts_dir=artifacts_dir,
         base_url=base_url,
@@ -199,7 +351,7 @@ def execute_cell(
             cwd=protocol.project_root,
             capture_output=True,
             text=True,
-            timeout=protocol.caps.wall_time_seconds,
+            timeout=caps.wall_time_seconds,
             check=False,
         )
         exit_code = completed.returncode
@@ -209,7 +361,7 @@ def execute_cell(
         timed_out = True
         stdout = error.stdout
         stderr = error.stderr
-        exception = f"wall-time cap exceeded ({protocol.caps.wall_time_seconds}s)"
+        exception = f"wall-time cap exceeded ({caps.wall_time_seconds}s)"
     except OSError as error:
         exception = f"could not start synthesizer: {error}"
     wall_time = monotonic() - start
@@ -231,7 +383,7 @@ def execute_cell(
         else "failed"
     )
     cell_manifest: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "protocol_id": protocol.protocol_id,
         "protocol_sha256": protocol.protocol_sha256,
         "cell": asdict(plan),
@@ -275,31 +427,114 @@ def _validate_selection(protocol: Protocol, plans: tuple[CellPlan, ...]) -> None
         raise ValueError("plan contains undeclared cells")
 
 
-def _initialize_matrix(output: Path, protocol: Protocol, plans: tuple[CellPlan, ...]) -> None:
+def _initialize_matrix(
+    output: Path,
+    protocol: Protocol,
+    plans: tuple[CellPlan, ...],
+    *,
+    stage: StageSpec | None,
+    caps: Caps,
+) -> None:
     output.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(protocol.path, output / "protocol.json")
     write_json_atomic(
         output / "matrix_manifest.json",
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "protocol_id": protocol.protocol_id,
             "protocol_sha256": protocol.protocol_sha256,
             "protocol_status": protocol.status,
             "created_at": _now(),
             "analysis_population": "intention-to-treat",
+            "stage_id": stage.stage_id if stage else None,
+            "effective_caps": asdict(caps),
+            "models": [asdict(model) for model in protocol.models],
             "planned_cells": [asdict(plan) for plan in plans],
         },
     )
 
 
-def _validate_resume(output: Path, protocol: Protocol) -> None:
+def _validate_resume(
+    output: Path,
+    protocol: Protocol,
+    plans: tuple[CellPlan, ...],
+    *,
+    stage: StageSpec | None,
+    caps: Caps,
+) -> None:
     manifest_path = output / "matrix_manifest.json"
     document = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if (
-        not isinstance(document, dict)
-        or document.get("protocol_sha256") != protocol.protocol_sha256
+    if not isinstance(document, dict) or document.get("protocol_sha256") != (
+        protocol.protocol_sha256
     ):
         raise ValueError("resume directory was created from a different protocol hash")
+    if document.get("planned_cells") != [asdict(plan) for plan in plans]:
+        raise ValueError("resume selection differs from the original planned cells")
+    if document.get("stage_id") != (stage.stage_id if stage else None):
+        raise ValueError("resume stage differs from the original matrix")
+    if document.get("effective_caps") != asdict(caps):
+        raise ValueError("resume resource caps differ from the original matrix")
+
+
+def _cost_summary(plans: tuple[CellPlan, ...], caps: Caps) -> dict[str, Any]:
+    provider_cells = sum(plan.model_scope == "model-specific" for plan in plans)
+
+    def first_seen(values: Sequence[Any]) -> list[Any]:
+        return list(dict.fromkeys(values))
+
+    return {
+        "cells": len(plans),
+        "local_control_cells": len(plans) - provider_cells,
+        "provider_cells": provider_cells,
+        "provider_candidate_score_cap": provider_cells * caps.max_scored_candidates,
+        "models": first_seen(
+            [plan.model_id for plan in plans if plan.model_id is not None]
+        ),
+        "tasks": first_seen([plan.task_id for plan in plans]),
+        "arms": first_seen([plan.arm for plan in plans]),
+        "seeds": first_seen([plan.seed for plan in plans]),
+    }
+
+
+def _enforce_cost_gates(
+    summary: dict[str, Any],
+    *,
+    stage: StageSpec | None,
+    max_provider_cells: int | None,
+    max_provider_score_cap: int | None,
+) -> None:
+    provider_cells = int(summary["provider_cells"])
+    score_cap = int(summary["provider_candidate_score_cap"])
+    if stage is not None and score_cap > stage.max_provider_scored_candidates:
+        raise ValueError(
+            f"stage {stage.stage_id} provider candidate-score cap {score_cap} exceeds "
+            f"its preregistered gate {stage.max_provider_scored_candidates}"
+        )
+    if max_provider_cells is not None and provider_cells > max_provider_cells:
+        raise ValueError(
+            f"selection has {provider_cells} provider cells, above explicit gate "
+            f"{max_provider_cells}"
+        )
+    if max_provider_score_cap is not None and score_cap > max_provider_score_cap:
+        raise ValueError(
+            f"selection provider candidate-score cap {score_cap} exceeds explicit gate "
+            f"{max_provider_score_cap}"
+        )
+
+
+def _base_url_for_plan(
+    protocol: Protocol, plan: CellPlan, override: str | None
+) -> str | None:
+    if plan.model_scope != "model-specific":
+        return None
+    if override is not None:
+        return override
+    model = next(model for model in protocol.models if model.model_id == plan.model_id)
+    if model.base_url_env:
+        model_endpoint = os.environ.get(model.base_url_env)
+        if model_endpoint is not None:
+            return model_endpoint
+    return os.environ.get(protocol.provider.base_url_env)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -310,7 +545,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--tasks", help="Comma-separated task ids")
     parser.add_argument("--arms", help="Comma-separated U,D,Q,QD arms")
     parser.add_argument("--seeds", help="Comma-separated protocol seeds")
+    parser.add_argument("--models", help="Comma-separated model ids; Q/QD only")
+    parser.add_argument("--stage", help="Named preregistered cost gate")
     parser.add_argument("--base-url", help="vLLM /v1 URL; otherwise read protocol env name")
+    parser.add_argument("--max-provider-cells", type=int)
+    parser.add_argument("--max-provider-score-cap", type=int)
     parser.add_argument("--executable", default="modelsmc-pbe")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -321,13 +560,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     tasks = _parse_csv(args.tasks)
     arms = _parse_csv(args.arms)
     seeds = _parse_seed_csv(args.seeds)
-    plans = build_plan(protocol, labels=labels, task_ids=tasks, arms=arms, seeds=seeds)
+    models = _parse_csv(args.models)
+    stage = find_stage(protocol, args.stage)
+    caps = effective_caps(protocol, stage)
+    plans = build_plan(
+        protocol,
+        stage=stage,
+        labels=labels,
+        task_ids=tasks,
+        arms=arms,
+        seeds=seeds,
+        model_ids=models,
+    )
     _validate_selection(protocol, plans)
-    base_url = args.base_url or os.environ.get(protocol.provider.base_url_env)
-    if any(plan.arm in {"Q", "QD"} for plan in plans) and base_url is None:
-        raise ValueError(
-            f"Q/QD selection requires --base-url or {protocol.provider.base_url_env}"
-        )
+    summary = _cost_summary(plans, caps)
+    _enforce_cost_gates(
+        summary,
+        stage=stage,
+        max_provider_cells=args.max_provider_cells,
+        max_provider_score_cap=args.max_provider_score_cap,
+    )
     executable = shutil.which(args.executable) or args.executable
     output = args.output.expanduser().resolve()
     if args.dry_run:
@@ -335,16 +587,30 @@ def main(argv: Sequence[str] | None = None) -> int:
             json.dumps(
                 {
                     "protocol_sha256": protocol.protocol_sha256,
+                    "stage_id": stage.stage_id if stage else None,
+                    "effective_caps": asdict(caps),
+                    "cost_gate": summary,
                     "cells": [asdict(plan) for plan in plans],
                 },
                 indent=2,
             )
         )
         return 0
+    missing_endpoints = [
+        plan.cell_id
+        for plan in plans
+        if plan.model_scope == "model-specific"
+        and _base_url_for_plan(protocol, plan, args.base_url) is None
+    ]
+    if missing_endpoints:
+        raise ValueError(
+            "Q/QD selection lacks a vLLM endpoint for cells: "
+            + ", ".join(missing_endpoints[:4])
+        )
     if args.resume:
-        _validate_resume(output, protocol)
+        _validate_resume(output, protocol, plans, stage=stage, caps=caps)
     else:
-        _initialize_matrix(output, protocol, plans)
+        _initialize_matrix(output, protocol, plans, stage=stage, caps=caps)
 
     failures = 0
     for index, plan in enumerate(plans, start=1):
@@ -358,8 +624,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 protocol,
                 plan,
                 output_dir=output,
+                caps=caps,
                 executable=executable,
-                base_url=base_url,
+                base_url=_base_url_for_plan(protocol, plan, args.base_url),
             )
         except (OSError, ValueError) as error:
             # Configuration errors before subprocess launch are fatal: counting them as

@@ -296,6 +296,27 @@ assumption that separately tokenized `P` is a token-ID prefix of `P || u`;
 Qwen tokenizers can merge tokens across that boundary. Incompatible provider
 responses still abort the run.
 
+### Immutable finite-score cache
+
+Remote finite scoring may be replayed from a persistent, content-addressed
+cache. Its key includes the complete score-producing and reconstruction
+contract: provider/model alias and repository, immutable model and tokenizer
+revisions, declared vLLM runtime/logprob configuration, score semantics,
+tokenization flag, configured energy reduction, exact prompt and candidate
+bytes, and the typed expression-validation context. The value contains the raw
+token IDs and log probabilities plus provider metadata; AST expressions are
+re-parsed under the bound validation context on every read.
+
+Cache files are installed atomically without replacing an existing key.
+Checksum, schema, key, metadata, candidate order, types, and logprob invariants
+are all validated before use; any corruption aborts instead of falling back to
+the provider. `replay-only` also aborts on a miss. Cache disposition is attached
+to each returned score batch and copied into the score ledger. Run metrics keep
+algorithm-requested candidates, cache hits/misses, provider-scored token
+positions, actual HTTP request telemetry, and provider await time separate.
+The scientific `max_scored_candidates` budget is charged before cache lookup,
+so warm evidence cannot buy a larger search.
+
 ## Initial state and proposal context
 
 The practical algorithm starts all $N$ particles from the same deterministic

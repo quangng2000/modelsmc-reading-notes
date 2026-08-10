@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "protocol_id": "modelsmc-pbe-u-d-q-qd-v1",
   "status": "draft-preregistration-not-yet-frozen",
   "study_scope": {
@@ -36,13 +36,107 @@
     "candidate_batch_size": 128,
     "deduction_strength": 4.0,
     "proposal_epsilon": 0.05,
-    "temperature": 0.7
+    "temperature": 0.7,
+    "llm_energy_normalization": "mean-full-prompt-conditional-logprob"
   },
+  "materialize_reference": false,
   "provider": {
-    "model": "qwen-coder",
     "base_url_env": "MODELSMC_VLLM_BASE_URL",
-    "api_key_env": null
+    "api_key_env": null,
+    "vllm_server_config": "vllm=0.11.0;image=vllm/vllm-openai:v0.11.0@sha256:014a95f21c9edf6abe0aea6b07353f96baa4ec291c427bb1176dc7c93a85845c;logprobs_mode=processed_logprobs;dtype=bfloat16;max_model_len=4096;gpu_memory_utilization=0.90;gpu=NVIDIA-A100-SXM4-80GB",
+    "score_cache_dir": "cache/candidate-scores",
+    "score_cache_mode": "read-write"
   },
+  "models": [
+    {
+      "id": "qwen25-coder-3b",
+      "alias": "qwen25-coder-3b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-3B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 3.0,
+      "active_parameters_billion": 3.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "488639f1ff808d1d3d0ba301aef8c11461451ec5",
+      "tokenizer_revision": "488639f1ff808d1d3d0ba301aef8c11461451ec5",
+      "base_url_env": "MODELSMC_VLLM_3B_BASE_URL"
+    },
+    {
+      "id": "qwen25-coder-7b",
+      "alias": "qwen25-coder-7b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 7.0,
+      "active_parameters_billion": 7.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+      "tokenizer_revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+      "base_url_env": "MODELSMC_VLLM_7B_BASE_URL"
+    },
+    {
+      "id": "qwen25-coder-14b",
+      "alias": "qwen25-coder-14b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-14B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 14.0,
+      "active_parameters_billion": 14.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "aedcc2d42b622764e023cf882b6652e646b95671",
+      "tokenizer_revision": "aedcc2d42b622764e023cf882b6652e646b95671",
+      "base_url_env": "MODELSMC_VLLM_14B_BASE_URL"
+    },
+    {
+      "id": "qwen25-coder-32b",
+      "alias": "qwen25-coder-32b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 32.0,
+      "active_parameters_billion": 32.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "tokenizer_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "base_url_env": "MODELSMC_VLLM_32B_BASE_URL"
+    }
+  ],
+  "stages": [
+    {
+      "id": "gate-1-score-smoke",
+      "description": "One cheap Q-only scalar scoring smoke per checkpoint before any larger allocation.",
+      "tasks": ["negative-int-to-bool"],
+      "arms": ["Q"],
+      "seeds": [101],
+      "models": ["qwen25-coder-3b", "qwen25-coder-7b", "qwen25-coder-14b", "qwen25-coder-32b"],
+      "caps": {"particles": 1, "iterations": 1, "max_scored_candidates": 128},
+      "max_provider_scored_candidates": 512
+    },
+    {
+      "id": "gate-2-size-pilot",
+      "description": "One common seed on a simple map and the hardest support-positive list task.",
+      "tasks": ["map-increment", "foldr-signed-window"],
+      "arms": ["Q", "QD"],
+      "seeds": [101],
+      "models": ["qwen25-coder-3b", "qwen25-coder-7b", "qwen25-coder-14b", "qwen25-coder-32b"],
+      "caps": {"particles": 4, "iterations": 1, "max_scored_candidates": 4000},
+      "max_provider_scored_candidates": 64000
+    },
+    {
+      "id": "gate-3-size-replication",
+      "description": "Replicate the pilot comparison on the four remaining frozen seeds only after Gate 2 passes.",
+      "tasks": ["map-increment", "foldr-signed-window"],
+      "arms": ["Q", "QD"],
+      "seeds": [211, 307, 401, 503],
+      "models": ["qwen25-coder-3b", "qwen25-coder-7b", "qwen25-coder-14b", "qwen25-coder-32b"],
+      "caps": {"particles": 4, "iterations": 1, "max_scored_candidates": 4000},
+      "max_provider_scored_candidates": 256000
+    }
+  ],
   "arms": [
     {
       "id": "U",

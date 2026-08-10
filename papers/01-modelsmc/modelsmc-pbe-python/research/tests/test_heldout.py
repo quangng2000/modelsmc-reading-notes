@@ -65,3 +65,40 @@ def test_known_map_program_is_exact_on_heldout(tmp_path: Path) -> None:
     assert evaluation["status"] == "completed"
     assert evaluation["passed"] == 64
     assert evaluation["exact"] is True
+    assert evaluation["program_source"] == "sampled_best_legacy_fallback"
+
+
+def test_heldout_prefers_best_visited_over_lost_final_particle(tmp_path: Path) -> None:
+    task = _task("map-increment")
+    result = {
+        "status": "completed",
+        "result": {
+            "best_visited": {
+                "program": {
+                    "kind": "MapProgram",
+                    "mapper": {
+                        "kind": "Add",
+                        "left": {"kind": "Item"},
+                        "right": {"kind": "IntLiteral", "intValue": "1"},
+                    },
+                },
+                "exact_program": True,
+            },
+            "sampled_best": {
+                "program": {
+                    "kind": "ExpressionProgram",
+                    "body": {"kind": "Input"},
+                },
+                "exact_program": False,
+            },
+        },
+    }
+    result_path = tmp_path / "result.json"
+    result_path.write_text(json.dumps(result), encoding="utf-8")
+
+    evaluation = evaluate_result(task, result_path)
+
+    assert evaluation["status"] == "completed"
+    assert evaluation["passed"] == 64
+    assert evaluation["exact"] is True
+    assert evaluation["program_source"] == "best_visited"

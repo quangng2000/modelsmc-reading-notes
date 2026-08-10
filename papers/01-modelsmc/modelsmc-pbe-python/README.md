@@ -34,6 +34,14 @@ with deterministic PBE scoring.
 
 See [NOTICE.md](NOTICE.md) for provenance and licensing notes.
 
+## Publication artifacts
+
+The executable implementation and tests live in this GitHub repository. The
+companion [Hugging Face dataset](https://huggingface.co/datasets/hackerprofile1/modelsmc-pbe-research)
+contains only the sanitized experimental evidence, aggregate results,
+publication figures, protocols, checksums, and manuscript PDF; it deliberately
+does not mirror the source tree or dependency environment.
+
 ## Install
 
 From the repository root:
@@ -62,6 +70,38 @@ uv run modelsmc-pbe synthesize \
   --particles 8 --iterations 6 \
   --device cpu --trace
 ```
+
+### Persistent finite-score cache
+
+For paid, cross-run model comparisons, persist the raw finite scores in an
+immutable content-addressed cache. A cold run uses `read-write`; an offline
+replay uses `replay-only` and fails rather than contacting vLLM when evidence is
+missing or corrupt:
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/foldr-bounded-square.json \
+  --mode importance-smc --proposal vllm \
+  --base-url http://127.0.0.1:18000/v1 --model qwen-coder \
+  --model-repository Qwen/Qwen2.5-Coder-3B-Instruct \
+  --model-revision 488639f1ff808d1d3d0ba301aef8c11461451ec5 \
+  --tokenizer-revision 488639f1ff808d1d3d0ba301aef8c11461451ec5 \
+  --vllm-server-config 'vllm=0.11.0;logprobs=processed_logprobs;dtype=bfloat16;max_model_len=4096' \
+  --score-cache-dir runs/candidate-score-cache \
+  --score-cache-mode read-write \
+  --skeleton foldr-filter-map --particles 1 --iterations 1 \
+  --alpha 0 --temperature 0.7 --device cpu --trace
+```
+
+Cache keys bind the served alias, exact repository/model/tokenizer revisions,
+declared vLLM scoring configuration, energy mode, tokenization policy, prompt
+prefix, candidate bytes, and expression-validation context. Entries store the
+raw token IDs and token log probabilities needed to reconstruct the original
+score batch. Writes are atomic and never replace an existing entry; malformed
+or mismatched entries fail closed. The run manifest records cache hits/misses,
+cache- and provider-served candidates/token positions, provider HTTP telemetry,
+and provider wait time. `--max-scored-candidates` still counts every finite
+choice requested by the algorithm, including cache hits.
 
 ### Uncorrected Qwen through Ollama (baseline only)
 

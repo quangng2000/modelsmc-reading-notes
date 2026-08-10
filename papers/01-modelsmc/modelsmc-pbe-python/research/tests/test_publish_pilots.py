@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from research.publish_pilots import _sanitize_string, build_release, validate_release
+from research.publish_pilots import (
+    _TREE_IGNORES,
+    _sanitize_string,
+    build_release,
+    validate_release,
+)
 
 PROJECT = Path(__file__).parents[2]
 
@@ -30,6 +35,8 @@ def test_release_is_allowlisted_self_contained_and_valid(tmp_path: Path) -> None
     assert built.pdf_files == 1
     assert not list(destination.rglob("__pycache__"))
     assert not list(destination.rglob("*.log"))
+    assert not (destination / "research" / "cache").exists()
+    assert "cache" in _TREE_IGNORES
 
 
 def test_release_builder_refuses_to_replace_existing_directory(tmp_path: Path) -> None:

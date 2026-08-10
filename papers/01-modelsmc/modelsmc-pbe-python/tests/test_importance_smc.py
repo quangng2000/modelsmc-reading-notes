@@ -37,7 +37,7 @@ from modelsmc_pbe.search.importance import (
     replay_qwen_categorical,
 )
 from modelsmc_pbe.search.importance.deduction_guide import FiniteDeductionGuide
-from modelsmc_pbe.search.importance.lazy_records import ConstructionTrace
+from modelsmc_pbe.search.importance.lazy_records import ConstructionTrace, LazyProposedTrace
 from modelsmc_pbe.search.importance.proposal import FiniteGuidedProposalKernel
 from modelsmc_pbe.search.importance.proposal_distribution import deduction_mismatch_counts
 from modelsmc_pbe.search.importance.support import ImportanceSupportBuilder
@@ -211,6 +211,102 @@ def test_lazy_exact_program_is_executed_only_after_its_trace_is_sampled(
         assert replay_qwen_categorical(ledger) == pytest.approx(
             tuple(candidate.qwen_probability for candidate in ledger.candidates)
         )
+
+
+def test_lazy_result_retains_exact_best_visited_after_final_population_loses_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Discovery is an ever-visited event, not final-particle survival."""
+
+    import modelsmc_pbe.search.importance.lazy_engine as lazy_engine_module
+
+    config = _config(MAP_SPEC, particles=1, iterations=1, alpha=0.0, seed=3)
+    options = ImportanceSMCOptions(
+        conditioned_skeleton="map-arithmetic",
+        support_limit=1_000,
+        deduction_mix=0.0,
+    )
+    support = FactorizedSupportBuilder(
+        spec=config.spec,
+        smc=config.smc,
+        options=options,
+    ).build()
+    family = support.families[0]
+    exact_key = canonical_key(
+        {
+            "kind": "Add",
+            "left": {"kind": "Item"},
+            "right": {"kind": "IntLiteral", "intValue": "1"},
+        }
+    )
+    exact_choice = next(
+        index
+        for index, filling in enumerate(family.catalogs[0].fillings)
+        if filling.key == exact_key
+    )
+    identity_key = canonical_key({"kind": "Item"})
+    identity_choice = next(
+        index
+        for index, filling in enumerate(family.catalogs[0].fillings)
+        if filling.key == identity_key
+    )
+    exact_trace = ConstructionTrace(family.hypothesis_index, (exact_choice,))
+    identity_trace = ConstructionTrace(family.hypothesis_index, (identity_choice,))
+
+    monkeypatch.setattr(
+        lazy_engine_module,
+        "sample_prior_trace",
+        lambda *_args, **_kwargs: exact_trace,
+    )
+
+    async def replace_exact_with_identity(
+        _kernel: object,
+        ancestors: tuple[object, ...],
+        *,
+        stage: int,
+        beta: float,
+    ) -> tuple[LazyProposedTrace, ...]:
+        del stage, beta
+        ancestor = ancestors[0]
+        assert hasattr(ancestor, "trace")
+        return (
+            LazyProposedTrace(
+                trace=identity_trace,
+                ancestor_trace=exact_trace,
+                log_q_construct=0.0,
+                log_q_mixture=0.0,
+                cloned=False,
+                family=family.hypothesis.kind.value,
+            ),
+        )
+
+    monkeypatch.setattr(
+        lazy_engine_module.LazyGuidedProposalKernel,
+        "sample_many",
+        replace_exact_with_identity,
+    )
+
+    with ProgramScorer(config) as scorer:
+        result = asyncio.run(
+            LazyImportanceSMCEngine(
+                config=config,
+                options=options,
+                scorer=scorer,
+                candidate_scorer=UniformCandidateScorer(),
+                generator=make_cpu_generator(3),
+            ).run()
+        )
+
+    assert result.sampled_best.exact_program is False
+    assert result.sampled_best.particle_mass == pytest.approx(1.0)
+    assert result.best_visited.exact_program is True
+    assert result.best_visited.total_loss == 0.0
+    assert result.best_visited.particle_mass == 0.0
+    assert result.search.exact_found is True
+    assert result.search.first_exact_stage == 0
+    assert result.exact is True
+    persisted = jsonable(result, include_raw_payloads=True)
+    assert persisted["best_visited"]["exact_program"] is True
 
 
 def test_fixed_support_runs_induction_deduction_and_rejects_aliases() -> None:

@@ -30,6 +30,10 @@ ProposalOption = Annotated[
     ),
 ]
 ModelOption = Annotated[str, typer.Option(help="Model served by Ollama or vLLM.")]
+ModelRepositoryOption = Annotated[
+    str | None,
+    typer.Option(help="Exact Hugging Face repository behind the served model alias."),
+]
 ModelRevisionOption = Annotated[
     str | None,
     typer.Option(help="Archival model revision or commit; does not change provider loading."),
@@ -45,6 +49,23 @@ BaseUrlOption = Annotated[
 ApiKeyEnvOption = Annotated[
     str | None,
     typer.Option(help="Environment variable containing the provider API key."),
+]
+VLLMServerConfigOption = Annotated[
+    str | None,
+    typer.Option(
+        help=(
+            "Immutable vLLM/runtime scoring fingerprint, including version and "
+            "logprob mode; required when the persistent score cache is enabled."
+        )
+    ),
+]
+ScoreCacheDirOption = Annotated[
+    Path | None,
+    typer.Option(file_okay=False, help="Persistent content-addressed score cache directory."),
+]
+ScoreCacheModeOption = Annotated[
+    str,
+    typer.Option(help="Persistent score cache policy: off, read-write, or replay-only."),
 ]
 SkeletonOption = Annotated[
     str,

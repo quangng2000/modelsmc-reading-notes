@@ -6,6 +6,8 @@ from modelsmc_pbe.proposals.candidate_scoring import (
     CandidateKind,
     CandidateLogprobSemantics,
     CandidateScoreBatch,
+    CandidateScoreOrigin,
+    CandidateScoreProvenance,
     CandidateScoreRequest,
     CandidateSequenceScore,
 )
@@ -44,6 +46,7 @@ class UniformCandidateScorer:
             source=self.name,
             model="none",
             semantics=CandidateLogprobSemantics.EXPLICIT_UNIFORM,
+            provenance=CandidateScoreProvenance(CandidateScoreOrigin.SYNTHETIC),
         )
 
     async def score_many(self, requests: list[CandidateScoreRequest]) -> list[CandidateScoreBatch]:

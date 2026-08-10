@@ -19,6 +19,18 @@ FIELDNAMES = (
     "task_id",
     "arm",
     "seed",
+    "model_scope",
+    "model_id",
+    "model_alias",
+    "model_hf_repository",
+    "model_architecture",
+    "model_parameterization",
+    "model_total_parameters_billion",
+    "model_active_parameters_billion",
+    "model_dtype",
+    "model_quantization",
+    "model_revision",
+    "tokenizer_revision",
     "status",
     "run_completed",
     "success",
@@ -27,14 +39,23 @@ FIELDNAMES = (
     "heldout_correct",
     "heldout_accuracy",
     "heldout_cases",
+    "heldout_program_source",
     "loss",
     "cost",
+    "training_program_source",
     "ess",
     "ess_min",
     "tv_distance",
     "logz_error",
     "absolute_logz_error",
     "scored_candidates",
+    "provider_score_requests",
+    "provider_candidates",
+    "provider_scored_tokens",
+    "provider_await_wall_seconds",
+    "score_cache_hit_candidates",
+    "score_cache_miss_candidates",
+    "cache_served_scored_tokens",
     "wall_time_seconds",
     "support_states",
     "support_exact_programs",
@@ -139,18 +160,56 @@ def _candidate_count(result: Mapping[str, Any], events: Sequence[Mapping[str, An
     return total if found else None
 
 
-def _champion_metrics(result: Mapping[str, Any]) -> tuple[bool, float | None, int | None]:
+def _cache_metrics(manifest: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    if manifest is None:
+        return {}
+    metrics = manifest.get("metrics")
+    if not isinstance(metrics, dict):
+        return {}
+    cache = metrics.get("candidate_score_cache")
+    return cast(Mapping[str, Any], cache) if isinstance(cache, dict) else {}
+
+
+def _champion_metrics(
+    result: Mapping[str, Any],
+) -> tuple[bool, float | None, int | None, str | None]:
+    search = result.get("search")
+    search_exact: bool | None = None
+    if isinstance(search, dict) and isinstance(search.get("exact_found"), bool):
+        search_exact = cast(bool, search["exact_found"])
+    if "best_visited" in result:
+        best = result.get("best_visited")
+        if not isinstance(best, dict):
+            return False, None, None, "best_visited_invalid"
+        exact = search_exact if search_exact is not None else best.get("exact_program") is True
+        return (
+            exact,
+            _number(best.get("total_loss")),
+            _integer(best.get("cost")),
+            "best_visited",
+        )
     sampled = result.get("sampled_best")
     if isinstance(sampled, dict):
-        exact = sampled.get("exact_program") is True
-        return exact, _number(sampled.get("total_loss")), _integer(sampled.get("cost"))
+        exact = search_exact if search_exact is not None else sampled.get("exact_program") is True
+        return (
+            exact,
+            _number(sampled.get("total_loss")),
+            _integer(sampled.get("cost")),
+            "sampled_best_legacy_fallback",
+        )
     champion = result.get("champion")
     if isinstance(champion, dict):
         score = champion.get("score")
         if isinstance(score, dict):
-            exact = score.get("exact_program") is True
-            return exact, _number(score.get("total_loss")), _integer(score.get("cost"))
-    return result.get("exact") is True, None, None
+            exact = search_exact if search_exact is not None else score.get("exact_program") is True
+            return (
+                exact,
+                _number(score.get("total_loss")),
+                _integer(score.get("cost")),
+                "champion_legacy_fallback",
+            )
+    exact = search_exact if search_exact is not None else result.get("exact") is True
+    return exact, None, None, None
 
 
 def _failure_reason(
@@ -198,7 +257,7 @@ def aggregate_cell(
     result: Mapping[str, Any] = (
         cast(Mapping[str, Any], result_value) if isinstance(result_value, dict) else {}
     )
-    training_exact, loss, cost = _champion_metrics(result)
+    training_exact, loss, cost, training_source = _champion_metrics(result)
     training_exact = completed and training_exact
     heldout_evaluable = heldout is not None and heldout.get("status") == "completed"
     heldout_correct = heldout_evaluable and heldout is not None and heldout.get("exact") is True
@@ -223,6 +282,7 @@ def aggregate_cell(
     if support_states is None:
         support_states = _integer(result.get("grammar_states"))
     status = str(cell.get("status")) if cell is not None else "not_started"
+    cache = _cache_metrics(core_manifest)
     return {
         "protocol_id": manifest.get("protocol_id"),
         "protocol_sha256": manifest.get("protocol_sha256"),
@@ -231,6 +291,22 @@ def aggregate_cell(
         "task_id": plan.get("task_id"),
         "arm": plan.get("arm"),
         "seed": plan.get("seed"),
+        "model_scope": plan.get("model_scope"),
+        "model_id": plan.get("model_id"),
+        "model_alias": plan.get("model_alias"),
+        "model_hf_repository": plan.get("model_hf_repository"),
+        "model_architecture": plan.get("model_architecture"),
+        "model_parameterization": plan.get("model_parameterization"),
+        "model_total_parameters_billion": _number(
+            plan.get("model_total_parameters_billion")
+        ),
+        "model_active_parameters_billion": _number(
+            plan.get("model_active_parameters_billion")
+        ),
+        "model_dtype": plan.get("model_dtype"),
+        "model_quantization": plan.get("model_quantization"),
+        "model_revision": plan.get("model_revision"),
+        "tokenizer_revision": plan.get("tokenizer_revision"),
         "status": status,
         "run_completed": completed,
         "success": training_exact,
@@ -239,14 +315,23 @@ def aggregate_cell(
         "heldout_correct": heldout_correct,
         "heldout_accuracy": _number(heldout.get("accuracy")) if heldout else 0.0,
         "heldout_cases": _integer(heldout.get("cases")) if heldout else None,
+        "heldout_program_source": heldout.get("program_source") if heldout else None,
         "loss": loss,
         "cost": cost,
+        "training_program_source": training_source,
         "ess": ess_values[-1] if ess_values else None,
         "ess_min": min(ess_values) if ess_values else None,
         "tv_distance": tv,
         "logz_error": logz_error,
         "absolute_logz_error": abs_logz,
         "scored_candidates": _candidate_count(result, events),
+        "provider_score_requests": _integer(cache.get("provider_score_requests")),
+        "provider_candidates": _integer(cache.get("provider_candidates")),
+        "provider_scored_tokens": _integer(cache.get("provider_scored_tokens")),
+        "provider_await_wall_seconds": _number(cache.get("provider_await_wall_seconds")),
+        "score_cache_hit_candidates": _integer(cache.get("hit_candidates")),
+        "score_cache_miss_candidates": _integer(cache.get("miss_candidates")),
+        "cache_served_scored_tokens": _integer(cache.get("cache_served_scored_tokens")),
         "wall_time_seconds": wall,
         "support_states": support_states,
         "support_exact_programs": _integer(result.get("exact_programs")),

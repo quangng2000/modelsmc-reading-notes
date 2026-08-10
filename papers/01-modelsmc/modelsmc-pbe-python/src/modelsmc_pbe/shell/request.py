@@ -14,10 +14,14 @@ class SynthesizeRequest:
     mode: str = "paper-search"
     proposal: str = "catalog"
     model: str = "qwen3-coder:30b-a3b-q8_0"
+    model_repository: str | None = None
     model_revision: str | None = None
     tokenizer_revision: str | None = None
+    vllm_server_config: str | None = None
     base_url: str | None = None
     api_key_env: str | None = None
+    score_cache_dir: Path | None = None
+    score_cache_mode: str = "off"
     skeleton: str = "auto"
     particles: int | None = None
     iterations: int | None = None

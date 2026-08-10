@@ -1,0 +1,99 @@
+{
+  "analysis_status": "exploratory",
+  "complete_expected_grid": true,
+  "complete_four_checkpoint_gate2": true,
+  "config": {
+    "arms": [
+      "Q",
+      "QD"
+    ],
+    "dpi": 450,
+    "latex_prefix": "generated/figures/gate2-size-transport32",
+    "models": [
+      "qwen25-coder-3b",
+      "qwen25-coder-7b",
+      "qwen25-coder-14b",
+      "qwen25-coder-32b"
+    ],
+    "seeds": [
+      101
+    ],
+    "tasks": [
+      "map-increment",
+      "foldr-signed-window"
+    ]
+  },
+  "confirmatory_claim_ready": false,
+  "eligible_for_exploratory_paper_insertion": true,
+  "figures": {
+    "outcome_matrix": {
+      "generated": true,
+      "paragraph_attachment": "P-RES-01",
+      "paths": {
+        "pdf": "outcome_matrix.pdf",
+        "png": "outcome_matrix.png",
+        "svg": "outcome_matrix.svg"
+      }
+    },
+    "paired_q_vs_qd": {
+      "generated": false,
+      "paragraph_attachment": "P-RES-01",
+      "paths": {},
+      "reason": "requires at least two paired Q/QD seeds for a checkpoint-task"
+    },
+    "provider_work": {
+      "generated": true,
+      "paragraph_attachment": "P-EXP-02",
+      "paths": {
+        "pdf": "provider_work.pdf",
+        "png": "provider_work.png",
+        "svg": "provider_work.svg"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "index": "1",
+      "name": "metrics.json",
+      "sha256": "d98604ab42fff7646acddeae83beac3a7b429f08ef151f2a8000f56c854a70ed"
+    },
+    {
+      "index": "2",
+      "name": "metrics.json",
+      "sha256": "cf511b4efa40aede47e0ae88f253586d8958df970248b57927768f35de7ac41e"
+    },
+    {
+      "index": "3",
+      "name": "metrics.json",
+      "sha256": "05062e4d6097f717b1ad60e083940ccee116d0fececacf967b989561e3236dd5"
+    },
+    {
+      "index": "4",
+      "name": "metrics.json",
+      "sha256": "ab2a109218ce65352165e08a583df0ddf27a3a2f020d23e3f5bf425e6669f1f8"
+    }
+  ],
+  "latex": {
+    "outcome_matrix": "generated/figures/gate2-size-transport32/outcome_matrix.pdf",
+    "paired_q_vs_qd": null,
+    "provider_work": "generated/figures/gate2-size-transport32/provider_work.pdf"
+  },
+  "missing_cells": [],
+  "paper_policy": "Do not include preliminary figures in manuscript claims until the complete expected four-checkpoint Gate-2 grid is present.",
+  "pipeline": "modelsmc-pbe-publication-figures-v1",
+  "protocol_sha256": "56c590864d456f884c82bf62ada3c11c1c2504d21b021e650bc323007553fc60",
+  "required_cells": 16,
+  "schema_version": 1,
+  "selected_rows": 16,
+  "sha256": {
+    "figure_data.json": "5070defbec63a36d5a5070b60b60a2fa9ab8fada294b455a757d94d2e74dbb6e",
+    "outcome_matrix.pdf": "436eed20ac3c8eca5083f35b48efa3fd8fc11401c3a903e1e340bd7024dcec7d",
+    "outcome_matrix.png": "6bc01a1b8f28583e5b8cd9b1db0d403b0ffb1ced5afd96b85420aa343fbdb13a",
+    "outcome_matrix.svg": "49001167e5149efdcfa0f85d063b24bdf6d5c8832616b1427288ea2a2b11f60e",
+    "provider_work.pdf": "97995cb701ad4d641309a8e8a60e9262e1befa41236efe9a4bcdb3942a853ea8",
+    "provider_work.png": "55e5dbcba507160d529f8790f91b7ced0882908ab0035abeb514e27782287aee",
+    "provider_work.svg": "ca0e28bc25861d0c61e4aafcb18d202907009c6573d10744ef234cd7f34649ab"
+  },
+  "statistical_unit": "seed",
+  "uncertainty_policy": "raw cells/counts only; no confidence intervals"
+}

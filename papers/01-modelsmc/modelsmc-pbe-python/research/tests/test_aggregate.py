@@ -30,6 +30,18 @@ def test_golden_intention_to_treat_aggregation(tmp_path: Path) -> None:
             "arm": "QD",
             "seed": 101,
             "analysis_label": "confirmatory",
+            "model_scope": "model-specific",
+            "model_id": "qwen25-coder-3b",
+            "model_alias": "qwen25-coder-3b",
+            "model_hf_repository": "Qwen/Qwen2.5-Coder-3B-Instruct",
+            "model_architecture": "Qwen2ForCausalLM",
+            "model_parameterization": "dense",
+            "model_total_parameters_billion": 3.0,
+            "model_active_parameters_billion": 3.0,
+            "model_dtype": "bfloat16",
+            "model_quantization": "none",
+            "model_revision": "revision-3b",
+            "tokenizer_revision": "tokenizer-3b",
         },
         {
             "cell_id": "signed--U--seed-101",
@@ -37,6 +49,18 @@ def test_golden_intention_to_treat_aggregation(tmp_path: Path) -> None:
             "arm": "U",
             "seed": 101,
             "analysis_label": "confirmatory",
+            "model_scope": "size-invariant",
+            "model_id": None,
+            "model_alias": None,
+            "model_hf_repository": None,
+            "model_architecture": None,
+            "model_parameterization": None,
+            "model_total_parameters_billion": None,
+            "model_active_parameters_billion": None,
+            "model_dtype": None,
+            "model_quantization": None,
+            "model_revision": None,
+            "tokenizer_revision": None,
         },
     ]
     _write(
@@ -61,16 +85,41 @@ def test_golden_intention_to_treat_aggregation(tmp_path: Path) -> None:
     )
     _write(
         cell / "heldout.json",
-        {"status": "completed", "exact": True, "accuracy": 1, "cases": 96},
+        {
+            "status": "completed",
+            "exact": True,
+            "accuracy": 1,
+            "cases": 96,
+            "program_source": "best_visited",
+        },
     )
-    _write(core / "manifest.json", {"status": "completed", "seed": 101})
+    _write(
+        core / "manifest.json",
+        {
+            "status": "completed",
+            "seed": 101,
+            "metrics": {
+                "candidate_score_cache": {
+                    "provider_score_requests": 4,
+                    "provider_candidates": 80,
+                    "provider_scored_tokens": 640,
+                    "provider_await_wall_seconds": 2.5,
+                    "hit_candidates": 20,
+                    "miss_candidates": 80,
+                    "cache_served_scored_tokens": 120,
+                }
+            },
+        },
+    )
     _write(
         core / "result.json",
         {
             "status": "completed",
             "run_id": "core-1",
             "result": {
-                "sampled_best": {"exact_program": True, "total_loss": 0, "cost": 25},
+                "best_visited": {"exact_program": True, "total_loss": 0, "cost": 25},
+                "sampled_best": {"exact_program": False, "total_loss": 1, "cost": 4},
+                "search": {"exact_found": True},
                 "stages": [{"ess_after": 3.5}, {"ess_after": 2.25}],
                 "reference": {
                     "total_variation_distance": 0.2,

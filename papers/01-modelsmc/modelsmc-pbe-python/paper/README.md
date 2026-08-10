@@ -10,7 +10,9 @@ ModelSMC-PBE study.
   closing-sentence handoff, evidence, dependency, and likely reviewer
   challenge.
 - `references.bib` contains the primary literature cited by the manuscript.
-- `generated/` contains tables generated from archived experiment artifacts.
+- `generated/` contains tables and provider-free figure bundles generated from
+  archived aggregate artifacts. Figure bundles include vector PDF/SVG,
+  high-DPI PNG, normalized data, and a checksum manifest.
 - `jmlr2e.sty` is the unmodified official JMLR style file at upstream commit
   `f413f638b407af76074813f8f88a82a7a5a81e9d`.
 

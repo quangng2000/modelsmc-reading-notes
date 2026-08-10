@@ -56,6 +56,9 @@ class LLMScoreWaveLedger:
     model_revision: str | None
     tokenizer_revision: str | None
     score_semantics: str
+    score_origin: str
+    cache_key_sha256: str | None
+    cache_hit: bool | None
     energy_normalization: LLMEnergyNormalization
     temperature: float
     proposal_epsilon: float

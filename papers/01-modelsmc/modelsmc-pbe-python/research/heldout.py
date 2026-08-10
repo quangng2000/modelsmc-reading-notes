@@ -214,27 +214,54 @@ def _same_runtime(left: object, right: object) -> bool:
     return False
 
 
-def extract_program(result_document: object) -> ProgramAst | None:
-    """Extract a champion AST from any currently emitted result envelope."""
+def _extract_program_with_source(
+    result_document: object,
+) -> tuple[ProgramAst, str] | None:
+    """Extract the declared discovery champion and its artifact field.
+
+    New lazy-search artifacts persist ``best_visited`` across the entire run.
+    Older artifacts predate that contract, so ``sampled_best`` and ``champion``
+    remain explicit legacy fallbacks only when ``best_visited`` is absent.
+    """
 
     if not isinstance(result_document, dict) or result_document.get("status") != "completed":
         return None
     result = result_document.get("result")
     if not isinstance(result, dict):
         return None
-    candidate: object = None
-    sampled_best = result.get("sampled_best")
-    if isinstance(sampled_best, dict):
-        candidate = sampled_best.get("program")
-    champion = result.get("champion")
-    if candidate is None and isinstance(champion, dict):
-        candidate = champion.get("program")
+
+    source: str
+    candidate: object
+    if "best_visited" in result:
+        best_visited = result.get("best_visited")
+        if not isinstance(best_visited, dict):
+            return None
+        candidate = best_visited.get("program")
+        source = "best_visited"
+    else:
+        sampled_best = result.get("sampled_best")
+        champion = result.get("champion")
+        if isinstance(sampled_best, dict):
+            candidate = sampled_best.get("program")
+            source = "sampled_best_legacy_fallback"
+        elif isinstance(champion, dict):
+            candidate = champion.get("program")
+            source = "champion_legacy_fallback"
+        else:
+            return None
     if candidate is None:
         return None
     try:
-        return normalize_program(candidate)
+        return normalize_program(candidate), source
     except ValueError:
         return None
+
+
+def extract_program(result_document: object) -> ProgramAst | None:
+    """Extract the program selected for held-out evaluation."""
+
+    extracted = _extract_program_with_source(result_document)
+    return None if extracted is None else extracted[0]
 
 
 def unavailable_evaluation(task: TaskSpec, reason: str) -> dict[str, Any]:
@@ -252,6 +279,7 @@ def unavailable_evaluation(task: TaskSpec, reason: str) -> dict[str, Any]:
         "accuracy": 0.0,
         "exact": False,
         "program_sha256": None,
+        "program_source": None,
         "evaluations": [],
     }
 
@@ -265,9 +293,10 @@ def evaluate_result(task: TaskSpec, result_path: Path) -> dict[str, Any]:
         document = json.loads(result_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         return unavailable_evaluation(task, f"result.json is unreadable: {error}")
-    program = extract_program(document)
-    if program is None:
+    extracted = _extract_program_with_source(document)
+    if extracted is None:
         return unavailable_evaluation(task, "completed champion AST is unavailable")
+    program, program_source = extracted
 
     evaluations: list[dict[str, Any]] = []
     passed = 0
@@ -297,6 +326,7 @@ def evaluate_result(task: TaskSpec, result_path: Path) -> dict[str, Any]:
         "accuracy": passed / count,
         "exact": passed == count,
         "program_sha256": hashlib.sha256(canonical_key(program).encode()).hexdigest(),
+        "program_source": program_source,
         "evaluations": evaluations,
     }
 

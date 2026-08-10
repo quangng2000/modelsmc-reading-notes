@@ -310,6 +310,19 @@ class LazyImportanceSMCEngine:
             ),
         )
         best = self._states[best_trace]
+        visited_best = min(
+            self._states.values(),
+            key=lambda state: (
+                not state.score.exact_program,
+                -(
+                    state.log_prior
+                    - beta
+                    * float(self._config.smc.loss_scale)
+                    * state.score.total_loss
+                ),
+                state.key,
+            ),
+        )
         final_exact_mass = sum(
             mass for trace, mass in empirical.items() if self._states[trace].score.exact_program
         )
@@ -376,6 +389,14 @@ class LazyImportanceSMCEngine:
             refuted_hypotheses=sum(not report.viable for report in support.deductions),
             hole_catalogs=support.hole_catalogs,
             families=families,
+            best_visited=LazyStateSummary(
+                family=visited_best.family,
+                program=visited_best.program,
+                total_loss=visited_best.score.total_loss,
+                cost=visited_best.score.cost,
+                exact_program=visited_best.score.exact_program,
+                particle_mass=empirical.get(visited_best.trace, 0.0),
+            ),
             sampled_best=LazyStateSummary(
                 family=best.family,
                 program=best.program,

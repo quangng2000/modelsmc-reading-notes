@@ -37,6 +37,60 @@ class CandidateKind(StrEnum):
     SKELETON = "skeleton"
 
 
+class CandidateScoreOrigin(StrEnum):
+    """Where one finite score batch was obtained in this run."""
+
+    PROVIDER = "provider"
+    CACHE = "cache"
+    SYNTHETIC = "synthetic"
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateScoreProvenance:
+    """Immutable cache disposition attached directly to a returned batch."""
+
+    origin: CandidateScoreOrigin
+    cache_key_sha256: str | None = None
+    cache_hit: bool | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.origin, CandidateScoreOrigin):
+            raise TypeError("origin must be a CandidateScoreOrigin")
+        if self.origin is CandidateScoreOrigin.CACHE:
+            if self.cache_hit is not True or self.cache_key_sha256 is None:
+                raise ValueError("cache-origin scores require a hit and cache key")
+        elif self.origin is CandidateScoreOrigin.SYNTHETIC:
+            if self.cache_key_sha256 is not None or self.cache_hit is not None:
+                raise ValueError("synthetic scores cannot have cache provenance")
+        elif self.cache_key_sha256 is None:
+            if self.cache_hit is not None:
+                raise ValueError("direct provider scores cannot have a cache disposition")
+        elif self.cache_hit is not False:
+            raise ValueError("cached cold provider scores require cache_hit=false")
+        if self.cache_key_sha256 is not None and (
+            len(self.cache_key_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in self.cache_key_sha256)
+        ):
+            raise ValueError("cache_key_sha256 must be a lowercase SHA-256 digest")
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderScoreMetrics:
+    """Actual provider-I/O telemetry, independent of scientific score budgets."""
+
+    http_requests: int
+    http_failures: int
+    scored_token_positions: int
+    http_request_seconds_sum: float
+
+
+@runtime_checkable
+class ProviderMetricSource(Protocol):
+    """Optional telemetry surface implemented by remote candidate scorers."""
+
+    def provider_metrics(self) -> ProviderScoreMetrics: ...
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateScoreRequest:
     """One common prefix and a complete finite canonical choice set."""
@@ -111,12 +165,17 @@ class CandidateScoreBatch:
     semantics: CandidateLogprobSemantics = CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT
     model_revision: str | None = None
     tokenizer_revision: str | None = None
+    provenance: CandidateScoreProvenance | None = None
 
     def __post_init__(self) -> None:
         if not self.scores:
             raise ValueError("candidate score batch must not be empty")
         if not isinstance(self.semantics, CandidateLogprobSemantics):
             raise ValueError("unsupported candidate score semantics")
+        if self.provenance is not None and not isinstance(
+            self.provenance, CandidateScoreProvenance
+        ):
+            raise TypeError("provenance must be CandidateScoreProvenance")
         for name, value in (
             ("model_revision", self.model_revision),
             ("tokenizer_revision", self.tokenizer_revision),

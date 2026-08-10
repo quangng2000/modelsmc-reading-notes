@@ -782,6 +782,19 @@ class FiniteGuidedProposalKernel:
                 model_revision=batch.model_revision,
                 tokenizer_revision=batch.tokenizer_revision,
                 score_semantics=batch.semantics.value,
+                score_origin=(
+                    "unspecified"
+                    if batch.provenance is None
+                    else batch.provenance.origin.value
+                ),
+                cache_key_sha256=(
+                    None
+                    if batch.provenance is None
+                    else batch.provenance.cache_key_sha256
+                ),
+                cache_hit=(
+                    None if batch.provenance is None else batch.provenance.cache_hit
+                ),
                 energy_normalization=self._options.llm_energy_normalization,
                 temperature=self._options.proposal_temperature,
                 proposal_epsilon=self._options.proposal_epsilon,
