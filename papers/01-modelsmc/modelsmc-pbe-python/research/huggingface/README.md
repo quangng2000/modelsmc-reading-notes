@@ -20,6 +20,10 @@ runs declared in `pilot_release.json`, including inexact outcomes rather than
 only successful examples. It must not be used to infer population success
 rates or statistical significance.
 
+The implementation snapshot is pinned to Git revision
+`578eba5c9c97456335bdc7dc9a51a50602b3809f`; the uploaded `SHA256SUMS` file
+independently covers every artifact in this release.
+
 ## What is being studied
 
 The system transforms input-output examples into typed program skeletons,
