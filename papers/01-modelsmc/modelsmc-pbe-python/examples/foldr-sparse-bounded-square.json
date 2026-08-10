@@ -1,0 +1,26 @@
+{
+  "name": "hidden sparse bounded list transformation",
+  "signature": {
+    "input": "List<Int>",
+    "output": "List<Int>"
+  },
+  "examples": [
+    { "input": [], "output": [] },
+    { "input": ["-3", "-1", "0", "2", "4"], "output": ["1", "0", "4"] },
+    { "input": ["3", "1", "-2", "4", "2"], "output": ["1", "4"] },
+    { "input": ["0", "4", "-1", "3"], "output": ["0", "1"] },
+    { "input": ["2", "-3", "1", "-2"], "output": ["4", "1"] }
+  ],
+  "integerConstants": ["-3", "-2", "-1", "0", "1", "2", "3", "4"],
+  "particles": 4,
+  "iterations": 1,
+  "cloneProbability": 0,
+  "essThreshold": 1,
+  "seed": 101,
+  "lossScale": 0.75,
+  "costScale": 0.02,
+  "lossCap": 1000,
+  "maxCost": 30,
+  "maxDepth": 12,
+  "maxNodes": 191
+}

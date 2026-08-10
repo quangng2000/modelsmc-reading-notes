@@ -109,6 +109,58 @@ After verifying that plan, remove `--dry-run` and add
 `--base-url "$MODELSMC_VLLM_BASE_URL"`. This harness does not execute that paid
 rerun as part of local verification.
 
+## Deduction-underconstrained stress test
+
+`protocol-deduction-stress-v1.json` is a separate exploratory D-versus-QD
+experiment. It must not be pooled with the Gate-2 size study. Its sparse
+bounded-square task retains the target program in a 36,198-trace auto-family
+support, including two exact construction traces, but none of the nonempty
+training inputs has an observed suffix. Consequently, sound deduction derives
+no examples for either the filter predicate or mapped-value hole. Deduction
+therefore supplies no discriminating evidence inside those catalogs; the Occam
+component still distinguishes programs by cost.
+
+The task was deliberately designed and screened after the original pilot. D
+failed all five frozen seeds before any Qwen score was observed. This makes the
+experiment a transparent stress test of whether Qwen finite-choice scores can
+add discovery signal where deduction is underconstrained, not an unbiased task
+sample or confirmatory benchmark.
+
+The exact per-cell score ceiling is
+`4 * (3 family choices + 600 predicates + 60 mapped values) = 2,652`.
+Run the provider-free preflight first:
+
+```bash
+uv run python -m research.run_matrix \
+  --protocol research/protocol-deduction-stress-v1.json \
+  --output research/outputs/deduction-stress-d-v1 \
+  --stage local-d-preflight \
+  --arms D
+```
+
+Dry-run the first paid QD gate without contacting a provider:
+
+```bash
+uv run python -m research.run_matrix \
+  --protocol research/protocol-deduction-stress-v1.json \
+  --output research/outputs/deduction-stress-qd32-v1 \
+  --stage paired-d-qd-32b \
+  --arms QD \
+  --seeds 101 \
+  --models qwen25-coder-32b \
+  --max-provider-cells 1 \
+  --max-provider-score-cap 2652 \
+  --dry-run
+```
+
+After the pinned 32B vLLM processed-logprob contract succeeds, remove
+`--dry-run` and add `--base-url "$MODELSMC_VLLM_32B_BASE_URL"`. Continue with
+the remaining four seeds if and only if that provider contract succeeds,
+regardless of whether seed 101 finds an exact program. The five QD cells have a
+hard combined ceiling of 13,260 scored candidates and at most 440 HTTP batches
+at batch size 32. The final self-contained paired matrix reruns D locally with
+QD rather than joining observations from separate output directories.
+
 ## Dry-run and execution
 
 Run commands from `papers/01-modelsmc/modelsmc-pbe-python`. This is the exact

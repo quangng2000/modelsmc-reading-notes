@@ -1,0 +1,131 @@
+{
+  "schema_version": 2,
+  "protocol_id": "modelsmc-pbe-deduction-stress-v1",
+  "status": "frozen-exploratory-after-d-screen-before-llm",
+  "study_scope": {
+    "primary_question": "Can finite-choice Qwen scores improve exact discovery when the target is in support but sound deduction derives no examples for either specialized hole?",
+    "primary_endpoint": "paired intention-to-treat exact discovery for D versus QD across five frozen seeds",
+    "secondary_endpoint": "held-out exact correctness on the frozen bounded-square oracle",
+    "design_disclosure": "The sparse task was deliberately designed and locally screened to make deduction underconstrained; D failed all five seeds before any Qwen score was observed. This is an exploratory stress test, not a confirmatory benchmark.",
+    "gpu_gate": "Run seed 101 first as a provider-contract gate. Continue with seeds 211, 307, 401, and 503 if and only if the provider contract succeeds, regardless of the synthesis outcome.",
+    "failure_policy": "Every planned cell remains in the analysis. Timeout, provider failure, invalid artifact, or non-exact training result counts as failure."
+  },
+  "seeds": [101, 211, 307, 401, 503],
+  "caps": {
+    "particles": 4,
+    "iterations": 1,
+    "alpha": 0.0,
+    "ess_threshold": 1.0,
+    "max_scored_candidates": 2652,
+    "support_limit": 250000,
+    "hole_state_limit": 250000,
+    "hole_max_cost": 3,
+    "wall_time_seconds": 1200,
+    "provider_timeout_seconds": 300
+  },
+  "shared_arguments": {
+    "beta_max": 1.0,
+    "candidate_batch_size": 32,
+    "deduction_strength": 4.0,
+    "proposal_epsilon": 0.05,
+    "temperature": 0.7,
+    "llm_energy_normalization": "mean-full-prompt-conditional-logprob"
+  },
+  "materialize_reference": false,
+  "provider": {
+    "base_url_env": "MODELSMC_VLLM_32B_BASE_URL",
+    "api_key_env": null,
+    "vllm_server_config": "vllm=0.11.0;image=vllm/vllm-openai:v0.11.0@sha256:014a95f21c9edf6abe0aea6b07353f96baa4ec291c427bb1176dc7c93a85845c;logprobs_mode=processed_logprobs;dtype=bfloat16;max_model_len=4096;gpu_memory_utilization=0.90;gpu=NVIDIA-A100-SXM4-80GB",
+    "score_cache_dir": "cache/deduction-stress-v1",
+    "score_cache_mode": "read-write"
+  },
+  "models": [
+    {
+      "id": "qwen25-coder-32b",
+      "alias": "qwen25-coder-32b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 32.0,
+      "active_parameters_billion": 32.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "tokenizer_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "base_url_env": "MODELSMC_VLLM_32B_BASE_URL"
+    }
+  ],
+  "stages": [
+    {
+      "id": "local-d-preflight",
+      "description": "Provider-free preflight of all five frozen D seeds before observing any Qwen score.",
+      "tasks": ["foldr-sparse-bounded-square"],
+      "arms": ["D"],
+      "seeds": [101, 211, 307, 401, 503],
+      "models": ["qwen25-coder-32b"],
+      "caps": {
+        "particles": 4,
+        "iterations": 1,
+        "max_scored_candidates": 2652
+      },
+      "max_provider_scored_candidates": 0
+    },
+    {
+      "id": "paired-d-qd-32b",
+      "description": "Self-contained five-seed paired D versus QD matrix on the support-positive, deduction-underconstrained task.",
+      "tasks": ["foldr-sparse-bounded-square"],
+      "arms": ["D", "QD"],
+      "seeds": [101, 211, 307, 401, 503],
+      "models": ["qwen25-coder-32b"],
+      "caps": {
+        "particles": 4,
+        "iterations": 1,
+        "max_scored_candidates": 2652
+      },
+      "max_provider_scored_candidates": 13260
+    }
+  ],
+  "arms": [
+    {
+      "id": "U",
+      "proposal": "catalog",
+      "deduction_mix": 0.0,
+      "description": "Uniform finite-catalog proposal; no Qwen and no deduction guide."
+    },
+    {
+      "id": "D",
+      "proposal": "catalog",
+      "deduction_mix": 0.75,
+      "description": "Finite-catalog proposal mixed with the deduction guide; no Qwen."
+    },
+    {
+      "id": "Q",
+      "proposal": "vllm",
+      "deduction_mix": 0.0,
+      "description": "Qwen finite-choice scores with a uniform support floor; no deduction guide."
+    },
+    {
+      "id": "QD",
+      "proposal": "vllm",
+      "deduction_mix": 0.75,
+      "description": "Qwen finite-choice scores mixed with deduction and a uniform support floor."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "foldr-sparse-bounded-square",
+      "spec": "../examples/foldr-sparse-bounded-square.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {
+        "oracle": "bounded_square",
+        "seed": 1401,
+        "count": 96,
+        "minimum": -8,
+        "maximum": 8,
+        "max_length": 10,
+        "corpus_sha256": "4b1ac93177418236e597c91bef5ebf7f192a7de04f344baf137c7460539271ab"
+      }
+    }
+  ]
+}
