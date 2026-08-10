@@ -6,8 +6,9 @@ ModelSMC-PBE study.
 - `main.tex` is the clean manuscript. Paragraph identifiers appear only as
   LaTeX comments and are not rendered.
 - `AUTHOR_REVIEW_GUIDE.md` is a separate paragraph-level argument map for
-  author review. It records each paragraph's purpose, evidence, dependency,
-  and likely reviewer challenge.
+  author review. It records each paragraph's purpose, opening-sentence job,
+  closing-sentence handoff, evidence, dependency, and likely reviewer
+  challenge.
 - `references.bib` contains the primary literature cited by the manuscript.
 - `generated/` contains tables generated from archived experiment artifacts.
 - `jmlr2e.sty` is the unmodified official JMLR style file at upstream commit

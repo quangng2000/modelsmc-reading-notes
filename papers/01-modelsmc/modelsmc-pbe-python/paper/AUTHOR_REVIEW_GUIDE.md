@@ -3,12 +3,13 @@
 This file is deliberately separate from the manuscript. Paragraph IDs appear
 as LaTeX comments in `main.tex`; they are not rendered in the paper.
 
-Review each row in this order:
+Review each paragraph in this order:
 
-1. Does the paragraph have exactly one primary job?
-2. Is its strongest claim supported by the listed evidence?
-3. Does it depend on a term or result introduced earlier?
-4. Would a skeptical reviewer interpret it more broadly than intended?
+1. Does the opening sentence state the topic or claim immediately?
+2. Does the paragraph have exactly one primary job?
+3. Does the middle develop that job with the listed evidence or dependency?
+4. Does the final sentence resolve the paragraph and hand off to what follows?
+5. Would a skeptical reviewer interpret it more broadly than intended?
 
 | ID | Purpose | Evidence or dependency | Likely reviewer challenge |
 |---|---|---|---|
@@ -42,11 +43,55 @@ Review each row in this order:
 | P-LIM-01 | State technical and external-validity limitations. | Implementation audit. | Specialized DSL and enumeration are major limitations. |
 | P-LIM-02 | State resource, safety, bias, and transparency implications. | Lazy execution, uniform support, and archive design. | Avoiding unvisited executions is not evidence of lower wall time or total compute; mathematical support is not deployment safety. |
 | P-CON-01 | Re-state the contribution as attribution and auditability. | Entire paper. | Do not end with an unsupported speed claim. |
+| P-ACK-01 | Disclose current funding and compute, then flag the declarations still required for submission. | Author statements, RunPod records, and final conflict/funding review. | The final submission must name all funding, donated compute, and competing interests. |
 | P-APP-01 | Sketch normalization and full-support argument. | Equation 4 and proposal tests. | Expand to a formal proposition before submission. |
 | P-APP-02 | Prevent oracle enumeration from being misreported as discovery. | Lazy/reference separation. | Current pilots are oracle-backed; any future online-efficiency table must count newly realized initialization and proposal traces separately. |
 
+## Opening and closing sentence plan
+
+These entries describe the **job** of the first and final sentence, not frozen
+wording. The manuscript owns the prose; this guide owns the argument structure.
+
+| ID | Opening-sentence job | Closing-sentence job or handoff |
+|---|---|---|
+| P-ABS-01 | Pose the attribution problem and the free-form proposal-density gap. | End on the negative Qwen result and the paper's measurement—not performance—claim. |
+| P-INT-01 | Define PBE and locate classical symbolic versus learned prioritization. | Hand learned guidance to the attribution question. |
+| P-INT-02 | Challenge the naive question “did the LLM help?” | Demand isolation of model proposal, symbolic support, target, and selection. |
+| P-INT-03 | Introduce SMC as a population view of synthesis. | Expose the unavailable canonical-AST proposal density, motivating the bounded construction. |
+| P-INT-04 | Narrow the problem to finite canonical family and hole choices. | Establish an evaluable energy proposal—not free-form AST probability—then hand off to the contributions. |
+| P-INT-05 | Enumerate the four technical and evaluation contributions. | Bound generality, calibration, and speed claims before formalization. |
+| P-BG-01 | Formalize examples, exactness, the DSL, and structural cost. | Separate training consistency from intended semantics through held-out evaluation. |
+| P-BG-02 | Define construction traces and the equal-family conditional Occam measure. | Label it data-conditional, not an unconditional Bayesian prior, motivating the Gibbs target. |
+| P-BG-03 | Define the finite loss-tempered target. | Restrict interpretation to the declared finite target, then move to constructing its support. |
+| P-SYM-01 | Map types and structural relations to skeleton hypotheses. | Use the filter–map example to expose typed holes for deduction. |
+| P-SYM-02 | Split deduction into refutation and hole-example inference. | Preserve all choices not eliminated by sound invariants, handing off to finite catalogs. |
+| P-SYM-03 | Define complete typed catalogs and online trace identity. | Warn that alias handling can change the target, setting the accounting requirements for proposals. |
+| P-PROP-01 | Specify the common prompt and complete full-prompt token scoring. | Define the implemented energies and explicitly deny candidate-suffix likelihood semantics. |
+| P-PROP-02 | Define the Qwen, deduction, and uniform node mixture. | Explain why normalized mixtures, rather than additive penalties, control serialization-length domination. |
+| P-PROP-03 | Factor a complete trace into family and sequential-hole probabilities. | Note the single-family shortcut and request deduplication without changing the proposal law. |
+| P-PROP-04 | Add the clone route to the transition law. | Close unknown fallback mass and reserve the score budget before moving to SMC weighting. |
+| P-SMC-01 | Define the product-of-static-target path law and incremental potential. | State the terminal marginal and the resampled versus non-resampled base-weight rule. |
+| P-SMC-02 | Separate path-normalizer and terminal-target references. | Bound diagnostics to a finite-particle approximation, motivating execution-boundary separation. |
+| P-SMC-03 | Contrast exhaustive reference and lazy online execution. | Refuse to credit support construction as discovery, handing off to experimental design. |
+| P-EXP-01 | Define the U, D, Q, and Q+D arms and their shared controls. | Mark absent ablations as future preregistered matrices. |
+| P-EXP-02 | Define archived outcomes and the seed as the independent unit. | List unfinished inference and endpoints that block confirmatory claims. |
+| P-EXP-03 | Introduce the controlled benchmark and covered DSL structures. | Disclose the small synthetic scope before presenting pilots. |
+| P-RES-01 | Label the table exploratory, oracle-backed, and non-speed evidence. | Use outcomes only to motivate repeated-seed protocol and component attribution. |
+| P-RES-02 | Decompose the exact hard-task choice into Qwen and deduction masses. | Attribute success to the defensive symbolic mixture, leading to Qwen's scoring failure. |
+| P-RES-03 | Diagnose short-AST bias from total full-prompt scores. | Identify mean-full-prompt energy as implemented and token-bounded scoring as future work. |
+| P-REL-01 | Position against symbolic, neural-guided, and LLM-guided synthesis. | Differentiate this work through exact factorized proposal accounting. |
+| P-REL-02 | Position against SMC synthesis, ModelSMC, and token steering. | Deny priority claims and state the narrower finite-evaluability contribution. |
+| P-LIM-01 | Lead with the small DSL, specialized catalogs, and data-dependent support. | Rule out general synthesis, formal correctness, and unbounded-code posterior claims. |
+| P-LIM-02 | State that lazy execution does not yet prove lower total cost. | End on sandboxing and publication of failures and ledgers, handing off to the conclusion. |
+| P-CON-01 | Recast credible LLM synthesis as an attribution and accounting problem. | Leave the empirical question—where Qwen adds value—to confirmatory benchmarks. |
+| P-ACK-01 | State the draft's current funding status. | Require complete funding, compute, conflict, and author disclosures before submission. |
+| P-APP-01 | Prove node normalization and positive support from the convex mixture. | Lift normalization through the trie and clone mixture, then hand off to oracle-claim boundaries. |
+| P-APP-02 | State that reference enumeration itself discovers exact programs. | Forbid crediting oracle-only discoveries to Qwen or SMC and close the paper's claim boundary. |
+
 ## Multi-paragraph section skeletons
 
+- **Abstract:** pose attribution gap -> state bounded method -> name the
+  accountable proposal -> report the negative result -> bound the claim.
 - **Introduction:** establish PBE -> expose attribution/probability gap -> state
   controlled solution -> enumerate bounded contributions.
 - **Background:** define examples and DSL -> define conditional base measure ->
@@ -61,5 +106,19 @@ Review each row in this order:
   disclose benchmark scope.
 - **Results:** label pilots -> attribute hard success to deduction -> motivate
   score-semantics ablation.
-- **Discussion:** distinguish closest work -> disclose limitations and safety ->
-  conclude with the auditable contribution.
+- **Related work:** position against symbolic and learned synthesis -> position
+  against SMC and steering -> isolate the finite-accounting contribution.
+- **Limitations:** disclose technical/external-validity limits -> disclose
+  compute, bias, safety, and transparency limits.
+- **Conclusion:** restate the attribution requirement -> summarize inspectable
+  components -> leave LLM value to confirmatory evidence.
+- **Acknowledgments:** state present funding and compute -> require final
+  disclosure review.
+- **Appendices:** establish normalization/full support -> enforce the boundary
+  between oracle enumeration and online discovery.
+
+## Non-paragraph material
+
+The author block, keywords, equations, table captions, and bibliography are not
+paragraph units. Review them separately for metadata accuracy, notation,
+self-contained captions, and citation completeness.
