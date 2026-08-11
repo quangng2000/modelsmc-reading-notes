@@ -12,6 +12,7 @@ from modelsmc_pbe.smc import normalize_log_weights
 
 from .proposal_distribution import deduction_mismatch_counts
 from .records import ImportanceSupport
+from .subtree import normalized_subtree_distribution
 from .target import equal_family_occam_log_prior
 
 
@@ -92,24 +93,11 @@ class FiniteDeductionGuide:
     ) -> torch.Tensor:
         """Normalize exact guide mass over a partition of a proposal subtree."""
 
-        if not groups or any(not group for group in groups):
-            raise ValueError("deduction subtree groups must be nonempty")
-        flattened = tuple(index for group in groups for index in group)
-        if len(flattened) != len(set(flattened)):
-            raise ValueError("deduction subtree groups must be disjoint")
-        if any(index < 0 or index >= len(self.support.states) for index in flattened):
-            raise IndexError("deduction subtree state index is outside the finite support")
-        log_weights = self.log_weights(beta)
-        log_masses = torch.stack(
-            [
-                torch.logsumexp(
-                    log_weights[torch.tensor(group, dtype=torch.int64)],
-                    dim=0,
-                )
-                for group in groups
-            ]
-        )
-        return normalize_log_weights(log_masses).weights
+        return normalized_subtree_distribution(
+            self.log_weights(beta),
+            groups,
+            label="deduction",
+        ).weights
 
     def family_probabilities(self, *, beta: float) -> torch.Tensor:
         """Return exact deduction-guide mass for each support family."""

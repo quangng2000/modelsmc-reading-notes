@@ -285,6 +285,32 @@ terminal marginal using total variation, exact-program mass, mean loss, and
 mean cost. They do not mislabel the accumulated value as the single final
 posterior normalizer.
 
+#### Materialized joint-target oracle
+
+The optional `joint-target` strategy is a separate exhaustive control, not an
+LLM energy mode. It reuses the fixed `FiniteImportanceTarget` logits
+
+$$
+\log\widetilde\pi_\beta(e)
+=\log p_0(e)-\beta\lambda_L\mathrm{loss}(e)
+$$
+
+after support construction has assembled and executed every complete state.
+For each family or hole prefix, it groups compatible terminal states and takes
+exact log-sum-exp subtree masses. Conditional log probabilities are differences
+of parent and child subtree masses, so they telescope to
+$\log\widetilde\pi_\beta(e)-\log Z_\beta$. The runtime checks this identity for
+every selected terminal state.
+
+The strategy requires materialized support and $\alpha=0$. It records no model
+identity, performs no candidate-score request, and leaves the LLM score ledger
+empty. Under these constraints every log incremental importance ratio equals
+$\log Z_\beta$, normalized particle weights remain uniform, and the estimated
+path normalizer matches enumeration up to floating-point tolerance. The
+up-front time and memory scale with the entire bounded support, so this mode is
+an oracle for proposal/target correctness rather than the scalable search
+algorithm.
+
 The model component uses finite-candidate energies from Qwen, not vLLM's
 free-form output distribution; it is mixed with the exact deduction guide.
 Canonical serialization removes JSON
@@ -404,8 +430,9 @@ observability/ is injected at orchestration boundaries.
   provider batches, prompts, counters, and orchestration.
 - `search/grammar_control/` separates support construction, target math,
   Markov transitions, result records, and annealing.
-- `search/importance/` separates fixed support, Qwen/deduction guides, exact
-  proposal accounting, Feynman--Kac updates, and reference metrics.
+- `search/importance/` separates fixed support, reusable subtree/trie math,
+  modular `guided/` and `joint/` proposals, Feynman--Kac updates, and reference
+  metrics; touched Python modules stay below 300 lines.
 - `induction/`, `deduction/`, and `enumeration/` implement the Paper-2-inspired
   typed skeleton, refutation, hole-example, and increasing-cost front end.
 - `core/` owns deterministic program semantics and scoring, not search.

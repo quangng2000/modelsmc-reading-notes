@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from modelsmc_pbe.config import ExperimentConfig
 from modelsmc_pbe.core import ProgramScorer
@@ -17,34 +17,35 @@ from modelsmc_pbe.proposals import (
     ProviderMetricSource,
 )
 from modelsmc_pbe.runtime import DeviceInfo, seed_everything
-from modelsmc_pbe.search import PaperSearchEngine
-from modelsmc_pbe.search.grammar_smc import GrammarSMCEngine, GrammarSMCOptions
 from modelsmc_pbe.search.importance import (
     ImportanceSMCEngine,
     ImportanceSMCOptions,
     LazyImportanceSMCEngine,
 )
+from modelsmc_pbe.shell.basic_execution import (
+    execute_grammar_smc as execute_grammar_smc,
+)
+from modelsmc_pbe.shell.basic_execution import (
+    execute_paper_search as execute_paper_search,
+)
 from modelsmc_pbe.shell.output import ProgramResultView
-from modelsmc_pbe.shell.providers import build_candidate_scorer, build_proposer
+from modelsmc_pbe.shell.providers import (
+    build_candidate_scorer,
+    validate_joint_target_request,
+)
 from modelsmc_pbe.shell.request import SynthesizeRequest
+from modelsmc_pbe.shell.run_records import CompletedRun as CompletedRun
 from modelsmc_pbe.shell.skeletons import (
     importance_uses_multiple_families,
     resolve_importance_skeleton,
-    resolve_skeleton,
 )
 
 
-@dataclass(frozen=True, slots=True)
-class CompletedRun:
-    """Search-engine-neutral values needed to finalize and present one run."""
-
-    persisted_result: object
-    final_particles: tuple[object, ...]
-    view: ProgramResultView
-
-
 @contextmanager
-def _candidate_score_metrics(scorer: CandidateScorer, logger: RunLogger) -> Iterator[None]:
+def _candidate_score_metrics(
+    scorer: CandidateScorer | None,
+    logger: RunLogger,
+) -> Iterator[None]:
     """Persist cache/provider accounting even when a scoring run fails."""
 
     try:
@@ -102,6 +103,13 @@ def execute_importance_smc(
 ) -> CompletedRun:
     """Run lazy factorized SMC, or the explicit materialized reference control."""
 
+    if request.proposal == "joint-target":
+        validate_joint_target_request(request)
+        if not request.materialize_reference:
+            raise ValueError("joint-target proposal requires --materialize-reference")
+        if config.smc.alpha != 0.0:
+            raise ValueError("joint-target proposal requires --alpha 0")
+
     seeded = seed_everything(
         config.smc.seed,
         deterministic=config.runtime.deterministic,
@@ -121,11 +129,17 @@ def execute_importance_smc(
         max_scored_candidates=request.max_scored_candidates,
         conditioned_skeleton=resolve_importance_skeleton(config, request.skeleton),
         multi_family=importance_uses_multiple_families(request.skeleton),
+        proposal_strategy=(
+            "joint-target" if request.proposal == "joint-target" else "guided"
+        ),
         llm_energy_normalization=LLMEnergyNormalization(request.llm_energy_normalization),
     )
-    candidate_scorer = build_candidate_scorer(request)
+    candidate_scorer = (
+        None if request.proposal == "joint-target" else build_candidate_scorer(request)
+    )
     with _candidate_score_metrics(candidate_scorer, logger), ProgramScorer(config) as scorer:
         if not request.materialize_reference:
+            assert candidate_scorer is not None
             lazy = asyncio.run(
                 LazyImportanceSMCEngine(
                     config=config,
@@ -193,13 +207,56 @@ def execute_importance_smc(
         family_mode = f"conditioned:{result.conditioned_skeleton}"
     else:
         family_mode = "general-generic"
-    family_details = tuple(
-        "family "
-        f"{family.family}: states={family.states} prior={family.prior_mass:.5g} "
-        f"guide={family.deduction_guide_mass:.5g} "
-        f"target={family.posterior_mass:.5g} particles={family.particle_mass:.5g}"
-        for family in result.families
-    )
+    proposal_details: tuple[str, ...]
+    deduction_details: tuple[str, ...]
+    score_details: tuple[str, ...]
+    if request.proposal == "joint-target":
+        proposal_details = (
+            "proposal semantics=exact normalized joint execution target (oracle)",
+            "every finite support program was assembled and executed before sampling",
+            "sequential family/hole marginals telescope to the complete target probability",
+            "deduction and LLM proposal controls are inactive",
+        )
+        deduction_details = ()
+        score_details = ("candidate scoring=inactive for joint-target oracle",)
+        family_details = tuple(
+            "family "
+            f"{family.family}: states={family.states} prior={family.prior_mass:.5g} "
+            f"target={family.posterior_mass:.5g} particles={family.particle_mass:.5g}"
+            for family in result.families
+        )
+    else:
+        assert result.family_deduction_mix is not None
+        assert result.hole_deduction_mix is not None
+        assert result.deduction_strength is not None
+        assert result.llm_energy_normalization is not None
+        assert result.deduction_guide_exact_mass is not None
+        assert result.max_scored_candidates is not None
+        proposal_details = (
+            "proposal mixture: "
+            f"family-deduction={result.family_deduction_mix:.5g} "
+            f"hole-deduction={result.hole_deduction_mix:.5g} "
+            f"strength={result.deduction_strength:.5g}",
+            f"LLM energy={result.llm_energy_normalization.value}",
+        )
+        deduction_details = (
+            "deduction-guide exact-program mass="
+            f"{result.deduction_guide_exact_mass:.7g}",
+        )
+        score_details = (
+            "candidate scores: "
+            f"used={result.scored_candidates} limit={result.max_scored_candidates}",
+        )
+        guided_families: list[str] = []
+        for family in result.families:
+            assert family.deduction_guide_mass is not None
+            guided_families.append(
+                "family "
+                f"{family.family}: states={family.states} prior={family.prior_mass:.5g} "
+                f"guide={family.deduction_guide_mass:.5g} "
+                f"target={family.posterior_mass:.5g} particles={family.particle_mass:.5g}"
+            )
+        family_details = tuple(guided_families)
     return CompletedRun(
         persisted_result=result,
         final_particles=result.final_particles,
@@ -211,16 +268,11 @@ def execute_importance_smc(
             cost=reference_best.cost,
             details=(
                 f"proposal={result.proposal_source}",
-                "proposal mixture: "
-                f"family-deduction={result.family_deduction_mix:.5g} "
-                f"hole-deduction={result.hole_deduction_mix:.5g} "
-                f"strength={result.deduction_strength:.5g}",
-                f"LLM energy={result.llm_energy_normalization.value}",
-                f"deduction-guide exact-program mass={result.deduction_guide_exact_mass:.7g}",
+                *proposal_details,
+                *deduction_details,
                 f"family mode={family_mode} aliased-programs={result.aliased_programs}",
                 f"support states={result.support_states} exact-programs={result.exact_programs}",
-                "candidate scores: "
-                f"used={result.scored_candidates} limit={result.max_scored_candidates}",
+                *score_details,
                 "exact-program mass: "
                 f"particles={result.reference.particle_exact_mass:.7g} "
                 f"enumeration={result.reference.enumeration_exact_mass:.7g}",
@@ -231,87 +283,5 @@ def execute_importance_smc(
                 f"error={result.reference.log_path_z_error:.7g}",
                 *family_details,
             ),
-        ),
-    )
-
-
-def execute_grammar_smc(
-    request: SynthesizeRequest,
-    config: ExperimentConfig,
-    device: DeviceInfo,
-    logger: RunLogger,
-) -> CompletedRun:
-    """Run the calibrated finite-skeleton control experiment."""
-
-    seeded = seed_everything(
-        config.smc.seed,
-        deterministic=config.runtime.deterministic,
-    )
-    options = GrammarSMCOptions(
-        skeleton=resolve_skeleton(config, request.skeleton),
-        state_limit=request.grammar_limit,
-        beta_max=request.beta_max,
-        moves_per_stage=request.moves_per_stage,
-        score_batch_size=request.score_batch_size,
-    )
-    with ProgramScorer(config) as scorer:
-        result = GrammarSMCEngine(
-            spec=config.spec,
-            smc=config.smc,
-            options=options,
-            scorer=scorer,
-            device=device,
-            generator=seeded.cpu_generator,
-            logger=logger,
-        ).run()
-    best = result.sampled_best
-    return CompletedRun(
-        persisted_result=result,
-        final_particles=result.final_particles,
-        view=ProgramResultView(
-            mode=result.mode,
-            exact=result.exact,
-            program=best.program,
-            total_loss=best.total_loss,
-            cost=best.cost,
-        ),
-    )
-
-
-def execute_paper_search(
-    request: SynthesizeRequest,
-    config: ExperimentConfig,
-    device: DeviceInfo,
-    logger: RunLogger,
-) -> CompletedRun:
-    """Run the practical ModelSMC-inspired resample-and-revise search."""
-
-    seeded = seed_everything(
-        config.smc.seed,
-        deterministic=config.runtime.deterministic,
-    )
-    proposer = build_proposer(request, config)
-    with ProgramScorer(config) as scorer:
-        result = asyncio.run(
-            PaperSearchEngine(
-                config=config,
-                scorer=scorer,
-                proposer=proposer,
-                device=device,
-                generator=seeded.cpu_generator,
-                logger=logger,
-            ).run()
-        )
-    champion = result.champion
-    return CompletedRun(
-        persisted_result=result.as_dict(),
-        final_particles=tuple(result.final_particle_records()),
-        view=ProgramResultView(
-            mode="paper-search",
-            exact=result.exact,
-            program=champion.program,
-            total_loss=champion.score.total_loss,
-            cost=champion.score.cost,
-            degraded=result.degraded,
         ),
     )

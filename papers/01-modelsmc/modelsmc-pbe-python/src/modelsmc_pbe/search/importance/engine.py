@@ -19,8 +19,11 @@ from modelsmc_pbe.smc import (
     systematic_resample,
 )
 
+from .joint import FiniteJointTargetProposalKernel
 from .proposal import FiniteGuidedProposalKernel
 from .records import (
+    IMPORTANCE_SMC_CLAIM,
+    JOINT_TARGET_IMPORTANCE_SMC_CLAIM,
     ImportancePopulation,
     ImportanceSMCOptions,
     ImportanceSMCResult,
@@ -45,7 +48,7 @@ class ImportanceSMCEngine:
         config: ExperimentConfig,
         options: ImportanceSMCOptions,
         scorer: ProgramScorer,
-        candidate_scorer: CandidateScorer,
+        candidate_scorer: CandidateScorer | None,
         device: DeviceInfo,
         generator: torch.Generator,
         logger: RunLogger | None = None,
@@ -56,6 +59,10 @@ class ImportanceSMCEngine:
             raise ValueError(
                 "importance-smc requires alpha < 1 so every target state remains reachable"
             )
+        if options.proposal_strategy == "joint-target" and config.smc.alpha != 0.0:
+            raise ValueError("joint-target proposal requires alpha=0")
+        if options.proposal_strategy == "guided" and candidate_scorer is None:
+            raise ValueError("guided importance-smc requires a candidate scorer")
         self._config = config
         self._options = options
         self._scorer = scorer
@@ -78,14 +85,29 @@ class ImportanceSMCEngine:
             device=self._device,
         )
         population = self._initialize(target)
-        kernel = FiniteGuidedProposalKernel(
-            config=self._config,
-            options=self._options,
-            support=support,
-            scorer=self._candidate_scorer,
-            generator=self._generator,
-            emit=self._emit,
-        )
+        if self._options.proposal_strategy == "joint-target":
+            kernel: FiniteGuidedProposalKernel | FiniteJointTargetProposalKernel = (
+                FiniteJointTargetProposalKernel(
+                    config=self._config,
+                    options=self._options,
+                    support=support,
+                    target=target,
+                    generator=self._generator,
+                    emit=self._emit,
+                )
+            )
+            probabilistic_claim = JOINT_TARGET_IMPORTANCE_SMC_CLAIM
+        else:
+            assert self._candidate_scorer is not None
+            kernel = FiniteGuidedProposalKernel(
+                config=self._config,
+                options=self._options,
+                support=support,
+                scorer=self._candidate_scorer,
+                generator=self._generator,
+                emit=self._emit,
+            )
+            probabilistic_claim = IMPORTANCE_SMC_CLAIM
         diagnostics: list[ImportanceStageDiagnostic] = []
         log_path_z_estimate = 0.0
         log_path_z_reference = 0.0
@@ -148,17 +170,43 @@ class ImportanceSMCEngine:
             target=target,
             beta_max=self._options.beta_max,
             proposal_source=kernel.source,
-            deduction_mix=self._options.deduction_mix,
-            family_deduction_mix=self._options.resolved_family_deduction_mix,
-            hole_deduction_mix=self._options.resolved_hole_deduction_mix,
-            deduction_strength=self._options.deduction_strength,
-            llm_energy_normalization=self._options.llm_energy_normalization,
+            proposal_strategy=self._options.proposal_strategy,
+            probabilistic_claim=probabilistic_claim,
+            deduction_mix=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.deduction_mix
+            ),
+            family_deduction_mix=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.resolved_family_deduction_mix
+            ),
+            hole_deduction_mix=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.resolved_hole_deduction_mix
+            ),
+            deduction_strength=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.deduction_strength
+            ),
+            llm_energy_normalization=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.llm_energy_normalization
+            ),
             deduction_guide=kernel.final_deduction_guide,
             stages=tuple(diagnostics),
             log_path_z_estimate=log_path_z_estimate,
             log_path_z_reference=log_path_z_reference,
             scored_candidates=kernel.scored_candidates,
-            max_scored_candidates=self._options.max_scored_candidates,
+            max_scored_candidates=(
+                None
+                if self._options.proposal_strategy == "joint-target"
+                else self._options.max_scored_candidates
+            ),
             score_ledger=kernel.score_ledger,
         )
         self._emit(

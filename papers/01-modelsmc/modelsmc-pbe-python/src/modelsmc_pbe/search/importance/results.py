@@ -7,11 +7,11 @@ import torch
 from modelsmc_pbe.proposals import LLMEnergyNormalization
 
 from .records import (
-    IMPORTANCE_SMC_CLAIM,
     ImportanceFamilySummary,
     ImportanceHypothesisSummary,
     ImportanceParticle,
     ImportancePopulation,
+    ImportanceProposalStrategy,
     ImportanceReferenceMetrics,
     ImportanceSMCResult,
     ImportanceStageDiagnostic,
@@ -53,17 +53,19 @@ def assemble_importance_result(
     target: FiniteImportanceTarget,
     beta_max: float,
     proposal_source: str,
-    deduction_mix: float,
-    family_deduction_mix: float,
-    hole_deduction_mix: float,
-    deduction_strength: float,
-    llm_energy_normalization: LLMEnergyNormalization,
-    deduction_guide: torch.Tensor,
+    proposal_strategy: ImportanceProposalStrategy,
+    probabilistic_claim: str,
+    deduction_mix: float | None,
+    family_deduction_mix: float | None,
+    hole_deduction_mix: float | None,
+    deduction_strength: float | None,
+    llm_energy_normalization: LLMEnergyNormalization | None,
+    deduction_guide: torch.Tensor | None,
     stages: tuple[ImportanceStageDiagnostic, ...],
     log_path_z_estimate: float,
     log_path_z_reference: float,
     scored_candidates: int,
-    max_scored_candidates: int,
+    max_scored_candidates: int | None,
     score_ledger: tuple[LLMScoreWaveLedger, ...],
 ) -> ImportanceSMCResult:
     """Project the final path particles onto programs and compare exactly."""
@@ -127,8 +129,10 @@ def assemble_importance_result(
                 support.states[index].score.exact_program for index in family.state_indices
             ),
             prior_mass=float(prior[list(family.state_indices)].sum().item()),
-            deduction_guide_mass=float(
-                deduction_guide[list(family.state_indices)].sum().item()
+            deduction_guide_mass=(
+                None
+                if deduction_guide is None
+                else float(deduction_guide[list(family.state_indices)].sum().item())
             ),
             posterior_mass=float(exact[list(family.state_indices)].sum().item()),
             particle_mass=float(empirical[list(family.state_indices)].sum().item()),
@@ -158,8 +162,9 @@ def assemble_importance_result(
     )
     return ImportanceSMCResult(
         mode="importance-smc",
-        probabilistic_claim=IMPORTANCE_SMC_CLAIM,
+        probabilistic_claim=probabilistic_claim,
         proposal_source=proposal_source,
+        proposal_strategy=proposal_strategy,
         deduction_mix=deduction_mix,
         family_deduction_mix=family_deduction_mix,
         hole_deduction_mix=hole_deduction_mix,
@@ -173,8 +178,10 @@ def assemble_importance_result(
         viable_hypotheses=len(support.families),
         refuted_hypotheses=sum(not report.viable for report in support.deductions),
         exact_programs=support.exact_programs,
-        deduction_guide_exact_mass=float(
-            deduction_guide[target.exact_mask].sum().item()
+        deduction_guide_exact_mass=(
+            None
+            if deduction_guide is None
+            else float(deduction_guide[target.exact_mask].sum().item())
         ),
         hole_catalogs=support.hole_catalogs,
         hypotheses=hypotheses,

@@ -84,17 +84,23 @@ def build_proposer(
 def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
     """Build the strict finite-candidate scorer used by importance-SMC."""
 
+    if request.proposal == "joint-target":
+        validate_joint_target_request(request)
+        raise ValueError("joint-target bypasses the candidate-scorer interface")
     try:
         cache_mode = ScoreCacheMode(request.score_cache_mode)
     except ValueError as error:
         raise ValueError("score cache mode must be off, read-write, or replay-only") from error
     if request.proposal == "catalog":
         if cache_mode is not ScoreCacheMode.OFF or request.score_cache_dir is not None:
-            raise ValueError("persistent candidate-score caching is available only for vllm")
+            raise ValueError(
+                "persistent candidate-score caching is available only for vllm"
+            )
         return UniformCandidateScorer()
     if request.proposal != "vllm":
         raise ValueError(
-            "importance-smc proposal must be catalog or vllm; Ollama and free-form "
+            "importance-smc proposal must be catalog or vllm, or the joint-target oracle; "
+            "Ollama and free-form "
             "OpenAI-compatible output do not expose the required finite-candidate scores"
         )
     if not request.model.strip():
@@ -155,3 +161,28 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
             ),
         ),
     )
+
+
+def validate_joint_target_request(request: SynthesizeRequest) -> None:
+    """Reject provider/cache settings that cannot affect the local oracle."""
+
+    if request.mode != "importance-smc":
+        raise ValueError("joint-target proposal is available only for importance-smc")
+    provider_options = {
+        "--model-repository": request.model_repository,
+        "--model-revision": request.model_revision,
+        "--tokenizer-revision": request.tokenizer_revision,
+        "--vllm-server-config": request.vllm_server_config,
+        "--base-url": request.base_url,
+        "--api-key-env": request.api_key_env,
+        "--score-cache-dir": request.score_cache_dir,
+        "--score-cache-mode": (
+            None if request.score_cache_mode == "off" else request.score_cache_mode
+        ),
+    }
+    present = [name for name, value in provider_options.items() if value is not None]
+    if present:
+        raise ValueError(
+            "joint-target uses no model provider or score cache; remove: "
+            + ", ".join(present)
+        )

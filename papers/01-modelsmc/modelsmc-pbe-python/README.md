@@ -12,7 +12,7 @@ The package has three deliberately different modes:
 | --- | --- | --- |
 | `paper-search` | finite catalog or black-box LLM | Heuristic allocation scores from an uncorrected proposal kernel; **not** posterior probabilities |
 | `grammar-smc` | known finite skeleton prior | An SMC approximation to the declared finite-skeleton Gibbs target, checked against exact enumeration |
-| `importance-smc` | finite typed holes scored by a deduction/Qwen defensive mixture | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
+| `importance-smc` | finite typed holes scored by a deduction/Qwen mixture, or an exhaustive joint-target oracle | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
 
 The latter two modes are calibrated to their declared computational targets.
 They are not thereby Bayesian posteriors over every possible program or over a
@@ -437,6 +437,78 @@ The declared Feynman--Kac path target is the product of these stage targets,
 so its terminal marginal is the desired finite `pi_beta`. Accordingly, the
 reported accumulated log normalizer is for the **product path target**
 `product_t Z_beta_t`, not just the final posterior's `Z_1`.
+
+### Exact joint-execution oracle
+
+`--proposal joint-target` implements the joint execution score directly as a
+materialized oracle control. For every complete program $e$ in the bounded
+deduction-refuted support $\mathcal E_D$ it uses
+
+$$
+S_{\mathrm{joint},\beta}(e)
+=\log p_0(e)-\beta\lambda_L\operatorname{loss}(e),
+\qquad
+q_{\mathrm{joint},\beta}(e)
+=\frac{\exp S_{\mathrm{joint},\beta}(e)}
+       {\sum_{u\in\mathcal E_D}\exp S_{\mathrm{joint},\beta}(u)}.
+$$
+
+The draw remains sequential. If $A(r)$ is the log-sum-exp target mass of all
+complete programs below construction prefix $r$, then
+
+$$
+\log q(c\mid r)=A(r+c)-A(r).
+$$
+
+For the stress family’s predicate $p$ and mapper $m$, this is exactly
+
+$$
+q(p)=\sum_m q_{\mathrm{joint}}(p,m),
+\qquad
+q(m\mid p)=\frac{q_{\mathrm{joint}}(p,m)}{q(p)}.
+$$
+
+The implementation generalizes the same marginal/conditional construction to
+the family choice and any ordered sequence of typed holes.
+Family, predicate, and mapper conditionals therefore telescope to the direct
+joint probability of the final program. With cloning disabled,
+
+$$
+\log\widetilde\pi_\beta(e)-\log q_{\mathrm{joint},\beta}(e)=\log Z_\beta
+$$
+
+for every sampled state. Thus all incremental importance weights are constant;
+the mode is an exact end-to-end check of support construction, target math,
+sequential proposal accounting, and SMC normalization.
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/foldr-sparse-bounded-square-v2.json \
+  --mode importance-smc --proposal joint-target \
+  --materialize-reference --skeleton auto \
+  --particles 4 --iterations 1 --alpha 0 --beta-max 1 \
+  --hole-max-cost 3 --support-limit 40000 \
+  --device cpu --trace
+```
+
+The proposal requires no Qwen scorer or GPU and uses no candidate-score cache
+or LLM score budget.
+Results identify `proposal_strategy=joint-target`; deduction/Qwen-only controls
+and guide masses are `null`, and the LLM score ledger is empty.
+Its real cost is exhaustive: it assembles and executes every unique program in
+the finite support before drawing any particle. For a one-stage diagnostic,
+if the normalized target gives zero-training-loss programs total mass
+$p_\star$, then $N$ independent oracle draws select at least one such program
+with probability
+$1-(1-p_\star)^N$. On the corrected 36,198-state stress task,
+$p_\star=0.9207000842$, so four draws give `0.9999604551` oracle sampling hit
+probability, conditional on this fixed support and target. The practical budget
+is therefore 36,198 up-front program materializations/scores—180,990
+program-example evaluations for the five training examples—plus a four-particle
+one-stage diagnostic; larger populations are needed only for additional Monte
+Carlo diagnostics, not this discovery criterion. This is a target-specific
+training-example oracle and scalability ceiling, not a deployable learned
+semantic scorer or a held-out guarantee.
 
 ### Calibrated finite-grammar control
 

@@ -80,6 +80,7 @@ def _create_logger(
     device: DeviceInfo,
     selected_skeleton: str | None,
 ) -> RunLogger:
+    joint_target = request.mode == "importance-smc" and request.proposal == "joint-target"
     algorithm_config: dict[str, object] = {
         "experiment": config,
         "mode": request.mode,
@@ -96,29 +97,40 @@ def _create_logger(
         "hole_state_limit": request.hole_state_limit,
         "support_limit": request.support_limit,
         "materialize_reference": request.materialize_reference,
-        "temperature": request.temperature,
-        "llm_energy_normalization": request.llm_energy_normalization,
-        "proposal_epsilon": request.proposal_epsilon,
-        "deduction_mix": request.deduction_mix,
+        "temperature": None if joint_target else request.temperature,
+        "llm_energy_normalization": (
+            None if joint_target else request.llm_energy_normalization
+        ),
+        "proposal_epsilon": None if joint_target else request.proposal_epsilon,
+        "deduction_mix": None if joint_target else request.deduction_mix,
         "family_deduction_mix": (
-            request.deduction_mix
-            if request.family_deduction_mix is None
-            else request.family_deduction_mix
+            None
+            if joint_target
+            else (
+                request.deduction_mix
+                if request.family_deduction_mix is None
+                else request.family_deduction_mix
+            )
         ),
         "hole_deduction_mix": (
-            request.deduction_mix
-            if request.hole_deduction_mix is None
-            else request.hole_deduction_mix
+            None
+            if joint_target
+            else (
+                request.deduction_mix
+                if request.hole_deduction_mix is None
+                else request.hole_deduction_mix
+            )
         ),
-        "deduction_strength": request.deduction_strength,
-        "candidate_batch_size": request.candidate_batch_size,
-        "max_scored_candidates": request.max_scored_candidates,
-        "max_tokens": request.max_tokens,
-        "max_concurrency": request.max_concurrency,
-        "timeout_seconds": request.timeout_seconds,
+        "deduction_strength": None if joint_target else request.deduction_strength,
+        "candidate_batch_size": None if joint_target else request.candidate_batch_size,
+        "max_scored_candidates": None if joint_target else request.max_scored_candidates,
+        "max_tokens": None if joint_target else request.max_tokens,
+        "max_concurrency": None if joint_target else request.max_concurrency,
+        "timeout_seconds": None if joint_target else request.timeout_seconds,
         "model": (
             request.model
-            if request.mode != "grammar-smc" and request.proposal != "catalog"
+            if request.mode != "grammar-smc"
+            and request.proposal not in {"catalog", "joint-target"}
             else None
         ),
         "model_repository": request.model_repository,
@@ -137,6 +149,8 @@ def _create_logger(
     claim = claims[request.mode]
     if request.mode == "importance-smc" and not request.materialize_reference:
         claim = "importance_corrected_lazy_factorized_construction_target"
+    if request.mode == "importance-smc" and request.proposal == "joint-target":
+        claim = "oracle_normalized_finite_joint_execution_target"
     return RunLogger.create(
         base_dir=config.runtime.artifacts_dir,
         run_name=f"{config.spec.name}-{request.mode}",

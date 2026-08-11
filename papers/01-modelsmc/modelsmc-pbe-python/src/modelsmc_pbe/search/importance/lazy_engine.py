@@ -27,18 +27,14 @@ from .factorized import (
 )
 from .lazy_proposal import LazyGuidedProposalKernel
 from .lazy_records import (
-    LAZY_IMPORTANCE_SMC_CLAIM,
     ConstructionTrace,
     FactorizedImportanceSupport,
-    LazyFamilySummary,
-    LazyImportanceParticle,
     LazyImportancePopulation,
     LazyImportanceSMCResult,
     LazyImportanceState,
-    LazySearchMetrics,
     LazyStageDiagnostic,
-    LazyStateSummary,
 )
+from .lazy_results import assemble_lazy_result
 from .lazy_support import FactorizedSupportBuilder
 from .records import ImportanceSMCOptions
 
@@ -60,6 +56,8 @@ class LazyImportanceSMCEngine:
             raise ValueError("lazy importance-smc requires a CPU generator")
         if config.smc.alpha >= 1.0:
             raise ValueError("lazy importance-smc requires alpha < 1")
+        if options.proposal_strategy != "guided":
+            raise ValueError("joint-target proposal requires materialized importance support")
         self._config = config
         self._options = options
         self._scorer = scorer
@@ -174,11 +172,14 @@ class LazyImportanceSMCEngine:
                 cumulative_evaluated_programs=diagnostic.cumulative_evaluated_programs,
             )
 
-        result = self._result(
-            support,
-            population,
-            kernel,
-            tuple(diagnostics),
+        result = assemble_lazy_result(
+            config=self._config,
+            options=self._options,
+            support=support,
+            population=population,
+            kernel=kernel,
+            diagnostics=tuple(diagnostics),
+            states=self._states,
             first_exact_stage=first_exact_stage,
             log_path_z_estimate=log_path_z_estimate,
         )
@@ -284,145 +285,6 @@ class LazyImportanceSMCEngine:
         slots = systematic_resample(weights, generator=self._generator)
         traces = tuple(population.traces[int(slot)] for slot in slots.tolist())
         return traces, torch.full((count,), 1.0 / count, dtype=torch.float64), True
-
-    def _result(
-        self,
-        support: FactorizedImportanceSupport,
-        population: LazyImportancePopulation,
-        kernel: LazyGuidedProposalKernel,
-        diagnostics: tuple[LazyStageDiagnostic, ...],
-        *,
-        first_exact_stage: int | None,
-        log_path_z_estimate: float,
-    ) -> LazyImportanceSMCResult:
-        empirical: dict[ConstructionTrace, float] = {}
-        for trace, weight in zip(population.traces, population.weights, strict=True):
-            empirical[trace] = empirical.get(trace, 0.0) + weight
-        beta = self._options.beta_max
-        best_trace = max(
-            empirical,
-            key=lambda trace: (
-                self._states[trace].log_prior
-                - beta
-                * float(self._config.smc.loss_scale)
-                * self._states[trace].score.total_loss,
-                self._states[trace].key,
-            ),
-        )
-        best = self._states[best_trace]
-        visited_best = min(
-            self._states.values(),
-            key=lambda state: (
-                not state.score.exact_program,
-                -(
-                    state.log_prior
-                    - beta
-                    * float(self._config.smc.loss_scale)
-                    * state.score.total_loss
-                ),
-                state.key,
-            ),
-        )
-        final_exact_mass = sum(
-            mass for trace, mass in empirical.items() if self._states[trace].score.exact_program
-        )
-        exact_sampled = sum(state.score.exact_program for state in self._states.values())
-        guide = kernel.final_family_guide()
-        family_positions = {
-            family.hypothesis_index: index for index, family in enumerate(support.families)
-        }
-        family_particle_mass = {
-            family.hypothesis_index: sum(
-                mass
-                for trace, mass in empirical.items()
-                if trace.hypothesis_index == family.hypothesis_index
-            )
-            for family in support.families
-        }
-        families = tuple(
-            LazyFamilySummary(
-                family=family.hypothesis.kind.value,
-                support_states=family.support_count,
-                prior_mass=1.0 / len(support.families),
-                deduction_guide_mass=float(
-                    guide[family_positions[family.hypothesis_index]].item()
-                ),
-                particle_mass=family_particle_mass[family.hypothesis_index],
-            )
-            for family in support.families
-        )
-        particles = tuple(
-            LazyImportanceParticle(
-                particle_index=index,
-                trace=trace,
-                ancestor_trace=population.ancestor_traces[index],
-                family=self._states[trace].family,
-                program=self._states[trace].program,
-                total_loss=self._states[trace].score.total_loss,
-                cost=self._states[trace].score.cost,
-                exact_program=self._states[trace].score.exact_program,
-                weight=population.weights[index],
-                log_q_mixture=population.log_q_mixture[index],
-                log_incremental_weight=population.log_incremental_weight[index],
-                cloned=population.cloned[index],
-            )
-            for index, trace in enumerate(population.traces)
-        )
-        return LazyImportanceSMCResult(
-            mode="importance-smc",
-            execution="lazy-factorized",
-            probabilistic_claim=LAZY_IMPORTANCE_SMC_CLAIM,
-            proposal_source=kernel.source,
-            deduction_mix=self._options.deduction_mix,
-            family_deduction_mix=self._options.resolved_family_deduction_mix,
-            hole_deduction_mix=self._options.resolved_hole_deduction_mix,
-            deduction_strength=self._options.deduction_strength,
-            llm_energy_normalization=self._options.llm_energy_normalization,
-            conditioned_skeleton=support.conditioned_skeleton,
-            multi_family=support.multi_family,
-            support_semantics=(
-                "typed construction traces; cross-family AST aliases are retained as "
-                "distinct latent traces"
-            ),
-            support_materialized=False,
-            support_states=support.support_states,
-            generated_hypotheses=len(support.induction.hypotheses),
-            viable_hypotheses=len(support.families),
-            refuted_hypotheses=sum(not report.viable for report in support.deductions),
-            hole_catalogs=support.hole_catalogs,
-            families=families,
-            best_visited=LazyStateSummary(
-                family=visited_best.family,
-                program=visited_best.program,
-                total_loss=visited_best.score.total_loss,
-                cost=visited_best.score.cost,
-                exact_program=visited_best.score.exact_program,
-                particle_mass=empirical.get(visited_best.trace, 0.0),
-            ),
-            sampled_best=LazyStateSummary(
-                family=best.family,
-                program=best.program,
-                total_loss=best.score.total_loss,
-                cost=best.score.cost,
-                exact_program=best.score.exact_program,
-                particle_mass=empirical[best_trace],
-            ),
-            search=LazySearchMetrics(
-                exact_found=bool(exact_sampled),
-                final_exact_particle_mass=final_exact_mass,
-                exact_sampled_programs=exact_sampled,
-                evaluated_programs=len(self._states),
-                evaluated_fraction_of_support=len(self._states) / support.support_states,
-                first_exact_stage=first_exact_stage,
-                log_path_z_estimate=log_path_z_estimate,
-            ),
-            reference=None,
-            stages=diagnostics,
-            final_particles=particles,
-            scored_candidates=kernel.scored_candidates,
-            max_scored_candidates=self._options.max_scored_candidates,
-            score_ledger=kernel.score_ledger,
-        )
 
     def _emit(self, name: str, *, message: str, level: str = "info", **data: Any) -> None:
         if self._logger is not None:

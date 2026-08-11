@@ -14,6 +14,8 @@ from modelsmc_pbe.runtime import DeviceInfo
 from modelsmc_pbe.search.importance.records import ImportanceState, ImportanceSupport
 from modelsmc_pbe.smc import NormalizedWeights, normalize_log_weights
 
+from .subtree import normalized_subtree_distribution
+
 
 def equal_family_occam_log_prior(
     support: ImportanceSupport,
@@ -97,3 +99,27 @@ class FiniteImportanceTarget:
         """Exactly normalize the finite target at one inverse temperature."""
 
         return normalize_log_weights(self.log_unnormalized(beta))
+
+    def subtree_probabilities(
+        self,
+        groups: tuple[tuple[int, ...], ...],
+        *,
+        beta: float,
+    ) -> Tensor:
+        """Normalize exact target mass over a partition of a construction subtree."""
+
+        return self.subtree_distribution(groups, beta=beta).weights
+
+    def subtree_distribution(
+        self,
+        groups: tuple[tuple[int, ...], ...],
+        *,
+        beta: float,
+    ) -> NormalizedWeights:
+        """Return probabilities and normalizer for a target-subtree partition."""
+
+        return normalized_subtree_distribution(
+            self.log_unnormalized(beta),
+            groups,
+            label="target",
+        )

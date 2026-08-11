@@ -24,7 +24,8 @@ ProposalOption = Annotated[
     str,
     typer.Option(
         help=(
-            "Proposal backend: importance-smc accepts vllm or catalog; "
+            "Proposal backend: importance-smc accepts vllm, catalog, or the "
+            "materialized joint-target oracle; "
             "paper-search also accepts ollama or openai-compatible."
         )
     ),
