@@ -135,7 +135,7 @@ class ImportanceSMCOptions:
         if (
             self.proposal_strategy == "guided"
             and self.llm_energy_normalization
-            is LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+            is LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST
         ):
             raise ValueError("guided proposals cannot use the joint-semantic label score")
 

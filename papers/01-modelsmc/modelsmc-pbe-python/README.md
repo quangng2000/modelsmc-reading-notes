@@ -461,6 +461,7 @@ diagnostic. Only the two final-label logprobs enter each contrast. Any actual
 tokenizer-boundary mismatch aborts the calibrated run. The swapped mapping
 cancels a fixed preference for label `A` or `B`; this is a compatibility
 log-score contrast, not an AST fluency total and not an execution-loss estimate.
+Derived artifacts identify this layout as `joint-semantic-proposal-ledger-v2`.
 
 For a deterministic scored slate $A$, the proposal is
 

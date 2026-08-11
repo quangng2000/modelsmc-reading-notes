@@ -40,13 +40,13 @@ def semantic_log_probabilities(
 ) -> tuple[float, ...]:
     """Normalize the recorded ``log prior + eta * semantic score`` logits."""
 
-    maximum_score = max(record.compatibility_log_odds for record in records)
+    maximum_score = max(record.compatibility_log_score for record in records)
     logits = tuple(
         record.log_prior
         + (
             0.0
             if semantic_scale == 0.0
-            else semantic_scale * (record.compatibility_log_odds - maximum_score)
+            else semantic_scale * (record.compatibility_log_score - maximum_score)
         )
         for record in records
     )

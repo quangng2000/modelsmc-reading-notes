@@ -218,7 +218,7 @@ def test_joint_semantic_requires_the_lazy_zero_clone_vllm_boundary() -> None:
     with pytest.raises(ValueError, match="guided proposals cannot"):
         ImportanceSMCOptions(
             llm_energy_normalization=(
-                LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+                LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST
             )
         )
     config = _config()

@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from modelsmc_pbe.proposals.labels import CompatibilityScore
 
+SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION = "joint-semantic-proposal-ledger-v2"
+
 
 def _sha256(value: object) -> str:
     encoded = json.dumps(
@@ -58,7 +60,7 @@ class SemanticProgramScoreLedger:
     """One symmetrized compatibility score without duplicating full token paths."""
 
     program_sha256: str
-    compatibility_log_odds: float
+    compatibility_log_score: float
     template_version: str
     prompt_sha256: str
     source: str
@@ -79,7 +81,7 @@ class SemanticTraceProbabilityLedger:
     trace: SemanticTraceIdentity
     program_sha256: str
     log_prior: float
-    compatibility_log_odds: float
+    compatibility_log_score: float
     log_q_semantic: float | None
     log_q_proposal: float
 
@@ -104,6 +106,7 @@ class SemanticSelectionLedger:
 class SemanticProposalLedger:
     """Derived proposal arithmetic plus hashes committing to raw score evidence."""
 
+    schema_version: str
     formula: str
     slate_selection: str
     slate_seed: int
@@ -133,7 +136,7 @@ class SemanticProposalLedger:
             for trace in self.trace_probabilities
             for value in (
                 trace.log_prior,
-                trace.compatibility_log_odds,
+                trace.compatibility_log_score,
                 trace.log_q_proposal,
             )
         ):
@@ -221,7 +224,7 @@ def summarize_score(score: CompatibilityScore) -> SemanticProgramScoreLedger:
     )
     return SemanticProgramScoreLedger(
         program_sha256=score.program_sha256,
-        compatibility_log_odds=score.compatibility_log_odds,
+        compatibility_log_score=score.compatibility_log_score,
         template_version=score.template_version,
         prompt_sha256=score.prompt_sha256,
         source=score.raw_identity.source,
@@ -246,7 +249,7 @@ def slate_digest(records: tuple[SemanticTraceProbabilityLedger, ...]) -> str:
                 item.trace.filling_indices,
                 item.program_sha256,
                 item.log_prior,
-                item.compatibility_log_odds,
+                item.compatibility_log_score,
                 item.log_q_semantic,
                 item.log_q_proposal,
             )

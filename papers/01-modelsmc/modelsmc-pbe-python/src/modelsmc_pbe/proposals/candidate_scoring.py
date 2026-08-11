@@ -29,7 +29,10 @@ class LLMEnergyNormalization(StrEnum):
 
     TOTAL_FULL_PROMPT_LOGPROB = "total-full-prompt-logprob"
     MEAN_FULL_PROMPT_CONDITIONAL_LOGPROB = "mean-full-prompt-conditional-logprob"
-    SYMMETRIZED_FINAL_LABEL_LOG_ODDS = "symmetrized-final-label-log-odds"
+    # Keep the historical wire value so existing content-addressed raw-score
+    # caches remain reusable after the scientific name was tightened.
+    SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST = "symmetrized-final-label-log-odds"
+    SYMMETRIZED_FINAL_LABEL_LOG_ODDS = SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST
 
 
 class CandidateKind(StrEnum):

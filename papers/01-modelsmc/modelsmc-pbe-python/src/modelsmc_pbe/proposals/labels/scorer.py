@@ -163,14 +163,14 @@ class SymmetrizedLabelCompatibilityScorer:
             raw_scores[3],
         )
         paths: tuple[LabelPathEvidence, ...] = (plus_a, plus_b, minus_a, minus_b)
-        compatibility_log_odds = 0.5 * (
+        compatibility_log_score = 0.5 * (
             (plus_proof.label_a_logprob - plus_proof.label_b_logprob)
             + (minus_proof.label_b_logprob - minus_proof.label_a_logprob)
         )
         return CompatibilityScore(
             program_key=program.program_key,
             program_sha256=program.sha256,
-            compatibility_log_odds=compatibility_log_odds,
+            compatibility_log_score=compatibility_log_score,
             paths=paths,
             boundary_proofs=(plus_proof, minus_proof),
             template_version=COMPATIBILITY_TEMPLATE_VERSION,

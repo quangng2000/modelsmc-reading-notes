@@ -159,7 +159,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
             server_config=server_config,
             semantics=CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT,
             energy_normalization=(
-                LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+                LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST
                 if request.proposal == "joint-semantic"
                 else LLMEnergyNormalization(request.llm_energy_normalization)
             ),

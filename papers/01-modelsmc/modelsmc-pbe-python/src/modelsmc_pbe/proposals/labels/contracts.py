@@ -158,7 +158,7 @@ class CompatibilityScore:
 
     program_key: str
     program_sha256: str
-    compatibility_log_odds: float
+    compatibility_log_score: float
     paths: tuple[LabelPathEvidence, ...]
     boundary_proofs: tuple[LabelBoundaryProof, ...]
     template_version: str
@@ -175,8 +175,8 @@ class CompatibilityScore:
             invalid_character = any(character not in "0123456789abcdef" for character in digest)
             if len(digest) != 64 or invalid_character:
                 raise ValueError(f"{name} must be a lowercase SHA-256 digest")
-        if not math.isfinite(self.compatibility_log_odds):
-            raise ValueError("compatibility_log_odds must be finite")
+        if not math.isfinite(self.compatibility_log_score):
+            raise ValueError("compatibility_log_score must be finite")
         expected_paths = (
             (CompatibilityMapping.A_IS_COMPATIBLE, CompatibilityLabel.A),
             (CompatibilityMapping.A_IS_COMPATIBLE, CompatibilityLabel.B),
@@ -215,7 +215,7 @@ class CompatibilityScore:
             - self.boundary_proofs[1].label_a_logprob
         )
         if not math.isclose(
-            self.compatibility_log_odds,
+            self.compatibility_log_score,
             reconstructed,
             rel_tol=0.0,
             abs_tol=1e-15,

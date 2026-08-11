@@ -2,7 +2,7 @@
 
 from .kernel import JOINT_SEMANTIC_PROPOSAL_SOURCE, LazyJointSemanticProposalKernel
 from .law import SemanticStageLaw
-from .ledger import SemanticProposalLedger
+from .ledger import SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION, SemanticProposalLedger
 from .records import (
     SemanticBranchDistribution,
     SemanticSlateProbability,
@@ -19,6 +19,7 @@ from .slate import (
 
 __all__ = [
     "JOINT_SEMANTIC_PROPOSAL_SOURCE",
+    "SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION",
     "LazyJointSemanticProposalKernel",
     "SemanticBranchDistribution",
     "SemanticProposalLedger",

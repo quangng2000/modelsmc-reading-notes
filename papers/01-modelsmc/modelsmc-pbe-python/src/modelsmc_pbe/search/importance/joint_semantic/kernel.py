@@ -26,6 +26,7 @@ from ..options import ImportanceProposalBudgetExceeded, ImportanceSMCOptions
 from ..score_ledger import LLMScoreWaveLedger
 from .law import SemanticStageLaw
 from .ledger import (
+    SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION,
     SemanticProgramScoreLedger,
     SemanticProposalLedger,
     SemanticSelectionLedger,
@@ -195,7 +196,7 @@ class LazyJointSemanticProposalKernel:
         )
         score_by_key = {score.program_key: score for score in batch.scores}
         semantic_scores = tuple(
-            score_by_key[key].compatibility_log_odds
+            score_by_key[key].compatibility_log_score
             for key in prepared.trace_program_keys
         )
         slate = attach_semantic_scores(
@@ -247,13 +248,14 @@ class LazyJointSemanticProposalKernel:
                 ),
                 program_sha256=score_by_key[key].program_sha256,
                 log_prior=item.entry.log_prior,
-                compatibility_log_odds=item.entry.semantic_score,
+                compatibility_log_score=item.entry.semantic_score,
                 log_q_semantic=(None if item.log_q_a == -math.inf else item.log_q_a),
                 log_q_proposal=item.log_q,
             )
             for item, key in zip(probabilities, trace_program_keys, strict=True)
         )
         return SemanticProposalLedger(
+            schema_version=SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION,
             formula="q=epsilon*pi+(1-epsilon)*normalize_slate(pi*exp(eta*a_llm))",
             slate_selection=(
                 "full-bounded-support"

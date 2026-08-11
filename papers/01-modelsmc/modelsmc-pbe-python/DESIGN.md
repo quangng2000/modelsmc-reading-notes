@@ -296,6 +296,8 @@ have equal lengths, identical prefix token IDs, and one final, distinct label
 token. The two raw prefix-logprob vectors remain separately hash-committed and
 their maximum absolute difference is retained as a provider-numerics diagnostic;
 prefix-logprob equality is not part of the token-boundary contract.
+The derived evidence uses the explicit nested schema identifier
+`joint-semantic-proposal-ledger-v2`.
 
 For a deterministic slate $A$, the normalized semantic component and defensive
 proposal are

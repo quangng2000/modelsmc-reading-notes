@@ -86,7 +86,7 @@ def execute_importance_smc(
         multi_family=importance_uses_multiple_families(request.skeleton),
         proposal_strategy=proposal_strategy,
         llm_energy_normalization=(
-            LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+            LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_SCORE_CONTRAST
             if request.proposal == "joint-semantic"
             else LLMEnergyNormalization(request.llm_energy_normalization)
         ),

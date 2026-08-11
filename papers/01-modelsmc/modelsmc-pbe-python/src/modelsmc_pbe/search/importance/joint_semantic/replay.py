@@ -7,6 +7,7 @@ import math
 from modelsmc_pbe.proposals.candidate_scoring import CandidateLogprobSemantics
 
 from .ledger import (
+    SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION,
     SemanticBoundaryLedger,
     SemanticProgramScoreLedger,
     SemanticProposalLedger,
@@ -125,7 +126,7 @@ def _validate_program_scores(
             + minus.label_b_logprob
             - minus.label_a_logprob
         )
-        if not close(program.compatibility_log_odds, reconstructed):
+        if not close(program.compatibility_log_score, reconstructed):
             raise ValueError("semantic program score disagrees with label evidence")
         programs[program.program_sha256] = program
     return programs
@@ -150,7 +151,7 @@ def _validate_trace_probabilities(
         program = programs.get(record.program_sha256)
         if program is None:
             raise ValueError("semantic trace references an unknown program score")
-        if not close(record.compatibility_log_odds, program.compatibility_log_odds):
+        if not close(record.compatibility_log_score, program.compatibility_log_score):
             raise ValueError("semantic trace score disagrees with its program evidence")
         stored_semantic = -math.inf if record.log_q_semantic is None else record.log_q_semantic
         if not close(stored_semantic, expected_semantic):
@@ -231,6 +232,8 @@ def _validate_selections(
 def validate_semantic_proposal_ledger(ledger: SemanticProposalLedger) -> None:
     """Recompute every derived semantic score, normalized mass, and selected density."""
 
+    if ledger.schema_version != SEMANTIC_PROPOSAL_LEDGER_SCHEMA_VERSION:
+        raise ValueError("unknown joint-semantic proposal ledger schema")
     if ledger.formula != "q=epsilon*pi+(1-epsilon)*normalize_slate(pi*exp(eta*a_llm))":
         raise ValueError("unknown joint-semantic proposal formula")
     if ledger.slate_selection not in {"full-bounded-support", "seeded-sha256-rank"}:

@@ -51,7 +51,7 @@ def _boundary(mapping: str, marker: str) -> SemanticBoundaryLedger:
 def _ledger() -> SemanticProposalLedger:
     program = SemanticProgramScoreLedger(
         program_sha256="9" * 64,
-        compatibility_log_odds=1.0,
+        compatibility_log_score=1.0,
         template_version="joint-semantic-v1",
         prompt_sha256="0" * 64,
         source="test",
@@ -74,7 +74,7 @@ def _ledger() -> SemanticProposalLedger:
         trace=selected,
         program_sha256=program.program_sha256,
         log_prior=prior,
-        compatibility_log_odds=1.0,
+        compatibility_log_score=1.0,
         log_q_semantic=0.0,
         log_q_proposal=inside_q,
     )
@@ -107,6 +107,7 @@ def _ledger() -> SemanticProposalLedger:
     )
     traces = (trace,)
     return SemanticProposalLedger(
+        schema_version="joint-semantic-proposal-ledger-v2",
         formula="q=epsilon*pi+(1-epsilon)*normalize_slate(pi*exp(eta*a_llm))",
         slate_selection="seeded-sha256-rank",
         slate_seed=7,
@@ -160,9 +161,13 @@ def test_public_lazy_result_resolves_semantic_ledger_type() -> None:
     "mutation, message",
     (
         (
+            lambda ledger: replace(ledger, schema_version="joint-semantic-proposal-ledger-v1"),
+            "unknown joint-semantic proposal ledger schema",
+        ),
+        (
             lambda ledger: replace(
                 ledger,
-                program_scores=(replace(ledger.program_scores[0], compatibility_log_odds=2.0),),
+                program_scores=(replace(ledger.program_scores[0], compatibility_log_score=2.0),),
             ),
             "program score disagrees",
         ),

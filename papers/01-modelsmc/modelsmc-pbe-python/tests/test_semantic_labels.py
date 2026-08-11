@@ -106,7 +106,7 @@ def test_symmetrized_semantic_score_uses_one_global_request_and_four_paths() -> 
     assert result.raw_candidate_count == 8
     assert result.template_version == COMPATIBILITY_TEMPLATE_VERSION
     assert [score.program_key for score in result.scores] == ["program-1", "program-2"]
-    assert [score.compatibility_log_odds for score in result.scores] == pytest.approx([1.3, 1.3])
+    assert [score.compatibility_log_score for score in result.scores] == pytest.approx([1.3, 1.3])
     assert all(len(score.paths) == 4 for score in result.scores)
     assert all(
         proof.max_abs_prefix_logprob_delta == pytest.approx(0.05)
@@ -135,8 +135,8 @@ def test_swapped_mapping_cancels_a_fixed_label_prior() -> None:
     plus, minus = score.boundary_proofs
     assert plus.label_a_logprob - plus.label_b_logprob == pytest.approx(2.0)
     assert minus.label_b_logprob - minus.label_a_logprob == pytest.approx(0.6)
-    assert score.compatibility_log_odds == pytest.approx(1.3)
-    assert score.compatibility_log_odds > 0
+    assert score.compatibility_log_score == pytest.approx(1.3)
+    assert score.compatibility_log_score > 0
 
 
 def test_semantic_adapter_chunks_only_at_whole_program_boundaries() -> None:
