@@ -2,15 +2,19 @@
 
 This report corrects the interpretation of the sealed
 `deduction-stress-paired-v1` artifacts without modifying them. The executable
-audit is `research/audit_math.py`; `--strict` fails on any seal, replay,
-probability, target, pairing, visit-count, or telemetry invariant violation.
+audit is `research/audit_math.py`; `--strict` fails on any protocol/matrix/cell
+binding, replay, probability, target, pairing, visit-count, or telemetry
+invariant violation.
 
 ## Result
 
-The sealed matrix passes all implemented invariants: 10 planned and 10 observed
+The frozen matrix passes all implemented invariants: 10 planned and 10 observed
 cells, five prefix-consistent D/QD pairs, and zero violations. This means the
-recorded sampler arithmetic is internally consistent. It does **not** validate
-the old post-run interpretation.
+recorded sampler arithmetic is internally consistent. The replay rebuilds the
+finite catalogs, deduction probabilities, and ancestor/previous-filling prompt
+prefixes from the frozen task and persisted particle paths. It is not remote
+provider attestation, and it does **not** validate the old post-run
+interpretation.
 
 The terminal target is
 
@@ -41,15 +45,18 @@ predicate factors by mapper factors from those sibling prefixes creates a
 non-identifying splice proxy. The audit labels it
 `NONIDENTIFYING_SPLICE_PROXY` and refuses discovery-probability or N50 math.
 The true sealed-run QD exact-path probability is `NOT_IDENTIFIED`; determining
-it would require counterfactual mapper score requests under both exact predicate
-prefixes.
+it conditionally across the realized ancestors would require missing
+ancestor-specific predicate requests for slots that did not select the target
+family, plus mapper requests under both exact predicate prefixes for every
+realized ancestor.
 
 The learned finite-choice scores were nearly flat. Across the sealed QD cells,
-the exact mapper's Qwen rank is 49--56 of 60 and its final proposal rank is
-58--60. With `proposal_epsilon=0.05` and `deduction_mix=0.75`, the learned
-coefficient is only `(1 - 0.05) * (1 - 0.75) = 0.2375`. Identical sampled paths
-under common random numbers are consequently compatible with slightly different
-categorical distributions; they do not show that Qwen was bypassed.
+the target mapper candidate's Qwen rank under sampled nonexact predicate
+prefixes is 49--56 of 60 and its final proposal rank is 58--60. With
+`proposal_epsilon=0.05` and `deduction_mix=0.75`, the learned coefficient is
+only `(1 - 0.05) * (1 - 0.75) = 0.2375`. Identical sampled paths under common
+random numbers are consequently compatible with slightly different categorical
+distributions; they do not show that Qwen was bypassed.
 
 Telemetry also reconciles once units are kept distinct:
 
@@ -84,12 +91,21 @@ The exact D proposal mass under that split is `4.0312369971e-5`: family mass
 two exact traces. Finite and lazy kernels agree on both exact construction
 densities.
 
-The legacy `deduction_mix` remains a fallback, so existing protocols and callers
-are unchanged. The local provider-free v2 gate completed successfully on
-2026-08-10 with one completed cell, no process failures, and a provider score
-cap of zero. Its independently recomputed, hash-bound certificate records two
-exact states and a `4.0` dominance margin. No v2 Qwen/RunPod pilot was executed
-as part of this audit.
+When split fields are omitted, both wave-local mixes fall back to the legacy
+`deduction_mix`, preserving legacy configurations' effective mixture values.
+The local provider-free v2 gate completed successfully on
+2026-08-11 UTC (2026-08-10 PDT) with one completed cell, no process failures,
+and a provider score cap of zero. Its independently recomputed, hash-bound
+certificate records two exact states and a `4.0` dominance margin.
+
+The gated seed-101 D/QD pilot subsequently completed with the configured 32B
+Qwen provider. Neither arm proposed an exact terminal construction; both
+selected the same four states under common random numbers, although their
+proposal probabilities differed. The QD ledgers contain no mapper request under
+an exact predicate prefix, so its exact-path probability remains
+`NOT_IDENTIFIED`. Run-specific provenance, telemetry, and interpretation are
+recorded in
+`research/DEDUCTION_STRESS_V2_PILOT_RESULT.md`.
 
 ## Reproduction
 

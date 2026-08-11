@@ -172,10 +172,11 @@ uv run python -m research.audit_math \
   --strict --output /tmp/deduction-stress-v1-math-audit.json
 ```
 
-The audit checks the matrix seal, replays every finite categorical ledger,
-reconciles paired paths and telemetry, materializes all 36,198 target states,
-and tracks whether each derived probability is identified by a prefix-consistent
-chain. Its findings are recorded in
+The audit checks protocol/matrix/cell bindings, rebuilds every finite catalog,
+deduction guide, and ancestor/previous-filling prompt, replays every categorical
+ledger, reconciles paired paths and telemetry, materializes all 36,198 target
+states, and tracks whether each derived probability is identified by a
+prefix-consistent chain. Its findings are recorded in
 `research/DEDUCTION_STRESS_MATH_AUDIT.md`.
 
 `protocol-deduction-stress-v2.json` is the corrected exploratory follow-up. It
@@ -203,8 +204,13 @@ uv run python -m research.run_matrix \
   --base-url "$MODELSMC_VLLM_32B_BASE_URL"
 ```
 
-The one-seed D/QD provider pilot remains explicitly unrun. It must not reuse
-the v1 splice proxy as a QD exact-path probability.
+The gated one-seed D/QD provider pilot completed on 2026-08-11 UTC. Neither arm
+found an exact construction at four particles and one guided iteration. The QD
+run never sampled an exact predicate, so its exact-path probability remains
+unidentified and must not be estimated with the v1-style cross-prefix splice.
+See `research/DEDUCTION_STRESS_V2_PILOT_RESULT.md` for the archived run result,
+telemetry, and archive checksum. The frozen protocol retains its pre-run status
+text because editing it would invalidate the protocol hash.
 
 ## Dry-run and execution
 
