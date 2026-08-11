@@ -149,6 +149,8 @@ class ImportanceSMCEngine:
             beta_max=self._options.beta_max,
             proposal_source=kernel.source,
             deduction_mix=self._options.deduction_mix,
+            family_deduction_mix=self._options.resolved_family_deduction_mix,
+            hole_deduction_mix=self._options.resolved_hole_deduction_mix,
             deduction_strength=self._options.deduction_strength,
             llm_energy_normalization=self._options.llm_energy_normalization,
             deduction_guide=kernel.final_deduction_guide,

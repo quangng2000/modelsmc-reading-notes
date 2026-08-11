@@ -204,6 +204,8 @@ class LazyImportanceSMCResult:
     probabilistic_claim: str
     proposal_source: str
     deduction_mix: float
+    family_deduction_mix: float
+    hole_deduction_mix: float
     deduction_strength: float
     llm_energy_normalization: LLMEnergyNormalization
     conditioned_skeleton: str | None

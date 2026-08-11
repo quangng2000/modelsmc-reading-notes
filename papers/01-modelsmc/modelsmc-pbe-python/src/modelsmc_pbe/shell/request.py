@@ -40,6 +40,8 @@ class SynthesizeRequest:
     materialize_reference: bool = False
     proposal_epsilon: float = 0.05
     deduction_mix: float = 0.5
+    family_deduction_mix: float | None = None
+    hole_deduction_mix: float | None = None
     deduction_strength: float = 2.0
     temperature: float = 0.7
     llm_energy_normalization: str = "total-full-prompt-logprob"

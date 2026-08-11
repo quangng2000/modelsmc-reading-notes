@@ -7,7 +7,7 @@ import json
 import os
 import shutil
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,6 +26,11 @@ from research.protocol import (
     TaskSpec,
     effective_caps,
     load_protocol,
+)
+from research.target_audit import (
+    CERTIFICATE_NAME,
+    create_target_audit_certificate,
+    validate_target_audit_certificate,
 )
 
 
@@ -236,6 +241,10 @@ def command_for(
         str(artifacts_dir),
         "--trace",
     ]
+    if arm.family_deduction_mix is not None:
+        command.extend(("--family-deduction-mix", str(arm.family_deduction_mix)))
+    if arm.hole_deduction_mix is not None:
+        command.extend(("--hole-deduction-mix", str(arm.hole_deduction_mix)))
     for name, value in sorted(protocol.shared_arguments.items()):
         command.extend((_flag(name), str(value)))
     if arm.proposal == "vllm":
@@ -434,6 +443,7 @@ def _initialize_matrix(
     *,
     stage: StageSpec | None,
     caps: Caps,
+    audit_certificate: Mapping[str, object] | None = None,
 ) -> None:
     output.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(protocol.path, output / "protocol.json")
@@ -447,6 +457,7 @@ def _initialize_matrix(
             "created_at": _now(),
             "analysis_population": "intention-to-treat",
             "stage_id": stage.stage_id if stage else None,
+            "audit_certificate": audit_certificate,
             "effective_caps": asdict(caps),
             "models": [asdict(model) for model in protocol.models],
             "planned_cells": [asdict(plan) for plan in plans],
@@ -461,6 +472,7 @@ def _validate_resume(
     *,
     stage: StageSpec | None,
     caps: Caps,
+    audit_certificate: Mapping[str, object] | None = None,
 ) -> None:
     manifest_path = output / "matrix_manifest.json"
     document = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -474,6 +486,8 @@ def _validate_resume(
         raise ValueError("resume stage differs from the original matrix")
     if document.get("effective_caps") != asdict(caps):
         raise ValueError("resume resource caps differ from the original matrix")
+    if document.get("audit_certificate") != audit_certificate:
+        raise ValueError("resume target-audit certificate differs from the original matrix")
 
 
 def _cost_summary(plans: tuple[CellPlan, ...], caps: Caps) -> dict[str, Any]:
@@ -537,6 +551,19 @@ def _base_url_for_plan(
     return os.environ.get(protocol.provider.base_url_env)
 
 
+def _resolve_executable(value: str) -> str:
+    """Resolve once so hashing and subprocess execution name the same file."""
+
+    located = shutil.which(value)
+    candidate = Path(located if located is not None else value).expanduser()
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+    resolved = candidate.resolve()
+    if not resolved.is_file():
+        raise ValueError(f"synthesizer executable does not exist: {resolved}")
+    return str(resolved)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocol", type=Path, default=Path(__file__).with_name("protocol.json"))
@@ -550,6 +577,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--base-url", help="vLLM /v1 URL; otherwise read protocol env name")
     parser.add_argument("--max-provider-cells", type=int)
     parser.add_argument("--max-provider-score-cap", type=int)
+    parser.add_argument(
+        "--audit-certificate",
+        type=Path,
+        help="Passing target-audit certificate required by a provider-backed stage",
+    )
     parser.add_argument("--executable", default="modelsmc-pbe")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -580,7 +612,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_provider_cells=args.max_provider_cells,
         max_provider_score_cap=args.max_provider_score_cap,
     )
-    executable = shutil.which(args.executable) or args.executable
     output = args.output.expanduser().resolve()
     if args.dry_run:
         print(
@@ -588,6 +619,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {
                     "protocol_sha256": protocol.protocol_sha256,
                     "stage_id": stage.stage_id if stage else None,
+                    "requires_audit_stage": (
+                        stage.requires_audit_stage if stage is not None else None
+                    ),
+                    "audit_certificate_required": bool(
+                        stage is not None and stage.requires_audit_stage is not None
+                    ),
                     "effective_caps": asdict(caps),
                     "cost_gate": summary,
                     "cells": [asdict(plan) for plan in plans],
@@ -596,6 +633,32 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+    executable = _resolve_executable(args.executable)
+    if (
+        int(summary["provider_cells"]) > 0
+        and protocol.target_contract is not None
+        and protocol.target_contract.reference_audit_required
+        and (stage is None or stage.requires_audit_stage is None)
+    ):
+        raise ValueError(
+            "provider-backed selection is forbidden outside a named stage with an "
+            "audit prerequisite"
+        )
+    audit_certificate: Mapping[str, object] | None = None
+    if stage is not None and stage.requires_audit_stage is not None:
+        if args.audit_certificate is None:
+            raise ValueError(
+                f"stage {stage.stage_id} requires --audit-certificate from "
+                f"{stage.requires_audit_stage}"
+            )
+        audit_certificate = validate_target_audit_certificate(
+            args.audit_certificate,
+            protocol,
+            stage,
+            executable=executable,
+        )
+    elif args.audit_certificate is not None:
+        raise ValueError("--audit-certificate is only valid for a stage that requires one")
     missing_endpoints = [
         plan.cell_id
         for plan in plans
@@ -608,9 +671,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             + ", ".join(missing_endpoints[:4])
         )
     if args.resume:
-        _validate_resume(output, protocol, plans, stage=stage, caps=caps)
+        _validate_resume(
+            output,
+            protocol,
+            plans,
+            stage=stage,
+            caps=caps,
+            audit_certificate=audit_certificate,
+        )
     else:
-        _initialize_matrix(output, protocol, plans, stage=stage, caps=caps)
+        _initialize_matrix(
+            output,
+            protocol,
+            plans,
+            stage=stage,
+            caps=caps,
+            audit_certificate=audit_certificate,
+        )
 
     failures = 0
     for index, plan in enumerate(plans, start=1):
@@ -638,6 +715,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"wall={record['wall_time_seconds']:.3f}s"
         )
     print(f"[matrix] finished cells={len(plans)} process_failures={failures}")
+    contract = protocol.target_contract
+    if (
+        contract is not None
+        and contract.reference_audit_required
+        and stage is not None
+        and stage.stage_id == contract.reference_audit_stage
+    ):
+        certificate = create_target_audit_certificate(
+            protocol,
+            stage,
+            output,
+            executable=executable,
+        )
+        if certificate["invariants_passed"] is not True:
+            raise RuntimeError(
+                f"target audit failed; see {output / CERTIFICATE_NAME}"
+            )
+        print(f"[matrix] target audit passed certificate={output / CERTIFICATE_NAME}")
     # Treatment failures are data, so a completed matrix command exits successfully.
     return 0
 

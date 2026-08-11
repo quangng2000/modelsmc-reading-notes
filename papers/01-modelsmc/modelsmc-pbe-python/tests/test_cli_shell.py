@@ -178,6 +178,10 @@ def test_cli_importance_smoke_uses_an_explicit_uniform_q(tmp_path: Path) -> None
             "tokenizer-test",
             "--deduction-mix",
             "0.6",
+            "--family-deduction-mix",
+            "0.7",
+            "--hole-deduction-mix",
+            "0.2",
             "--deduction-strength",
             "3.0",
             "--max-tokens",
@@ -206,11 +210,17 @@ def test_cli_importance_smoke_uses_an_explicit_uniform_q(tmp_path: Path) -> None
     assert persisted["result"]["reference"] is None
     assert persisted["result"]["proposal_source"] == "uniform-finite-candidates"
     assert persisted["result"]["deduction_mix"] == 0.6
+    assert persisted["result"]["family_deduction_mix"] == 0.7
+    assert persisted["result"]["hole_deduction_mix"] == 0.2
     assert persisted["result"]["deduction_strength"] == 3.0
     assert persisted["result"]["llm_energy_normalization"] == (
         "mean-full-prompt-conditional-logprob"
     )
     assert persisted["result"]["score_ledger"]
+    assert all(
+        ledger["deduction_mix"] == (0.7 if ledger["wave"] == "family" else 0.2)
+        for ledger in persisted["result"]["score_ledger"]
+    )
     assert all(
         "deduction_guide_mass" in family for family in persisted["result"]["families"]
     )
@@ -233,6 +243,8 @@ def test_cli_importance_smoke_uses_an_explicit_uniform_q(tmp_path: Path) -> None
     assert manifest["configuration"]["model_revision"] == "b2cff646"
     assert manifest["configuration"]["tokenizer_revision"] == "tokenizer-test"
     assert manifest["configuration"]["deduction_mix"] == 0.6
+    assert manifest["configuration"]["family_deduction_mix"] == 0.7
+    assert manifest["configuration"]["hole_deduction_mix"] == 0.2
     assert manifest["configuration"]["deduction_strength"] == 3.0
     assert manifest["configuration"]["max_tokens"] == 123
     assert manifest["configuration"]["max_concurrency"] == 3

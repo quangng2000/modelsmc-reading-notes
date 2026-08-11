@@ -45,6 +45,8 @@ class ImportanceSMCOptions:
     proposal_temperature: float = 0.7
     proposal_epsilon: float = 0.05
     deduction_mix: float = 0.5
+    family_deduction_mix: float | None = None
+    hole_deduction_mix: float | None = None
     deduction_strength: float = 2.0
     beta_max: float = 1.0
     max_scored_candidates: int = 1_000_000
@@ -72,6 +74,14 @@ class ImportanceSMCOptions:
             raise ValueError("proposal_epsilon must be finite and in (0, 1]")
         if not math.isfinite(self.deduction_mix) or not 0.0 <= self.deduction_mix <= 1.0:
             raise ValueError("deduction_mix must be finite and in [0, 1]")
+        for name, optional_value in (
+            ("family_deduction_mix", self.family_deduction_mix),
+            ("hole_deduction_mix", self.hole_deduction_mix),
+        ):
+            if optional_value is not None and (
+                not math.isfinite(optional_value) or not 0.0 <= optional_value <= 1.0
+            ):
+                raise ValueError(f"{name} must be None or finite and in [0, 1]")
         if not math.isfinite(self.deduction_strength) or self.deduction_strength < 0.0:
             raise ValueError("deduction_strength must be finite and nonnegative")
         if not math.isfinite(self.beta_max) or self.beta_max <= 0:
@@ -93,6 +103,22 @@ class ImportanceSMCOptions:
             )
         if not isinstance(self.llm_energy_normalization, LLMEnergyNormalization):
             raise TypeError("llm_energy_normalization must be an LLMEnergyNormalization")
+
+    @property
+    def resolved_family_deduction_mix(self) -> float:
+        """Return the family-wave mix, falling back to the legacy shared value."""
+
+        if self.family_deduction_mix is None:
+            return self.deduction_mix
+        return self.family_deduction_mix
+
+    @property
+    def resolved_hole_deduction_mix(self) -> float:
+        """Return the hole-wave mix, falling back to the legacy shared value."""
+
+        if self.hole_deduction_mix is None:
+            return self.deduction_mix
+        return self.hole_deduction_mix
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,6 +318,8 @@ class ImportanceSMCResult:
     probabilistic_claim: str
     proposal_source: str
     deduction_mix: float
+    family_deduction_mix: float
+    hole_deduction_mix: float
     deduction_strength: float
     llm_energy_normalization: LLMEnergyNormalization
     conditioned_skeleton: SkeletonName | None

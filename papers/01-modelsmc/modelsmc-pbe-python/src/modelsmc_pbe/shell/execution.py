@@ -114,6 +114,8 @@ def execute_importance_smc(
         proposal_temperature=request.temperature,
         proposal_epsilon=request.proposal_epsilon,
         deduction_mix=request.deduction_mix,
+        family_deduction_mix=request.family_deduction_mix,
+        hole_deduction_mix=request.hole_deduction_mix,
         deduction_strength=request.deduction_strength,
         beta_max=request.beta_max,
         max_scored_candidates=request.max_scored_candidates,
@@ -165,6 +167,10 @@ def execute_importance_smc(
                         "--materialize-reference for the external finite control",
                         "candidate scores: "
                         f"used={lazy.scored_candidates} limit={lazy.max_scored_candidates}",
+                        "proposal mixture: "
+                        f"family-deduction={lazy.family_deduction_mix:.5g} "
+                        f"hole-deduction={lazy.hole_deduction_mix:.5g} "
+                        f"strength={lazy.deduction_strength:.5g}",
                         *family_details,
                     ),
                 ),
@@ -206,7 +212,8 @@ def execute_importance_smc(
             details=(
                 f"proposal={result.proposal_source}",
                 "proposal mixture: "
-                f"deduction={result.deduction_mix:.5g} "
+                f"family-deduction={result.family_deduction_mix:.5g} "
+                f"hole-deduction={result.hole_deduction_mix:.5g} "
                 f"strength={result.deduction_strength:.5g}",
                 f"LLM energy={result.llm_energy_normalization.value}",
                 f"deduction-guide exact-program mass={result.deduction_guide_exact_mass:.7g}",

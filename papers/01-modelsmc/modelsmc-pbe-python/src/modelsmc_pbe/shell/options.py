@@ -164,6 +164,22 @@ DeductionMixOption = Annotated[
         help="Mass assigned to the exact deduction guide before the uniform floor.",
     ),
 ]
+FamilyDeductionMixOption = Annotated[
+    float | None,
+    typer.Option(
+        min=0.0,
+        max=1.0,
+        help="Override deduction-guide mass for structural family choices.",
+    ),
+]
+HoleDeductionMixOption = Annotated[
+    float | None,
+    typer.Option(
+        min=0.0,
+        max=1.0,
+        help="Override deduction-guide mass for typed hole choices.",
+    ),
+]
 DeductionStrengthOption = Annotated[
     float,
     typer.Option(

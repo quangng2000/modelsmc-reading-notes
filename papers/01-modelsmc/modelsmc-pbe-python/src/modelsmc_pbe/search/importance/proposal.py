@@ -181,6 +181,8 @@ class FiniteGuidedProposalKernel:
             message="exact Occam/deduction subtree guide constructed",
             level="debug",
             deduction_mix=options.deduction_mix,
+            family_deduction_mix=options.resolved_family_deduction_mix,
+            hole_deduction_mix=options.resolved_hole_deduction_mix,
             deduction_strength=options.deduction_strength,
             minimum_violations=float(self._deduction_guide.violations.min().item()),
             maximum_violations=float(self._deduction_guide.violations.max().item()),
@@ -492,11 +494,13 @@ class FiniteGuidedProposalKernel:
         beta: float,
     ) -> _ProposalPath:
         choices = self._family_choices()
+        deduction_mix = self._options.resolved_family_deduction_mix
         distribution = self._candidate_probabilities(
             request,
             batch,
             groups=tuple(choice.family.state_indices for choice in choices),
             beta=beta,
+            deduction_mix=deduction_mix,
         )
         probabilities = distribution.probabilities
         if seed.target_state_index is None:
@@ -531,6 +535,7 @@ class FiniteGuidedProposalKernel:
             ancestor_state_index=seed.ancestor_state_index,
             forced=seed.target_state_index is not None,
             cloned=seed.cloned,
+            deduction_mix=deduction_mix,
         )
         self._event(
             "importance.proposal.family_selected",
@@ -544,7 +549,7 @@ class FiniteGuidedProposalKernel:
             qwen_probability=float(distribution.q_llm[selected].item()),
             deduction_probability=float(distribution.q_deduction[selected].item()),
             uniform_floor=self._options.proposal_epsilon / len(choices),
-            deduction_mix=self._options.deduction_mix,
+            deduction_mix=deduction_mix,
             forced=seed.target_state_index is not None,
             cloned=seed.cloned,
         )
@@ -621,11 +626,13 @@ class FiniteGuidedProposalKernel:
             )
             for choice in choices
         )
+        deduction_mix = self._options.resolved_hole_deduction_mix
         distribution = self._candidate_probabilities(
             request,
             batch,
             groups=groups,
             beta=beta,
+            deduction_mix=deduction_mix,
         )
         probabilities = distribution.probabilities
         if path.target_state_index is None:
@@ -659,6 +666,7 @@ class FiniteGuidedProposalKernel:
             ancestor_state_index=path.ancestor_state_index,
             forced=path.target_state_index is not None,
             cloned=path.cloned,
+            deduction_mix=deduction_mix,
         )
         self._event(
             "importance.proposal.hole_selected",
@@ -675,7 +683,7 @@ class FiniteGuidedProposalKernel:
             qwen_probability=float(distribution.q_llm[selected].item()),
             deduction_probability=float(distribution.q_deduction[selected].item()),
             uniform_floor=self._options.proposal_epsilon / len(choices),
-            deduction_mix=self._options.deduction_mix,
+            deduction_mix=deduction_mix,
             deduction_examples=len(
                 path.family.deduction.examples_for(chosen.hole_name)
             ),
@@ -699,6 +707,7 @@ class FiniteGuidedProposalKernel:
         *,
         groups: tuple[tuple[int, ...], ...],
         beta: float,
+        deduction_mix: float,
     ) -> CandidateDistribution:
         if tuple(score.candidate for score in batch.scores) != request.candidates:
             raise RuntimeError("candidate scorer reordered or changed the finite catalog")
@@ -711,7 +720,7 @@ class FiniteGuidedProposalKernel:
             q_deduction=q_deduction,
             temperature=self._options.proposal_temperature,
             epsilon=self._options.proposal_epsilon,
-            deduction_mix=self._options.deduction_mix,
+            deduction_mix=deduction_mix,
         )
 
     def _record_score_wave(
@@ -728,6 +737,7 @@ class FiniteGuidedProposalKernel:
         ancestor_state_index: int,
         forced: bool,
         cloned: bool,
+        deduction_mix: float,
     ) -> None:
         """Deduplicate score evidence while retaining every categorical use."""
 
@@ -747,7 +757,7 @@ class FiniteGuidedProposalKernel:
             self._options.llm_energy_normalization,
             self._options.proposal_temperature,
             self._options.proposal_epsilon,
-            self._options.deduction_mix,
+            deduction_mix,
             deduction,
             proposal,
         )
@@ -798,7 +808,7 @@ class FiniteGuidedProposalKernel:
                 energy_normalization=self._options.llm_energy_normalization,
                 temperature=self._options.proposal_temperature,
                 proposal_epsilon=self._options.proposal_epsilon,
-                deduction_mix=self._options.deduction_mix,
+                deduction_mix=deduction_mix,
                 candidates=candidates,
                 selections=(),
             )

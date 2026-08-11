@@ -237,7 +237,13 @@ class LazyGuidedProposalKernel:
         )
         paths: list[_Path] = []
         for seed, request, batch in zip(seeds, requests, batches, strict=True):
-            distribution = self._distribution(request, batch, q_deduction)
+            deduction_mix = self._options.resolved_family_deduction_mix
+            distribution = self._distribution(
+                request,
+                batch,
+                q_deduction,
+                deduction_mix=deduction_mix,
+            )
             if seed.target_trace is None:
                 position = int(
                     categorical_sample(
@@ -265,6 +271,7 @@ class LazyGuidedProposalKernel:
                 slot=seed.slot,
                 forced=seed.target_trace is not None,
                 cloned=seed.cloned,
+                deduction_mix=deduction_mix,
             )
             paths.append(
                 _Path(
@@ -382,7 +389,13 @@ class LazyGuidedProposalKernel:
             cost_scale=float(self._config.smc.cost_scale),
             violation_scale=self._violation_scale(beta),
         )
-        distribution = self._distribution(request, batch, q_deduction)
+        deduction_mix = self._options.resolved_hole_deduction_mix
+        distribution = self._distribution(
+            request,
+            batch,
+            q_deduction,
+            deduction_mix=deduction_mix,
+        )
         if path.target_trace is None:
             position = int(
                 categorical_sample(
@@ -408,6 +421,7 @@ class LazyGuidedProposalKernel:
             slot=path.slot,
             forced=path.target_trace is not None,
             cloned=path.cloned,
+            deduction_mix=deduction_mix,
         )
         path.selected_indices.append(choice)
         path.previous_fillings.append(filling)
@@ -456,6 +470,8 @@ class LazyGuidedProposalKernel:
         request: CandidateScoreRequest,
         batch: CandidateScoreBatch,
         q_deduction: torch.Tensor,
+        *,
+        deduction_mix: float,
     ) -> CandidateDistribution:
         if tuple(score.candidate for score in batch.scores) != request.candidates:
             raise RuntimeError("candidate scorer reordered or changed the finite catalog")
@@ -467,7 +483,7 @@ class LazyGuidedProposalKernel:
             q_deduction=q_deduction,
             temperature=self._options.proposal_temperature,
             epsilon=self._options.proposal_epsilon,
-            deduction_mix=self._options.deduction_mix,
+            deduction_mix=deduction_mix,
         )
 
     def _record_score_wave(
@@ -483,6 +499,7 @@ class LazyGuidedProposalKernel:
         slot: int,
         forced: bool,
         cloned: bool,
+        deduction_mix: float,
     ) -> None:
         """Deduplicate score evidence while retaining every categorical use."""
 
@@ -502,7 +519,7 @@ class LazyGuidedProposalKernel:
             self._options.llm_energy_normalization,
             self._options.proposal_temperature,
             self._options.proposal_epsilon,
-            self._options.deduction_mix,
+            deduction_mix,
             deduction,
             proposal,
         )
@@ -553,7 +570,7 @@ class LazyGuidedProposalKernel:
                 energy_normalization=self._options.llm_energy_normalization,
                 temperature=self._options.proposal_temperature,
                 proposal_epsilon=self._options.proposal_epsilon,
-                deduction_mix=self._options.deduction_mix,
+                deduction_mix=deduction_mix,
                 candidates=candidates,
                 selections=(),
             )

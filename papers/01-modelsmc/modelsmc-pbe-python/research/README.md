@@ -161,6 +161,51 @@ hard combined ceiling of 13,260 scored candidates and at most 440 HTTP batches
 at batch size 32. The final self-contained paired matrix reruns D locally with
 QD rather than joining observations from separate output directories.
 
+### V1 math audit and corrected v2 protocol
+
+The sealed v1 artifacts remain immutable, but their earlier interpretation is
+corrected by `research.audit_math`. Run the end-to-end replay with:
+
+```bash
+uv run python -m research.audit_math \
+  research/outputs/deduction-stress-paired-v1 \
+  --strict --output /tmp/deduction-stress-v1-math-audit.json
+```
+
+The audit checks the matrix seal, replays every finite categorical ledger,
+reconciles paired paths and telemetry, materializes all 36,198 target states,
+and tracks whether each derived probability is identified by a prefix-consistent
+chain. Its findings are recorded in
+`research/DEDUCTION_STRESS_MATH_AUDIT.md`.
+
+`protocol-deduction-stress-v2.json` is the corrected exploratory follow-up. It
+changes only the task's `lossScale` from `0.75` to `2.0`, preserves the original
+task ID and held-out corpus, and uses family/hole deduction mixes of `0.75/0.0`
+for D and QD. Run its provider-free reference gate first:
+
+```bash
+uv run python -m research.run_matrix \
+  --protocol research/protocol-deduction-stress-v2.json \
+  --output research/outputs/deduction-stress-v2-reference \
+  --stage provider-free-reference-audit
+```
+
+That stage writes `target_audit_certificate.json` only after the exhaustive
+target and its artifact hashes pass. The paid pilot requires that certificate:
+
+```bash
+uv run python -m research.run_matrix \
+  --protocol research/protocol-deduction-stress-v2.json \
+  --output research/outputs/deduction-stress-v2-pilot \
+  --stage paired-d-qd-32b-pilot \
+  --audit-certificate \
+    research/outputs/deduction-stress-v2-reference/target_audit_certificate.json \
+  --base-url "$MODELSMC_VLLM_32B_BASE_URL"
+```
+
+The one-seed D/QD provider pilot remains explicitly unrun. It must not reuse
+the v1 splice proxy as a QD exact-path probability.
+
 ## Dry-run and execution
 
 Run commands from `papers/01-modelsmc/modelsmc-pbe-python`. This is the exact

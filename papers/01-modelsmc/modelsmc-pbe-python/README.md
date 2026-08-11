@@ -318,6 +318,14 @@ with `--proposal catalog`. The model component is then uniform, while the same
 explicit deduction guide remains active; pass `--deduction-mix 0` to recover
 the old fully uniform construction proposal.
 
+`--deduction-mix` remains the backward-compatible default for every proposal
+wave. `--family-deduction-mix` and `--hole-deduction-mix` can override it at
+family selection and hole filling, respectively. This matters when deduction
+soundly identifies a useful family but derives no discriminating examples for
+the holes: the family guide can remain active without treating a hole-level
+Occam distribution as if it were evidence. Score ledgers store the resolved
+mix used by each wave, and results and manifests retain both resolved values.
+
 The Qwen path does **not** sample free-form JSON. For prompt `P` and canonical
 candidate `u`, it teacher-forces the complete concatenated prompt and obtains
 an energy from that prompt's tokenization

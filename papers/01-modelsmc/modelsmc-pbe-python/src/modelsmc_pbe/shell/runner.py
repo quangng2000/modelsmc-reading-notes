@@ -100,6 +100,16 @@ def _create_logger(
         "llm_energy_normalization": request.llm_energy_normalization,
         "proposal_epsilon": request.proposal_epsilon,
         "deduction_mix": request.deduction_mix,
+        "family_deduction_mix": (
+            request.deduction_mix
+            if request.family_deduction_mix is None
+            else request.family_deduction_mix
+        ),
+        "hole_deduction_mix": (
+            request.deduction_mix
+            if request.hole_deduction_mix is None
+            else request.hole_deduction_mix
+        ),
         "deduction_strength": request.deduction_strength,
         "candidate_batch_size": request.candidate_batch_size,
         "max_scored_candidates": request.max_scored_candidates,

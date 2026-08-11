@@ -56,6 +56,25 @@ def test_importance_energy_normalization_remains_total_by_default() -> None:
     )
 
 
+def test_split_deduction_mixes_fall_back_to_legacy_value_and_allow_overrides() -> None:
+    legacy = ImportanceSMCOptions(deduction_mix=0.6)
+    split = ImportanceSMCOptions(
+        deduction_mix=0.6,
+        family_deduction_mix=0.8,
+        hole_deduction_mix=0.2,
+    )
+
+    assert legacy.resolved_family_deduction_mix == pytest.approx(0.6)
+    assert legacy.resolved_hole_deduction_mix == pytest.approx(0.6)
+    assert split.resolved_family_deduction_mix == pytest.approx(0.8)
+    assert split.resolved_hole_deduction_mix == pytest.approx(0.2)
+
+    with pytest.raises(ValueError, match="family_deduction_mix"):
+        ImportanceSMCOptions(family_deduction_mix=1.1)
+    with pytest.raises(ValueError, match="hole_deduction_mix"):
+        ImportanceSMCOptions(hole_deduction_mix=-0.1)
+
+
 def _config(
     path: Path,
     *,
@@ -953,9 +972,11 @@ def test_persistable_score_ledger_replays_pre_mixture_qwen_categorical() -> None
 
     config = _bounded_config()
     options = ImportanceSMCOptions(
-        conditioned_skeleton="foldr-filter-map",
+        multi_family=True,
         support_limit=1_000,
         deduction_mix=0.3,
+        family_deduction_mix=0.8,
+        hole_deduction_mix=0.1,
         proposal_temperature=0.6,
         llm_energy_normalization=(
             LLMEnergyNormalization.MEAN_FULL_PROMPT_CONDITIONAL_LOGPROB
@@ -997,6 +1018,9 @@ def test_persistable_score_ledger_replays_pre_mixture_qwen_categorical() -> None
         assert ledger.model_revision == "b2cff646"
         assert ledger.tokenizer_revision == "tokenizer-test"
         assert ledger.selections[0].selected_probability > 0.0
+        assert ledger.deduction_mix == pytest.approx(
+            0.8 if ledger.wave == "family" else 0.1
+        )
 
 
 def test_proposal_deduplicates_scoring_work_and_skips_one_family_wave() -> None:

@@ -12,6 +12,7 @@ from research.protocol import effective_caps, load_protocol
 from research.run_matrix import (
     _base_url_for_plan,
     _initialize_matrix,
+    _resolve_executable,
     _validate_resume,
     build_plan,
     command_for,
@@ -40,6 +41,17 @@ def _write_protocol_copy(
     path = tmp_path / "protocol.json"
     path.write_text(json.dumps(document), encoding="utf-8")
     return path
+
+
+def test_relative_executable_is_canonicalized_before_hashing_and_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "tool"
+    executable.write_text("test entry point", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert _resolve_executable("./tool") == str(executable.resolve())
 
 
 def test_size_matrix_crosses_models_only_for_qwen_arms() -> None:
@@ -75,6 +87,47 @@ def test_schema_two_rejects_a_mutable_model_revision(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="40-hex commit"):
         load_protocol(path)
+
+
+def test_protocol_emits_only_explicit_split_deduction_mix_overrides(
+    tmp_path: Path,
+) -> None:
+    def mutate(document: dict[str, Any]) -> None:
+        arms = document["arms"]
+        assert isinstance(arms, list)
+        qd = next(arm for arm in arms if arm["id"] == "QD")
+        qd["family_deduction_mix"] = 0.8
+        qd["hole_deduction_mix"] = 0.1
+
+    split = load_protocol(_write_protocol_copy(tmp_path, mutate))
+    stage = find_stage(split, "gate-2-size-pilot")
+    assert stage is not None
+    plan = next(
+        plan
+        for plan in build_plan(split, stage=stage, model_ids={"qwen25-coder-3b"})
+        if plan.arm == "QD"
+    )
+    task = next(task for task in split.tasks if task.task_id == plan.task_id)
+    arm = next(arm for arm in split.arms if arm.name == plan.arm)
+    command = command_for(
+        split,
+        task,
+        arm,
+        plan,
+        caps=effective_caps(split, stage),
+        executable="modelsmc-pbe",
+        artifacts_dir=tmp_path,
+        base_url="https://provider.invalid/v1",
+    )
+
+    assert _value_after(command, "--deduction-mix") == "0.75"
+    assert _value_after(command, "--family-deduction-mix") == "0.8"
+    assert _value_after(command, "--hole-deduction-mix") == "0.1"
+
+    frozen = load_protocol(PROTOCOL_PATH)
+    frozen_arm = next(arm for arm in frozen.arms if arm.name == "QD")
+    assert frozen_arm.family_deduction_mix is None
+    assert frozen_arm.hole_deduction_mix is None
 
 
 def test_transport_amendment_changes_only_batching_and_exploratory_metadata() -> None:

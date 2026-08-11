@@ -44,6 +44,8 @@ class ArmSpec:
     name: ArmName
     proposal: Literal["catalog", "vllm"]
     deduction_mix: float
+    family_deduction_mix: float | None
+    hole_deduction_mix: float | None
     description: str
 
 
@@ -110,6 +112,20 @@ class StageSpec:
     model_ids: tuple[str, ...]
     caps: StageCaps
     max_provider_scored_candidates: int
+    requires_audit_stage: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class TargetContract:
+    base_measure: Literal["equal-family-within-family-occam"]
+    likelihood: Literal["soft-loss-gibbs"]
+    loss_scale: float
+    beta_max: float
+    terminal_dominance_requirement: Literal[
+        "min-exact-log-target-strictly-greater-than-max-inexact-log-target"
+    ]
+    reference_audit_required: bool
+    reference_audit_stage: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +144,7 @@ class Protocol:
     provider: ProviderSpec
     materialize_reference: bool
     shared_arguments: dict[str, str | int | float]
+    target_contract: TargetContract | None
 
     @property
     def project_root(self) -> Path:
@@ -232,10 +249,22 @@ def _load_arm(value: object) -> ArmSpec:
     deduction_mix = _number(record.get("deduction_mix"), f"arm {name} deduction_mix")
     if deduction_mix > 1.0:
         raise ValueError(f"arm {name} deduction_mix must be at most 1")
+    optional_mixes: dict[str, float | None] = {}
+    for field_name in ("family_deduction_mix", "hole_deduction_mix"):
+        raw_value = record.get(field_name)
+        if raw_value is None:
+            optional_mixes[field_name] = None
+            continue
+        parsed = _number(raw_value, f"arm {name} {field_name}")
+        if parsed > 1.0:
+            raise ValueError(f"arm {name} {field_name} must be at most 1")
+        optional_mixes[field_name] = parsed
     return ArmSpec(
         name=cast(ArmName, name),
         proposal=cast(Literal["catalog", "vllm"], proposal),
         deduction_mix=deduction_mix,
+        family_deduction_mix=optional_mixes["family_deduction_mix"],
+        hole_deduction_mix=optional_mixes["hole_deduction_mix"],
         description=_text(record.get("description"), f"arm {name} description"),
     )
 
@@ -361,6 +390,12 @@ def _load_stage(
     )
     if any(arm in {"Q", "QD"} for arm in selected_arms) and provider_budget == 0:
         raise ValueError(f"provider-backed stage {stage_id} must have a positive budget")
+    raw_requires_audit = record.get("requires_audit_stage")
+    requires_audit_stage = (
+        None
+        if raw_requires_audit is None
+        else _stable_id(raw_requires_audit, f"stage {stage_id} requires_audit_stage")
+    )
     return StageSpec(
         stage_id=stage_id,
         description=_text(record.get("description"), f"stage {stage_id} description"),
@@ -384,6 +419,7 @@ def _load_stage(
             ),
         ),
         max_provider_scored_candidates=provider_budget,
+        requires_audit_stage=requires_audit_stage,
     )
 
 
@@ -562,6 +598,61 @@ def load_protocol(path: str | Path) -> Protocol:
     if not isinstance(raw_materialize, bool):
         raise ValueError("materialize_reference must be boolean")
 
+    raw_target_contract = document.get("target_contract")
+    target_contract: TargetContract | None = None
+    if raw_target_contract is not None:
+        if schema_version < 3:
+            raise ValueError("target_contract requires schema_version 3 or newer")
+        contract = _record(raw_target_contract, "target_contract")
+        dominance = _text(
+            contract.get("terminal_dominance_requirement"),
+            "target_contract.terminal_dominance_requirement",
+        )
+        expected_dominance = (
+            "min-exact-log-target-strictly-greater-than-max-inexact-log-target"
+        )
+        if dominance != expected_dominance:
+            raise ValueError(
+                "target_contract.terminal_dominance_requirement must be "
+                f"{expected_dominance}"
+            )
+        required = contract.get("reference_audit_required")
+        if not isinstance(required, bool):
+            raise ValueError("target_contract.reference_audit_required must be boolean")
+        target_contract = TargetContract(
+            base_measure=cast(
+                Literal["equal-family-within-family-occam"],
+                _text(contract.get("base_measure"), "target_contract.base_measure"),
+            ),
+            likelihood=cast(
+                Literal["soft-loss-gibbs"],
+                _text(contract.get("likelihood"), "target_contract.likelihood"),
+            ),
+            loss_scale=_number(
+                contract.get("loss_scale"), "target_contract.loss_scale", minimum=0.000001
+            ),
+            beta_max=_number(
+                contract.get("beta_max"), "target_contract.beta_max", minimum=0.000001
+            ),
+            terminal_dominance_requirement=cast(
+                Literal[
+                    "min-exact-log-target-strictly-greater-than-max-inexact-log-target"
+                ],
+                dominance,
+            ),
+            reference_audit_required=required,
+            reference_audit_stage=_stable_id(
+                contract.get("reference_audit_stage"),
+                "target_contract.reference_audit_stage",
+            ),
+        )
+        if target_contract.base_measure != "equal-family-within-family-occam":
+            raise ValueError(
+                "target_contract.base_measure must be equal-family-within-family-occam"
+            )
+        if target_contract.likelihood != "soft-loss-gibbs":
+            raise ValueError("target_contract.likelihood must be soft-loss-gibbs")
+
     task_ids = {task.task_id for task in tasks}
     arm_names = {str(arm.name) for arm in arms}
     seed_values = set(seeds)
@@ -579,6 +670,42 @@ def load_protocol(path: str | Path) -> Protocol:
     )
     if len({stage.stage_id for stage in stages}) != len(stages):
         raise ValueError("stage ids must be unique")
+    stage_positions = {stage.stage_id: position for position, stage in enumerate(stages)}
+    for position, stage in enumerate(stages):
+        required_stage = stage.requires_audit_stage
+        if required_stage is None:
+            continue
+        if required_stage not in stage_positions:
+            raise ValueError(
+                f"stage {stage.stage_id} requires unknown audit stage {required_stage}"
+            )
+        if stage_positions[required_stage] >= position:
+            raise ValueError(
+                f"stage {stage.stage_id} audit prerequisite must be declared earlier"
+            )
+    if target_contract is not None and target_contract.reference_audit_required:
+        reference_id = target_contract.reference_audit_stage
+        if reference_id not in stage_positions:
+            raise ValueError(f"target contract references unknown audit stage {reference_id}")
+        reference_stage = stages[stage_positions[reference_id]]
+        if reference_stage.max_provider_scored_candidates != 0 or any(
+            arm in {"Q", "QD"} for arm in reference_stage.arms
+        ):
+            raise ValueError("target-contract reference audit stage must be provider-free")
+        for stage in stages:
+            if not any(arm in {"Q", "QD"} for arm in stage.arms):
+                continue
+            if stage.requires_audit_stage != reference_id:
+                raise ValueError(
+                    f"provider-backed stage {stage.stage_id} must require audit stage "
+                    f"{reference_id}"
+                )
+            uncovered_tasks = set(stage.task_ids) - set(reference_stage.task_ids)
+            if uncovered_tasks:
+                raise ValueError(
+                    f"provider-backed stage {stage.stage_id} has tasks not covered by "
+                    f"{reference_id}: {sorted(uncovered_tasks)}"
+                )
 
     return Protocol(
         path=resolved,
@@ -595,4 +722,5 @@ def load_protocol(path: str | Path) -> Protocol:
         provider=provider,
         materialize_reference=raw_materialize,
         shared_arguments=cast(dict[str, str | int | float], shared),
+        target_contract=target_contract,
     )
