@@ -41,7 +41,6 @@ def _validate_boundary(boundary: SemanticBoundaryLedger) -> None:
         boundary.label_a_prefix_token_logprobs_sha256,
         boundary.label_b_prefix_token_logprobs_sha256,
         boundary.shared_token_ids_sha256,
-        boundary.shared_token_logprobs_sha256,
     )
     if not all(_is_sha256(digest) for digest in digests):
         raise ValueError("semantic boundary evidence must use lowercase SHA-256")
@@ -50,16 +49,21 @@ def _validate_boundary(boundary: SemanticBoundaryLedger) -> None:
     if boundary.shared_token_count < 0:
         raise ValueError("semantic boundary shared-token count must be nonnegative")
     if (
-        boundary.label_a_prefix_token_ids_sha256
-        != boundary.shared_token_ids_sha256
-        or boundary.label_b_prefix_token_ids_sha256
-        != boundary.shared_token_ids_sha256
-        or boundary.label_a_prefix_token_logprobs_sha256
-        != boundary.shared_token_logprobs_sha256
-        or boundary.label_b_prefix_token_logprobs_sha256
-        != boundary.shared_token_logprobs_sha256
+        boundary.label_a_prefix_token_ids_sha256 != boundary.shared_token_ids_sha256
+        or boundary.label_b_prefix_token_ids_sha256 != boundary.shared_token_ids_sha256
     ):
-        raise ValueError("semantic boundary prefix hashes disagree")
+        raise ValueError("semantic boundary prefix token IDs disagree")
+    if (
+        not math.isfinite(boundary.max_abs_prefix_logprob_delta)
+        or boundary.max_abs_prefix_logprob_delta < 0.0
+    ):
+        raise ValueError("semantic prefix logprob delta must be finite and nonnegative")
+    if (
+        boundary.label_a_prefix_token_logprobs_sha256
+        == boundary.label_b_prefix_token_logprobs_sha256
+        and boundary.max_abs_prefix_logprob_delta != 0.0
+    ):
+        raise ValueError("identical semantic prefix logprob commitments require zero delta")
     if boundary.label_a_token_id < 0 or boundary.label_b_token_id < 0:
         raise ValueError("semantic label token IDs must be nonnegative")
     if boundary.label_a_token_id == boundary.label_b_token_id:
@@ -89,19 +93,14 @@ def _validate_program_scores(
             raise ValueError("semantic score must retain teacher-forced path semantics")
         if not program.source or not program.model:
             raise ValueError("semantic program score provider identity must not be empty")
-        if program.cache_key_sha256 is not None and not _is_sha256(
-            program.cache_key_sha256
-        ):
+        if program.cache_key_sha256 is not None and not _is_sha256(program.cache_key_sha256):
             raise ValueError("semantic cache identity must use lowercase SHA-256")
         provenance = (
             program.score_origin,
             program.cache_key_sha256,
             program.cache_hit,
         )
-        if (
-            provenance[0] == "cache"
-            and (provenance[1] is None or provenance[2] is not True)
-        ):
+        if provenance[0] == "cache" and (provenance[1] is None or provenance[2] is not True):
             raise ValueError("cache-origin semantic scores require a hit and cache key")
         if provenance[0] in {"synthetic", "unspecified"} and provenance[1:] != (
             None,
@@ -163,16 +162,11 @@ def _validate_trace_probabilities(
         )
         if not close(record.log_q_proposal, expected_proposal):
             raise ValueError("defensive semantic probability failed replay")
-        if (
-            record.log_prior > ABSOLUTE_TOLERANCE
-            or record.log_q_proposal > ABSOLUTE_TOLERANCE
-        ):
+        if record.log_prior > ABSOLUTE_TOLERANCE or record.log_q_proposal > ABSOLUTE_TOLERANCE:
             raise ValueError("semantic trace prior and proposal masses cannot exceed one")
         traces[record.trace] = record
     prior_mass = math.fsum(math.exp(record.log_prior) for record in traces.values())
-    proposal_mass = math.fsum(
-        math.exp(record.log_q_proposal) for record in traces.values()
-    )
+    proposal_mass = math.fsum(math.exp(record.log_q_proposal) for record in traces.values())
     if prior_mass > 1.0 + ABSOLUTE_TOLERANCE or proposal_mass > 1.0 + ABSOLUTE_TOLERANCE:
         raise ValueError("semantic slate prior or proposal mass exceeds one")
     if ledger.slate_traces == ledger.support_states and (
@@ -199,14 +193,9 @@ def _validate_selections(
         if selection.stage < 1 or selection.slot < 0 or not math.isfinite(selection.beta):
             raise ValueError("semantic selection stage, slot, and beta must be valid")
         factors = (selection.family_log_probability, *selection.hole_log_probabilities)
-        if len(selection.hole_log_probabilities) != len(
-            selection.selected.filling_indices
-        ):
+        if len(selection.hole_log_probabilities) != len(selection.selected.filling_indices):
             raise ValueError("semantic selection requires one factor per selected hole")
-        if any(
-            not math.isfinite(value) or value > ABSOLUTE_TOLERANCE
-            for value in factors
-        ):
+        if any(not math.isfinite(value) or value > ABSOLUTE_TOLERANCE for value in factors):
             raise ValueError("semantic selection conditionals must be finite and nonpositive")
         sequential = math.fsum(factors)
         if not close(sequential, selection.log_q_proposal):

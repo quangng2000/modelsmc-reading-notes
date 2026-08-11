@@ -24,7 +24,8 @@ from modelsmc_pbe.search.importance.lazy_records import LazyImportanceSMCResult
 
 def _boundary(mapping: str, marker: str) -> SemanticBoundaryLedger:
     shared_ids = marker * 64
-    shared_logprobs = chr(ord(marker) + 1) * 64
+    label_a_prefix_logprobs = chr(ord(marker) + 1) * 64
+    label_b_prefix_logprobs = chr(ord(marker) + 2) * 64
     return SemanticBoundaryLedger(
         mapping=mapping,
         label_a_candidate_sha256="a" * 64,
@@ -35,11 +36,11 @@ def _boundary(mapping: str, marker: str) -> SemanticBoundaryLedger:
         label_b_token_logprobs_sha256="f" * 64,
         label_a_prefix_token_ids_sha256=shared_ids,
         label_b_prefix_token_ids_sha256=shared_ids,
-        label_a_prefix_token_logprobs_sha256=shared_logprobs,
-        label_b_prefix_token_logprobs_sha256=shared_logprobs,
+        label_a_prefix_token_logprobs_sha256=label_a_prefix_logprobs,
+        label_b_prefix_token_logprobs_sha256=label_b_prefix_logprobs,
         shared_token_count=8,
         shared_token_ids_sha256=shared_ids,
-        shared_token_logprobs_sha256=shared_logprobs,
+        max_abs_prefix_logprob_delta=0.25,
         label_a_token_id=10,
         label_b_token_id=11,
         label_a_logprob=-0.1 if mapping == "a-is-compatible" else -1.1,
@@ -161,18 +162,14 @@ def test_public_lazy_result_resolves_semantic_ledger_type() -> None:
         (
             lambda ledger: replace(
                 ledger,
-                program_scores=(
-                    replace(ledger.program_scores[0], compatibility_log_odds=2.0),
-                ),
+                program_scores=(replace(ledger.program_scores[0], compatibility_log_odds=2.0),),
             ),
             "program score disagrees",
         ),
         (
             lambda ledger: replace(
                 ledger,
-                trace_probabilities=(
-                    replace(ledger.trace_probabilities[0], log_q_semantic=-0.2),
-                ),
+                trace_probabilities=(replace(ledger.trace_probabilities[0], log_q_semantic=-0.2),),
             ),
             "component probability failed replay",
         ),
@@ -240,6 +237,24 @@ def test_public_lazy_result_resolves_semantic_ledger_type() -> None:
                 ),
             ),
             "one factor per selected hole",
+        ),
+        (
+            lambda ledger: replace(
+                ledger,
+                program_scores=(
+                    replace(
+                        ledger.program_scores[0],
+                        boundaries=(
+                            replace(
+                                ledger.program_scores[0].boundaries[0],
+                                max_abs_prefix_logprob_delta=-0.1,
+                            ),
+                            ledger.program_scores[0].boundaries[1],
+                        ),
+                    ),
+                ),
+            ),
+            "prefix logprob delta must be finite and nonnegative",
         ),
     ),
 )

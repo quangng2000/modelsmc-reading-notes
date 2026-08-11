@@ -64,7 +64,7 @@ def _semantic_details(result: LazyImportanceSMCResult) -> tuple[str, ...]:
     if ledger is None or result.semantic_scale is None or result.proposal_epsilon is None:
         raise RuntimeError("joint-semantic result is missing its proposal evidence")
     return (
-        "semantic score=symmetrized final-label compatibility log-odds",
+        "semantic score=symmetrized final-label compatibility log-score contrast",
         "joint law=q=epsilon*prior+(1-epsilon)*softmax(log-prior+eta*score)",
         f"semantic slate={ledger.slate_traces}/{ledger.support_states} "
         f"unique-programs={ledger.unique_programs}",

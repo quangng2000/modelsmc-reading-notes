@@ -31,7 +31,7 @@ class SemanticTraceIdentity:
 
 @dataclass(frozen=True, slots=True)
 class SemanticBoundaryLedger:
-    """Hashed shared path plus the two final label-token scores."""
+    """Shared token IDs, independent prefix-score commitments, and label scores."""
 
     mapping: str
     label_a_candidate_sha256: str
@@ -46,7 +46,7 @@ class SemanticBoundaryLedger:
     label_b_prefix_token_logprobs_sha256: str
     shared_token_count: int
     shared_token_ids_sha256: str
-    shared_token_logprobs_sha256: str
+    max_abs_prefix_logprob_delta: float
     label_a_token_id: int
     label_b_token_id: int
     label_a_logprob: float
@@ -159,9 +159,7 @@ def validate_final_semantic_selections(
     if len(final_ancestors) != particles or len(final_log_q) != particles:
         raise ValueError("semantic final particle arrays must align")
     expected_keys = {
-        (stage, slot)
-        for stage in range(1, iterations + 1)
-        for slot in range(particles)
+        (stage, slot) for stage in range(1, iterations + 1) for slot in range(particles)
     }
     actual = {(selection.stage, selection.slot): selection for selection in ledger.selections}
     if set(actual) != expected_keys:
@@ -201,18 +199,10 @@ def summarize_score(score: CompatibilityScore) -> SemanticProgramScoreLedger:
             label_b_candidate_sha256=score.paths[2 * index + 1].candidate_sha256,
             label_a_token_ids_sha256=score.paths[2 * index].token_ids_sha256,
             label_b_token_ids_sha256=score.paths[2 * index + 1].token_ids_sha256,
-            label_a_token_logprobs_sha256=(
-                score.paths[2 * index].token_logprobs_sha256
-            ),
-            label_b_token_logprobs_sha256=(
-                score.paths[2 * index + 1].token_logprobs_sha256
-            ),
-            label_a_prefix_token_ids_sha256=(
-                score.paths[2 * index].prefix_token_ids_sha256
-            ),
-            label_b_prefix_token_ids_sha256=(
-                score.paths[2 * index + 1].prefix_token_ids_sha256
-            ),
+            label_a_token_logprobs_sha256=(score.paths[2 * index].token_logprobs_sha256),
+            label_b_token_logprobs_sha256=(score.paths[2 * index + 1].token_logprobs_sha256),
+            label_a_prefix_token_ids_sha256=(score.paths[2 * index].prefix_token_ids_sha256),
+            label_b_prefix_token_ids_sha256=(score.paths[2 * index + 1].prefix_token_ids_sha256),
             label_a_prefix_token_logprobs_sha256=(
                 score.paths[2 * index].prefix_token_logprobs_sha256
             ),
@@ -221,7 +211,7 @@ def summarize_score(score: CompatibilityScore) -> SemanticProgramScoreLedger:
             ),
             shared_token_count=proof.shared_token_count,
             shared_token_ids_sha256=proof.shared_token_ids_sha256,
-            shared_token_logprobs_sha256=proof.shared_token_logprobs_sha256,
+            max_abs_prefix_logprob_delta=proof.max_abs_prefix_logprob_delta,
             label_a_token_id=proof.label_a_token_id,
             label_b_token_id=proof.label_b_token_id,
             label_a_logprob=proof.label_a_logprob,

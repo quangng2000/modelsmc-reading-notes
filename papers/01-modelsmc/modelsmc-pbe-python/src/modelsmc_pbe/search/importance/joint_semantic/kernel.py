@@ -41,7 +41,7 @@ from .slate import (
     select_deterministic_slate,
 )
 
-JOINT_SEMANTIC_PROPOSAL_SOURCE = "joint-semantic-symmetrized-label-logodds"
+JOINT_SEMANTIC_PROPOSAL_SOURCE = "joint-semantic-symmetrized-label-logscore-contrast"
 type EventEmitter = Callable[..., None]
 
 

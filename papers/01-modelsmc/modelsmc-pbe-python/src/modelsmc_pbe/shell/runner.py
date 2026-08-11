@@ -108,7 +108,7 @@ def _create_logger(
         "semantic_scale": request.semantic_scale if joint_semantic else None,
         "semantic_slate_size": request.semantic_slate_size if joint_semantic else None,
         "semantic_score_kind": (
-            "symmetrized-final-label-log-odds" if joint_semantic else None
+            "symmetrized-final-label-log-score-contrast" if joint_semantic else None
         ),
         "deduction_mix": (
             None if joint_target or joint_semantic else request.deduction_mix

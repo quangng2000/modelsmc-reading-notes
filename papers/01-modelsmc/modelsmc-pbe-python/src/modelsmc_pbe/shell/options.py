@@ -164,7 +164,7 @@ SemanticScaleOption = Annotated[
     float,
     typer.Option(
         min=0.0,
-        help="Strength eta of the symmetrized LLM compatibility log-odds.",
+        help="Strength eta of the symmetrized LLM final-label log-score contrast.",
     ),
 ]
 SemanticSlateSizeOption = Annotated[

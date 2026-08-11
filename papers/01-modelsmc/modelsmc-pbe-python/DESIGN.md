@@ -290,9 +290,12 @@ posterior normalizer.
 The `joint-semantic` strategy is a model-backed proposal over complete
 construction traces. It never uses observed execution loss in its prompt.
 Instead, for each unique canonical slate program it computes a
-label-prior-symmetrized compatibility log odds from two swapped binary-label
-comparisons. Each comparison is accepted only when its A/B teacher-forced token
-paths are identical except for one final, distinct label token.
+label-prior-symmetrized compatibility score from two swapped binary-label
+comparisons. Each comparison is accepted only when its A/B teacher-forced paths
+have equal lengths, identical prefix token IDs, and one final, distinct label
+token. The two raw prefix-logprob vectors remain separately hash-committed and
+their maximum absolute difference is retained as a provider-numerics diagnostic;
+prefix-logprob equality is not part of the token-boundary contract.
 
 For a deterministic slate $A$, the normalized semantic component and defensive
 proposal are
@@ -323,7 +326,8 @@ factors are inputs to that compact replay; the runtime separately checks slate
 priors against the factorized support, and an artifact-only prior audit must
 rebuild the support from the bound experiment configuration. The ledger stores
 hash commitments rather than duplicate raw token vectors, so an independent
-token-boundary audit also needs the retained content-addressed cache entries.
+token-boundary or prefix-drift audit also needs the retained content-addressed
+cache entries.
 
 #### Materialized joint-target oracle
 

@@ -202,7 +202,7 @@ def assemble_lazy_result(
             None if semantic_ledger is None else semantic_ledger.slate_traces
         ),
         semantic_score_kind=(
-            None if guided else "symmetrized-final-label-log-odds"
+            None if guided else "symmetrized-final-label-log-score-contrast"
         ),
         semantic_score_ledger=semantic_ledger,
     )

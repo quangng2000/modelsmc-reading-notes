@@ -39,16 +39,24 @@ def extract_label_pair(
         raise LabelBoundaryError("mapped A/B paths may differ only at the final token ID")
     if label_a_score.token_ids[-1] == label_b_score.token_ids[-1]:
         raise LabelBoundaryError("mapped A/B labels must have distinct final token IDs")
-    if label_a_score.token_logprobs[:-1] != label_b_score.token_logprobs[:-1]:
-        raise LabelBoundaryError("mapped A/B paths must have aligned shared-token logprobs")
     evidence_a = _evidence(label_a_spec, label_a_score)
     evidence_b = _evidence(label_b_spec, label_b_score)
     proof = LabelBoundaryProof(
         mapping=mapping,
         shared_token_count=len(label_a_score.token_ids) - 1,
-        shared_token_ids_sha256=_sequence_sha256(label_a_score.token_ids[:-1]),
-        shared_token_logprobs_sha256=_sequence_sha256(
-            label_a_score.token_logprobs[:-1]
+        shared_token_ids_sha256=evidence_a.prefix_token_ids_sha256,
+        label_a_prefix_token_logprobs_sha256=(evidence_a.prefix_token_logprobs_sha256),
+        label_b_prefix_token_logprobs_sha256=(evidence_b.prefix_token_logprobs_sha256),
+        max_abs_prefix_logprob_delta=max(
+            (
+                abs(label_a - label_b)
+                for label_a, label_b in zip(
+                    label_a_score.token_logprobs[:-1],
+                    label_b_score.token_logprobs[:-1],
+                    strict=True,
+                )
+            ),
+            default=0.0,
         ),
         label_a_token_id=label_a_score.token_ids[-1],
         label_b_token_id=label_b_score.token_ids[-1],

@@ -9,7 +9,7 @@ from modelsmc_pbe.proposals.labels.contracts import (
     CompatibilityProgram,
 )
 
-COMPATIBILITY_TEMPLATE_VERSION = "joint-semantic-compatibility-v1"
+COMPATIBILITY_TEMPLATE_VERSION = "joint-semantic-compatibility-v2"
 
 _INSTRUCTIONS = """You are judging semantic program compatibility.
 Given the task and input/output examples, decide whether the candidate program can be

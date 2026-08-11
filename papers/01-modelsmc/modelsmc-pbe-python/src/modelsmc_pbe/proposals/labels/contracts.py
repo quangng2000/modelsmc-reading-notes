@@ -96,12 +96,14 @@ class LabelPathEvidence:
 
 @dataclass(frozen=True, slots=True)
 class LabelBoundaryProof:
-    """Hashed evidence that a mapped pair differs at one final label token."""
+    """Shared token-ID boundary with separate raw prefix-score commitments."""
 
     mapping: CompatibilityMapping
     shared_token_count: int
     shared_token_ids_sha256: str
-    shared_token_logprobs_sha256: str
+    label_a_prefix_token_logprobs_sha256: str
+    label_b_prefix_token_logprobs_sha256: str
+    max_abs_prefix_logprob_delta: float
     label_a_token_id: int
     label_b_token_id: int
     label_a_logprob: float
@@ -114,12 +116,23 @@ class LabelBoundaryProof:
             raise ValueError("shared token count must be nonnegative")
         for digest in (
             self.shared_token_ids_sha256,
-            self.shared_token_logprobs_sha256,
+            self.label_a_prefix_token_logprobs_sha256,
+            self.label_b_prefix_token_logprobs_sha256,
         ):
             if len(digest) != 64 or any(
                 character not in "0123456789abcdef" for character in digest
             ):
                 raise ValueError("shared token evidence must use lowercase SHA-256")
+        if (
+            not math.isfinite(self.max_abs_prefix_logprob_delta)
+            or self.max_abs_prefix_logprob_delta < 0
+        ):
+            raise ValueError("prefix logprob delta must be finite and nonnegative")
+        if (
+            self.label_a_prefix_token_logprobs_sha256 == self.label_b_prefix_token_logprobs_sha256
+            and self.max_abs_prefix_logprob_delta != 0.0
+        ):
+            raise ValueError("identical prefix logprob commitments require zero delta")
         if any(
             not math.isfinite(value) or value > 0
             for value in (self.label_a_logprob, self.label_b_logprob)
@@ -141,7 +154,7 @@ class RawCompatibilityScoreIdentity:
 
 @dataclass(frozen=True, slots=True)
 class CompatibilityScore:
-    """Symmetrized log odds plus compact commitments to its raw path evidence."""
+    """Symmetrized label-score contrast plus commitments to raw path evidence."""
 
     program_key: str
     program_sha256: str
@@ -159,9 +172,7 @@ class CompatibilityScore:
             ("program_sha256", self.program_sha256),
             ("prompt_sha256", self.prompt_sha256),
         ):
-            invalid_character = any(
-                character not in "0123456789abcdef" for character in digest
-            )
+            invalid_character = any(character not in "0123456789abcdef" for character in digest)
             if len(digest) != 64 or invalid_character:
                 raise ValueError(f"{name} must be a lowercase SHA-256 digest")
         if not math.isfinite(self.compatibility_log_odds):
@@ -188,9 +199,9 @@ class CompatibilityScore:
                 or label_a.prefix_token_ids_sha256 != proof.shared_token_ids_sha256
                 or label_b.prefix_token_ids_sha256 != proof.shared_token_ids_sha256
                 or label_a.prefix_token_logprobs_sha256
-                != proof.shared_token_logprobs_sha256
+                != proof.label_a_prefix_token_logprobs_sha256
                 or label_b.prefix_token_logprobs_sha256
-                != proof.shared_token_logprobs_sha256
+                != proof.label_b_prefix_token_logprobs_sha256
                 or label_a.final_token_id != proof.label_a_token_id
                 or label_b.final_token_id != proof.label_b_token_id
                 or label_a.final_logprob != proof.label_a_logprob

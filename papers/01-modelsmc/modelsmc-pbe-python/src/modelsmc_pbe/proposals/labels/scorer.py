@@ -1,4 +1,4 @@
-"""Adapter from raw teacher-forced paths to semantic compatibility log odds."""
+"""Adapter from raw teacher-forced paths to semantic label-score contrasts."""
 
 from __future__ import annotations
 

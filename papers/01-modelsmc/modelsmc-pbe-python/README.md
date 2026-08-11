@@ -453,11 +453,14 @@ a_{\mathrm{LLM}}(e;D)
 \right].
 $$
 
-The two paths for each mapping must have identical token IDs and log
-probabilities except for one distinct final label token. Any tokenizer-boundary
-or provider mismatch aborts the calibrated run. The swapped mapping cancels a
-fixed preference for label `A` or `B`; this is a compatibility log-odds score,
-not an AST fluency total and not an execution-loss estimate.
+The two paths for each mapping must have equal lengths, identical prefix token
+IDs, and one distinct final label token. Their raw prefix-logprob vectors are
+committed separately rather than required to be bit-identical; the semantic
+ledger records their maximum absolute difference as a provider-numerics
+diagnostic. Only the two final-label logprobs enter each contrast. Any actual
+tokenizer-boundary mismatch aborts the calibrated run. The swapped mapping
+cancels a fixed preference for label `A` or `B`; this is a compatibility
+log-score contrast, not an AST fluency total and not an execution-loss estimate.
 
 For a deterministic scored slate $A$, the proposal is
 

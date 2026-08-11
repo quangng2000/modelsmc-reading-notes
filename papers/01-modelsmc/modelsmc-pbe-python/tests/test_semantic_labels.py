@@ -61,7 +61,7 @@ class _ScriptedRawScorer:
             _raw_score(
                 candidate,
                 (100 + index // 2, 900 + index % 2),
-                (-0.2, final_logprobs[index % 4]),
+                (-0.2 - 0.05 * (index % 2), final_logprobs[index % 4]),
             )
             for index, candidate in enumerate(request.candidates)
         )
@@ -75,9 +75,7 @@ class _ScriptedRawScorer:
             provenance=CandidateScoreProvenance(CandidateScoreOrigin.SYNTHETIC),
         )
 
-    async def score_many(
-        self, requests: list[CandidateScoreRequest]
-    ) -> list[CandidateScoreBatch]:
+    async def score_many(self, requests: list[CandidateScoreRequest]) -> list[CandidateScoreBatch]:
         self.score_many_calls += 1
         return [await self.score_candidates(request) for request in requests]
 
@@ -110,6 +108,11 @@ def test_symmetrized_semantic_score_uses_one_global_request_and_four_paths() -> 
     assert [score.program_key for score in result.scores] == ["program-1", "program-2"]
     assert [score.compatibility_log_odds for score in result.scores] == pytest.approx([1.3, 1.3])
     assert all(len(score.paths) == 4 for score in result.scores)
+    assert all(
+        proof.max_abs_prefix_logprob_delta == pytest.approx(0.05)
+        for score in result.scores
+        for proof in score.boundary_proofs
+    )
     assert result.scores[0].raw_identity.source == raw_scorer.name
     assert result.scores[0].raw_identity.model_revision == "model-revision"
     assert request.candidates[0][:-1] == request.candidates[1][:-1]
@@ -139,8 +142,7 @@ def test_swapped_mapping_cancels_a_fixed_label_prior() -> None:
 def test_semantic_adapter_chunks_only_at_whole_program_boundaries() -> None:
     raw_scorer = _ScriptedRawScorer()
     programs = tuple(
-        CompatibilityProgram(f"program-{index}", f"program({index})")
-        for index in range(3)
+        CompatibilityProgram(f"program-{index}", f"program({index})") for index in range(3)
     )
 
     result = asyncio.run(
@@ -173,14 +175,6 @@ def test_semantic_adapter_chunks_only_at_whole_program_boundaries() -> None:
         ((10, 20), (-0.2, -0.3), (11, 21), (-0.2, -0.4), "only at the final"),
         ((10, 20), (-0.2, -0.3), (10, 20), (-0.2, -0.4), "distinct final"),
         ((10, 20), (-0.2, -0.3), (10, 11, 21), (-0.2, -0.1, -0.4), "equal"),
-        ((10, 20), (-0.2, -0.3), (10, 21), (-0.25, -0.4), "aligned shared"),
-        (
-            (10, 20),
-            (-0.2, -0.3),
-            (10, 21),
-            (-0.2000000000005, -0.4),
-            "aligned shared",
-        ),
     ],
 )
 def test_label_boundary_rejects_nonisolated_final_tokens(
@@ -200,6 +194,24 @@ def test_label_boundary_rejects_nonisolated_final_tokens(
             _raw_score(specs[0].candidate, a_ids, a_logs),
             _raw_score(specs[1].candidate, b_ids, b_logs),
         )
+
+
+def test_label_boundary_retains_distinct_prefix_logprob_commitments() -> None:
+    specs = build_program_paths(CompatibilityProgram("p", "program"))
+
+    evidence_a, evidence_b, proof = extract_label_pair(
+        CompatibilityMapping.A_IS_COMPATIBLE,
+        specs[0],
+        specs[1],
+        _raw_score(specs[0].candidate, (10, 20), (-0.2, -0.3)),
+        _raw_score(specs[1].candidate, (10, 21), (-0.25, -0.4)),
+    )
+
+    assert evidence_a.prefix_token_ids_sha256 == evidence_b.prefix_token_ids_sha256
+    assert evidence_a.prefix_token_logprobs_sha256 != evidence_b.prefix_token_logprobs_sha256
+    assert proof.label_a_prefix_token_logprobs_sha256 == (evidence_a.prefix_token_logprobs_sha256)
+    assert proof.label_b_prefix_token_logprobs_sha256 == (evidence_b.prefix_token_logprobs_sha256)
+    assert proof.max_abs_prefix_logprob_delta == pytest.approx(0.05)
 
 
 def test_semantic_adapter_rejects_non_teacher_forced_scores() -> None:
