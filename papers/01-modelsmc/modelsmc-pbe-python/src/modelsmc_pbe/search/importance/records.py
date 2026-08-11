@@ -16,6 +16,9 @@ from .options import (
     IMPORTANCE_SMC_CLAIM as IMPORTANCE_SMC_CLAIM,
 )
 from .options import (
+    JOINT_SEMANTIC_IMPORTANCE_SMC_CLAIM as JOINT_SEMANTIC_IMPORTANCE_SMC_CLAIM,
+)
+from .options import (
     JOINT_TARGET_IMPORTANCE_SMC_CLAIM as JOINT_TARGET_IMPORTANCE_SMC_CLAIM,
 )
 from .options import (

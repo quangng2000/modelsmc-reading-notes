@@ -19,8 +19,14 @@ JOINT_TARGET_IMPORTANCE_SMC_CLAIM = (
     "training-loss/Occam target; every complete program is executed before sampling, "
     "and exact target subtree marginals define the sequential construction law"
 )
+JOINT_SEMANTIC_IMPORTANCE_SMC_CLAIM = (
+    "importance-corrected SMC on a finite factorized construction support; "
+    "a label-symmetrized LLM compatibility score defines a defensive joint "
+    "proposal, only sampled complete programs are executed, and the realized "
+    "training loss enters the exact target/proposal importance correction"
+)
 
-type ImportanceProposalStrategy = Literal["guided", "joint-target"]
+type ImportanceProposalStrategy = Literal["guided", "joint-semantic", "joint-target"]
 
 
 class EmptyImportanceSupportError(RuntimeError):
@@ -57,6 +63,9 @@ class ImportanceSMCOptions:
         LLMEnergyNormalization.TOTAL_FULL_PROMPT_LOGPROB
     )
     proposal_strategy: ImportanceProposalStrategy = "guided"
+    semantic_scale: float = 1.0
+    semantic_slate_size: int | None = None
+    semantic_candidate_batch_size: int = 128
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -103,10 +112,32 @@ class ImportanceSMCOptions:
             raise ValueError(
                 "multi-family support and a single conditioned skeleton are mutually exclusive"
             )
-        if self.proposal_strategy not in {"guided", "joint-target"}:
-            raise ValueError("proposal_strategy must be guided or joint-target")
+        if self.proposal_strategy not in {"guided", "joint-semantic", "joint-target"}:
+            raise ValueError(
+                "proposal_strategy must be guided, joint-semantic, or joint-target"
+            )
+        if not math.isfinite(self.semantic_scale) or self.semantic_scale < 0.0:
+            raise ValueError("semantic_scale must be finite and nonnegative")
+        if self.semantic_slate_size is not None and (
+            isinstance(self.semantic_slate_size, bool)
+            or not isinstance(self.semantic_slate_size, int)
+            or self.semantic_slate_size < 1
+        ):
+            raise ValueError("semantic_slate_size must be None or a positive integer")
+        if self.proposal_strategy == "joint-semantic" and (
+            isinstance(self.semantic_candidate_batch_size, bool)
+            or not isinstance(self.semantic_candidate_batch_size, int)
+            or self.semantic_candidate_batch_size < 4
+        ):
+            raise ValueError("semantic_candidate_batch_size must be at least four")
         if not isinstance(self.llm_energy_normalization, LLMEnergyNormalization):
             raise TypeError("llm_energy_normalization must be an LLMEnergyNormalization")
+        if (
+            self.proposal_strategy == "guided"
+            and self.llm_energy_normalization
+            is LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+        ):
+            raise ValueError("guided proposals cannot use the joint-semantic label score")
 
     @property
     def resolved_family_deduction_mix(self) -> float:

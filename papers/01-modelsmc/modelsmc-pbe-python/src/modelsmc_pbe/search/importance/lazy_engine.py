@@ -7,9 +7,7 @@ from typing import Any
 import torch
 
 from modelsmc_pbe.config import ExperimentConfig
-from modelsmc_pbe.core import ProgramScorer, RejectedProgram, ScoredProgram
-from modelsmc_pbe.domain import canonical_key
-from modelsmc_pbe.induction import assemble_program
+from modelsmc_pbe.core import ProgramScorer
 from modelsmc_pbe.observability import RunLogger
 from modelsmc_pbe.proposals import CandidateScorer
 from modelsmc_pbe.smc import (
@@ -21,11 +19,10 @@ from modelsmc_pbe.smc import (
 
 from .factorized import (
     sample_prior_trace,
-    trace_fillings,
-    trace_hole_cost,
-    trace_log_prior,
 )
+from .joint_semantic import LazyJointSemanticProposalKernel
 from .lazy_proposal import LazyGuidedProposalKernel
+from .lazy_realization import realize_traces
 from .lazy_records import (
     ConstructionTrace,
     FactorizedImportanceSupport,
@@ -56,8 +53,10 @@ class LazyImportanceSMCEngine:
             raise ValueError("lazy importance-smc requires a CPU generator")
         if config.smc.alpha >= 1.0:
             raise ValueError("lazy importance-smc requires alpha < 1")
-        if options.proposal_strategy != "guided":
+        if options.proposal_strategy == "joint-target":
             raise ValueError("joint-target proposal requires materialized importance support")
+        if options.proposal_strategy == "joint-semantic" and config.smc.alpha != 0.0:
+            raise ValueError("joint-semantic proposal requires alpha=0")
         self._config = config
         self._options = options
         self._scorer = scorer
@@ -74,7 +73,13 @@ class LazyImportanceSMCEngine:
             emit=self._emit,
         ).build()
         population, initial_new = self._initialize(support)
-        kernel = LazyGuidedProposalKernel(
+        kernel: LazyGuidedProposalKernel | LazyJointSemanticProposalKernel
+        kernel_type = (
+            LazyJointSemanticProposalKernel
+            if self._options.proposal_strategy == "joint-semantic"
+            else LazyGuidedProposalKernel
+        )
+        kernel = kernel_type(
             config=self._config,
             options=self._options,
             support=support,
@@ -225,53 +230,14 @@ class LazyImportanceSMCEngine:
         support: FactorizedImportanceSupport,
         traces: tuple[ConstructionTrace, ...],
     ) -> tuple[tuple[LazyImportanceState, ...], int]:
-        missing = tuple(dict.fromkeys(trace for trace in traces if trace not in self._states))
-        programs = []
-        metadata = []
-        for trace in missing:
-            family = support.family(trace.hypothesis_index)
-            fillings = trace_fillings(family, trace)
-            program = assemble_program(
-                family.hypothesis,
-                {filling.hole_name: filling.expression for filling in fillings},
-                allowed_integer_constants=self._config.spec.integer_constants,
-            )
-            programs.append(program)
-            metadata.append((trace, family, fillings, program))
-        results: list[ScoredProgram | RejectedProgram] = []
-        size = self._options.score_batch_size
-        for start in range(0, len(programs), size):
-            results.extend(self._scorer.score_batch(programs[start : start + size]))
-        for (trace, family, fillings, program), score in zip(
-            metadata,
-            results,
-            strict=True,
-        ):
-            if isinstance(score, RejectedProgram):
-                raise RuntimeError(
-                    "factorized support admitted a sampled program rejected by the semantic "
-                    f"core: {score.reason}"
-                )
-            expected_cost = family.base_cost + trace_hole_cost(family, trace)
-            if score.cost != expected_cost:
-                raise RuntimeError(
-                    "factorized structural cost disagrees with semantic scorer: "
-                    f"factorized={expected_cost}, scorer={score.cost}"
-                )
-            self._states[trace] = LazyImportanceState(
-                trace=trace,
-                family=family.hypothesis.kind.value,
-                fillings=fillings,
-                program=program,
-                key=canonical_key(program),
-                score=score,
-                log_prior=trace_log_prior(
-                    support,
-                    trace,
-                    cost_scale=float(self._config.smc.cost_scale),
-                ),
-            )
-        return tuple(self._states[trace] for trace in traces), len(missing)
+        return realize_traces(
+            config=self._config,
+            options=self._options,
+            scorer=self._scorer,
+            support=support,
+            traces=traces,
+            states=self._states,
+        )
 
     def _ancestors(
         self,

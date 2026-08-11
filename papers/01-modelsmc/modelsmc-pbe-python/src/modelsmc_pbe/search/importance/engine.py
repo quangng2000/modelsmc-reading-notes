@@ -61,6 +61,8 @@ class ImportanceSMCEngine:
             )
         if options.proposal_strategy == "joint-target" and config.smc.alpha != 0.0:
             raise ValueError("joint-target proposal requires alpha=0")
+        if options.proposal_strategy == "joint-semantic":
+            raise ValueError("joint-semantic proposal requires lazy factorized execution")
         if options.proposal_strategy == "guided" and candidate_scorer is None:
             raise ValueError("guided importance-smc requires a candidate scorer")
         self._config = config

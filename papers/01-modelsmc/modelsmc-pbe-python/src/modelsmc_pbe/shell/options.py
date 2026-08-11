@@ -24,8 +24,8 @@ ProposalOption = Annotated[
     str,
     typer.Option(
         help=(
-            "Proposal backend: importance-smc accepts vllm, catalog, or the "
-            "materialized joint-target oracle; "
+            "Proposal backend: importance-smc accepts vllm, catalog, the LLM-backed "
+            "joint-semantic proposal, or the materialized joint-target oracle; "
             "paper-search also accepts ollama or openai-compatible."
         )
     ),
@@ -154,7 +154,27 @@ ProposalEpsilonOption = Annotated[
     typer.Option(
         min=0.000001,
         max=1.0,
-        help="Uniform mixture mass guaranteeing finite proposal support.",
+        help=(
+            "Defensive proposal mass: uniform for guided catalogs and the exact "
+            "Occam prior for joint-semantic."
+        ),
+    ),
+]
+SemanticScaleOption = Annotated[
+    float,
+    typer.Option(
+        min=0.0,
+        help="Strength eta of the symmetrized LLM compatibility log-odds.",
+    ),
+]
+SemanticSlateSizeOption = Annotated[
+    int | None,
+    typer.Option(
+        min=1,
+        help=(
+            "Deterministic number of complete traces scored by joint-semantic; "
+            "omit to score the full bounded support."
+        ),
     ),
 ]
 DeductionMixOption = Annotated[

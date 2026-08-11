@@ -51,3 +51,5 @@ class SynthesizeRequest:
     device: str | None = None
     artifacts_dir: Path | None = None
     trace: bool = False
+    semantic_scale: float = 1.0
+    semantic_slate_size: int | None = None

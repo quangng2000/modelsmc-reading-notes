@@ -285,6 +285,46 @@ terminal marginal using total variation, exact-program mass, mean loss, and
 mean cost. They do not mislabel the accumulated value as the single final
 posterior normalizer.
 
+#### Lazy joint-semantic proposal
+
+The `joint-semantic` strategy is a model-backed proposal over complete
+construction traces. It never uses observed execution loss in its prompt.
+Instead, for each unique canonical slate program it computes a
+label-prior-symmetrized compatibility log odds from two swapped binary-label
+comparisons. Each comparison is accepted only when its A/B teacher-forced token
+paths are identical except for one final, distinct label token.
+
+For a deterministic slate $A$, the normalized semantic component and defensive
+proposal are
+
+$$
+r_A(e)\propto \mathbf1[e\in A]p_0(e)\exp[\eta a_{\rm LLM}(e;D)],
+\qquad
+q(e)=\epsilon p_0(e)+(1-\epsilon)r_A(e).
+$$
+
+The factorized implementation combines exact prior suffix partitions with
+semantic slate prefix masses. Each next-choice probability is child prefix
+mass divided by parent prefix mass, so the sequential product equals the direct
+leaf mixture. The prior floor preserves absolute continuity outside a bounded
+slate. `alpha=0` is required by this first implementation.
+
+Complete slate ASTs are assembled for model prompts but are not executed.
+Only sampled traces enter `ProgramScorer`; their realized loss then enters
+`log p0 - beta * lossScale * loss - log q`. Thus the importance correction is
+exact conditional on the recorded slate and scores even when the LLM surrogate
+is poor. Four raw label paths are charged for each unique canonical slate
+program. The result uses a distinct semantic ledger and never labels these
+scores as deduction-guide or full-prompt fluency energies.
+
+The compact ledger independently replays the swapped-label score, semantic
+normalization, defensive mixture, and every selected density. Its stored prior
+factors are inputs to that compact replay; the runtime separately checks slate
+priors against the factorized support, and an artifact-only prior audit must
+rebuild the support from the bound experiment configuration. The ledger stores
+hash commitments rather than duplicate raw token vectors, so an independent
+token-boundary audit also needs the retained content-addressed cache entries.
+
 #### Materialized joint-target oracle
 
 The optional `joint-target` strategy is a separate exhaustive control, not an

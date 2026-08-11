@@ -3,21 +3,16 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterator
-from contextlib import contextmanager
-from dataclasses import asdict
 
 from modelsmc_pbe.config import ExperimentConfig
 from modelsmc_pbe.core import ProgramScorer
 from modelsmc_pbe.observability import RunLogger
 from modelsmc_pbe.proposals import (
-    CachedCandidateScorer,
-    CandidateScorer,
     LLMEnergyNormalization,
-    ProviderMetricSource,
 )
 from modelsmc_pbe.runtime import DeviceInfo, seed_everything
 from modelsmc_pbe.search.importance import (
+    ImportanceProposalStrategy,
     ImportanceSMCEngine,
     ImportanceSMCOptions,
     LazyImportanceSMCEngine,
@@ -28,71 +23,20 @@ from modelsmc_pbe.shell.basic_execution import (
 from modelsmc_pbe.shell.basic_execution import (
     execute_paper_search as execute_paper_search,
 )
+from modelsmc_pbe.shell.importance_views import lazy_completed_run
 from modelsmc_pbe.shell.output import ProgramResultView
 from modelsmc_pbe.shell.providers import (
     build_candidate_scorer,
+    validate_joint_semantic_request,
     validate_joint_target_request,
 )
 from modelsmc_pbe.shell.request import SynthesizeRequest
 from modelsmc_pbe.shell.run_records import CompletedRun as CompletedRun
+from modelsmc_pbe.shell.score_metrics import candidate_score_metrics
 from modelsmc_pbe.shell.skeletons import (
     importance_uses_multiple_families,
     resolve_importance_skeleton,
 )
-
-
-@contextmanager
-def _candidate_score_metrics(
-    scorer: CandidateScorer | None,
-    logger: RunLogger,
-) -> Iterator[None]:
-    """Persist cache/provider accounting even when a scoring run fails."""
-
-    try:
-        yield
-    finally:
-        if isinstance(scorer, ProviderMetricSource):
-            provider_metrics = asdict(scorer.provider_metrics())
-            logger.record_metrics("candidate_score_provider", provider_metrics)
-            logger.event(
-                "candidate_score_provider.summary",
-                message="candidate-score provider I/O accounting",
-                level="info",
-                **provider_metrics,
-            )
-        if isinstance(scorer, CachedCandidateScorer):
-            metrics = scorer.metrics()
-            summary = {
-                "mode": scorer.mode.value,
-                "cache_dir": str(scorer.cache_dir),
-                **asdict(metrics),
-            }
-            logger.record_metrics("candidate_score_cache", summary)
-            logger.event(
-                "candidate_score_cache.summary",
-                message="persistent candidate-score cache accounting",
-                level="info",
-                **summary,
-            )
-        else:
-            summary = {
-                "mode": "off",
-                "cache_dir": None,
-                "lookup_requests": 0,
-                "lookup_candidates": 0,
-                "hit_requests": 0,
-                "hit_candidates": 0,
-                "miss_requests": 0,
-                "miss_candidates": 0,
-                "provider_invocations": 0,
-                "provider_score_requests": 0,
-                "provider_candidates": 0,
-                "provider_failures": 0,
-                "cache_served_scored_tokens": 0,
-                "provider_scored_tokens": 0,
-                "provider_await_wall_seconds": 0.0,
-            }
-            logger.record_metrics("candidate_score_cache", summary)
 
 
 def execute_importance_smc(
@@ -109,11 +53,22 @@ def execute_importance_smc(
             raise ValueError("joint-target proposal requires --materialize-reference")
         if config.smc.alpha != 0.0:
             raise ValueError("joint-target proposal requires --alpha 0")
+    if request.proposal == "joint-semantic":
+        validate_joint_semantic_request(request)
+        if config.smc.alpha != 0.0:
+            raise ValueError("joint-semantic proposal requires --alpha 0")
 
     seeded = seed_everything(
         config.smc.seed,
         deterministic=config.runtime.deterministic,
     )
+    proposal_strategy: ImportanceProposalStrategy
+    if request.proposal == "joint-target":
+        proposal_strategy = "joint-target"
+    elif request.proposal == "joint-semantic":
+        proposal_strategy = "joint-semantic"
+    else:
+        proposal_strategy = "guided"
     options = ImportanceSMCOptions(
         hole_max_cost=request.hole_max_cost,
         hole_state_limit=request.hole_state_limit,
@@ -129,15 +84,20 @@ def execute_importance_smc(
         max_scored_candidates=request.max_scored_candidates,
         conditioned_skeleton=resolve_importance_skeleton(config, request.skeleton),
         multi_family=importance_uses_multiple_families(request.skeleton),
-        proposal_strategy=(
-            "joint-target" if request.proposal == "joint-target" else "guided"
+        proposal_strategy=proposal_strategy,
+        llm_energy_normalization=(
+            LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+            if request.proposal == "joint-semantic"
+            else LLMEnergyNormalization(request.llm_energy_normalization)
         ),
-        llm_energy_normalization=LLMEnergyNormalization(request.llm_energy_normalization),
+        semantic_scale=request.semantic_scale,
+        semantic_slate_size=request.semantic_slate_size,
+        semantic_candidate_batch_size=request.candidate_batch_size,
     )
     candidate_scorer = (
         None if request.proposal == "joint-target" else build_candidate_scorer(request)
     )
-    with _candidate_score_metrics(candidate_scorer, logger), ProgramScorer(config) as scorer:
+    with candidate_score_metrics(candidate_scorer, logger), ProgramScorer(config) as scorer:
         if not request.materialize_reference:
             assert candidate_scorer is not None
             lazy = asyncio.run(
@@ -150,45 +110,7 @@ def execute_importance_smc(
                     logger=logger,
                 ).run()
             )
-            lazy_best = lazy.best_visited
-            family_details = tuple(
-                "family "
-                f"{family.family}: traces={family.support_states} "
-                f"prior={family.prior_mass:.5g} guide={family.deduction_guide_mass:.5g} "
-                f"particles={family.particle_mass:.5g}"
-                for family in lazy.families
-            )
-            return CompletedRun(
-                persisted_result=lazy,
-                final_particles=lazy.final_particles,
-                view=ProgramResultView(
-                    mode=lazy.mode,
-                    exact=lazy.exact,
-                    program=lazy_best.program,
-                    total_loss=lazy_best.total_loss,
-                    cost=lazy_best.cost,
-                    details=(
-                        "execution=lazy-factorized (exact reference disabled)",
-                        f"proposal={lazy.proposal_source}",
-                        f"support traces={lazy.support_states} materialized=false",
-                        "visited programs: "
-                        f"{lazy.search.evaluated_programs}/{lazy.support_states} "
-                        f"({lazy.search.evaluated_fraction_of_support:.3%})",
-                        "search success: "
-                        f"exact-found={lazy.search.exact_found} "
-                        f"final-exact-mass={lazy.search.final_exact_particle_mass:.7g}",
-                        "reference metrics=unavailable; rerun with "
-                        "--materialize-reference for the external finite control",
-                        "candidate scores: "
-                        f"used={lazy.scored_candidates} limit={lazy.max_scored_candidates}",
-                        "proposal mixture: "
-                        f"family-deduction={lazy.family_deduction_mix:.5g} "
-                        f"hole-deduction={lazy.hole_deduction_mix:.5g} "
-                        f"strength={lazy.deduction_strength:.5g}",
-                        *family_details,
-                    ),
-                ),
-            )
+            return lazy_completed_run(lazy)
         result = asyncio.run(
             ImportanceSMCEngine(
                 config=config,

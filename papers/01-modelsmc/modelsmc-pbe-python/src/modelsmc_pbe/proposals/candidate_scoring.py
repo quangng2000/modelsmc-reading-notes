@@ -21,13 +21,15 @@ class CandidateLogprobSemantics(StrEnum):
 class LLMEnergyNormalization(StrEnum):
     """Reduction from a scored full-prompt token path to one finite energy.
 
-    Both choices operate on the complete teacher-forced ``P || candidate``
-    path.  They deliberately make no claim that ``P`` has a separately
-    recoverable tokenizer boundary.
+    The total and mean choices reduce the complete teacher-forced
+    ``P || candidate`` path. The label marker instead identifies a separate,
+    boundary-verified contrastive reduction and is never passed to
+    :func:`llm_energy`.
     """
 
     TOTAL_FULL_PROMPT_LOGPROB = "total-full-prompt-logprob"
     MEAN_FULL_PROMPT_CONDITIONAL_LOGPROB = "mean-full-prompt-conditional-logprob"
+    SYMMETRIZED_FINAL_LABEL_LOG_ODDS = "symmetrized-final-label-log-odds"
 
 
 class CandidateKind(StrEnum):
@@ -35,6 +37,7 @@ class CandidateKind(StrEnum):
 
     EXPRESSION = "expression"
     SKELETON = "skeleton"
+    LABEL = "label"
 
 
 class CandidateScoreOrigin(StrEnum):
@@ -119,7 +122,7 @@ class CandidateScoreRequest:
             if not isinstance(self.hole, HoleSpecification):
                 raise TypeError("expression candidates require a HoleSpecification")
         elif self.hole is not None:
-            raise TypeError("skeleton candidates must not declare an expression hole")
+            raise TypeError("non-expression candidates must not declare an expression hole")
         if self.request_index < 0:
             raise ValueError("request_index must be nonnegative")
         if self.max_depth < 1 or self.max_nodes < 1:

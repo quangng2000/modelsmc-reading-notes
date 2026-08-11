@@ -87,6 +87,8 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
     if request.proposal == "joint-target":
         validate_joint_target_request(request)
         raise ValueError("joint-target bypasses the candidate-scorer interface")
+    if request.proposal == "joint-semantic":
+        validate_joint_semantic_request(request)
     try:
         cache_mode = ScoreCacheMode(request.score_cache_mode)
     except ValueError as error:
@@ -97,10 +99,10 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
                 "persistent candidate-score caching is available only for vllm"
             )
         return UniformCandidateScorer()
-    if request.proposal != "vllm":
+    if request.proposal not in {"vllm", "joint-semantic"}:
         raise ValueError(
-            "importance-smc proposal must be catalog or vllm, or the joint-target oracle; "
-            "Ollama and free-form "
+            "importance-smc proposal must be catalog or vllm, joint-semantic, or the "
+            "joint-target oracle; Ollama and free-form "
             "OpenAI-compatible output do not expose the required finite-candidate scores"
         )
     if not request.model.strip():
@@ -156,8 +158,10 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
             tokenizer_revision=tokenizer_revision,
             server_config=server_config,
             semantics=CandidateLogprobSemantics.TEACHER_FORCED_FULL_PROMPT,
-            energy_normalization=LLMEnergyNormalization(
-                request.llm_energy_normalization
+            energy_normalization=(
+                LLMEnergyNormalization.SYMMETRIZED_FINAL_LABEL_LOG_ODDS
+                if request.proposal == "joint-semantic"
+                else LLMEnergyNormalization(request.llm_energy_normalization)
             ),
         ),
     )
@@ -186,3 +190,19 @@ def validate_joint_target_request(request: SynthesizeRequest) -> None:
             "joint-target uses no model provider or score cache; remove: "
             + ", ".join(present)
         )
+
+
+def validate_joint_semantic_request(request: SynthesizeRequest) -> None:
+    """Validate the lazy, model-backed semantic proposal boundary."""
+
+    if request.mode != "importance-smc":
+        raise ValueError("joint-semantic proposal is available only for importance-smc")
+    if request.materialize_reference:
+        raise ValueError(
+            "joint-semantic executes only sampled programs; "
+            "remove --materialize-reference"
+        )
+    if request.alpha not in {None, 0.0}:
+        raise ValueError("joint-semantic proposal requires --alpha 0")
+    if not request.model.strip():
+        raise ValueError("--model is required for joint-semantic scoring")

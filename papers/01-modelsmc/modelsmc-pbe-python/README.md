@@ -12,7 +12,7 @@ The package has three deliberately different modes:
 | --- | --- | --- |
 | `paper-search` | finite catalog or black-box LLM | Heuristic allocation scores from an uncorrected proposal kernel; **not** posterior probabilities |
 | `grammar-smc` | known finite skeleton prior | An SMC approximation to the declared finite-skeleton Gibbs target, checked against exact enumeration |
-| `importance-smc` | finite typed holes scored by a deduction/Qwen mixture, or an exhaustive joint-target oracle | Importance-corrected SMC for the fixed, bounded, deduction-refuted support, checked against exact enumeration |
+| `importance-smc` | finite typed holes, an LLM joint-semantic slate, or an exhaustive joint-target oracle | Importance-corrected SMC for the fixed, bounded, deduction-refuted support; exact enumeration is available only to materialized controls |
 
 The latter two modes are calibrated to their declared computational targets.
 They are not thereby Bayesian posteriors over every possible program or over a
@@ -437,6 +437,81 @@ The declared Feynman--Kac path target is the product of these stage targets,
 so its terminal marginal is the desired finite `pi_beta`. Accordingly, the
 reported accumulated log normalizer is for the **product path target**
 `product_t Z_beta_t`, not just the final posterior's `Z_1`.
+
+### LLM joint-semantic proposal
+
+`--proposal joint-semantic` is the scalable counterpart to the exhaustive
+oracle below. For a complete candidate program $e=h(p,m)$, Qwen sees the PBE
+examples and the full program but never sees its execution output or loss. It
+scores four teacher-forced answer paths with swapped meanings for labels `A`
+and `B`:
+
+$$
+a_{\mathrm{LLM}}(e;D)
+=\frac12\left[
+\ell_+(A)-\ell_+(B)+\ell_-(B)-\ell_-(A)
+\right].
+$$
+
+The two paths for each mapping must have identical token IDs and log
+probabilities except for one distinct final label token. Any tokenizer-boundary
+or provider mismatch aborts the calibrated run. The swapped mapping cancels a
+fixed preference for label `A` or `B`; this is a compatibility log-odds score,
+not an AST fluency total and not an execution-loss estimate.
+
+For a deterministic scored slate $A$, the proposal is
+
+$$
+r_A(e)\propto
+\mathbf1[e\in A]p_0(e)\exp[\eta a_{\mathrm{LLM}}(e;D)],
+\qquad
+q(e)=\epsilon p_0(e)+(1-\epsilon)r_A(e).
+$$
+
+The exact prior floor gives every bounded trace positive mass, including traces
+outside a partial slate. Prefix masses of this same joint table define the
+family, predicate, and mapper conditionals, so their product telescopes to the
+persisted $q(e)$. Only the initial and subsequently sampled complete programs
+are executed. After execution, the ordinary correction is
+
+$$
+\log w(e)=
+\log p_0(e)-\beta\lambda_L\operatorname{loss}(e)-\log q(e).
+$$
+
+This is exact importance accounting for the realized semantic proposal; it
+does not claim that the LLM surrogate equals the normalized target. Omit
+`--semantic-slate-size` to score the full bounded support. A practical RunPod
+smoke starts with 512 traces, which costs at most 2,048 raw label paths:
+
+```bash
+uv run modelsmc-pbe synthesize \
+  examples/foldr-sparse-bounded-square-v2.json \
+  --mode importance-smc --proposal joint-semantic \
+  --skeleton auto --particles 16 --iterations 1 --alpha 0 \
+  --semantic-scale 1 --semantic-slate-size 512 \
+  --proposal-epsilon 0.05 --candidate-batch-size 128 \
+  --max-scored-candidates 2048 \
+  --score-cache-mode read-write \
+  --score-cache-dir artifacts/joint-semantic-score-cache \
+  --base-url http://127.0.0.1:18000/v1 --model qwen-coder \
+  --device cpu --trace
+```
+
+Four raw paths are charged once per unique canonical program. On the corrected
+36,198-trace stress support, a full no-alias slate therefore needs a budget of
+144,792 raw paths; use the persistent score cache for that run. Slate ASTs are
+assembled only as prompt material and are not run through the semantic core.
+Results keep the guided score ledger empty and instead persist a compact
+semantic ledger with the label-boundary evidence, slate law, and every selected
+conditional probability. Its replay recomputes the contrastive scores,
+normalization, defensive mixture, and selected densities. The recorded
+$p_0$ factors are checked against the live factorized support when the law is
+built; auditing those prior factors from artifacts alone requires rebuilding
+that support from the bound task configuration. Raw token paths are committed
+by hash rather than copied into `result.json`; independently rechecking their
+single-token boundary requires retaining the referenced content-addressed
+score-cache entries, as in the command above.
 
 ### Exact joint-execution oracle
 

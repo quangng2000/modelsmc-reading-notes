@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from modelsmc_pbe.core import ScoredProgram
 from modelsmc_pbe.deduction import DeductionReport
@@ -10,8 +11,11 @@ from modelsmc_pbe.domain import ProgramAst
 from modelsmc_pbe.induction import HoleSpec, InductionReport, TypedSkeleton
 from modelsmc_pbe.proposals import LLMEnergyNormalization
 
-from .records import HoleCatalogSummary, HoleFilling
+from .records import HoleCatalogSummary, HoleFilling, ImportanceProposalStrategy
 from .score_ledger import LLMScoreWaveLedger
+
+if TYPE_CHECKING:
+    from .joint_semantic.ledger import SemanticProposalLedger
 
 LAZY_IMPORTANCE_SMC_CLAIM = (
     "importance-corrected SMC on a finite factorized construction-trace support; "
@@ -148,8 +152,9 @@ class LazyFamilySummary:
     family: str
     support_states: int
     prior_mass: float
-    deduction_guide_mass: float
+    deduction_guide_mass: float | None
     particle_mass: float
+    proposal_mass: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,11 +208,11 @@ class LazyImportanceSMCResult:
     execution: str
     probabilistic_claim: str
     proposal_source: str
-    deduction_mix: float
-    family_deduction_mix: float
-    hole_deduction_mix: float
-    deduction_strength: float
-    llm_energy_normalization: LLMEnergyNormalization
+    deduction_mix: float | None
+    family_deduction_mix: float | None
+    hole_deduction_mix: float | None
+    deduction_strength: float | None
+    llm_energy_normalization: LLMEnergyNormalization | None
     conditioned_skeleton: str | None
     multi_family: bool
     support_semantics: str
@@ -227,9 +232,19 @@ class LazyImportanceSMCResult:
     scored_candidates: int
     max_scored_candidates: int
     score_ledger: tuple[LLMScoreWaveLedger, ...]
+    proposal_strategy: ImportanceProposalStrategy = "guided"
+    proposal_epsilon: float | None = None
+    semantic_scale: float | None = None
+    semantic_slate_size: int | None = None
+    semantic_score_kind: str | None = None
+    semantic_score_ledger: SemanticProposalLedger | None = None
 
     @property
     def exact(self) -> bool:
         """Whether search ever visited an exact program, even if it was later lost."""
 
         return self.best_visited.exact_program
+
+
+if not TYPE_CHECKING:
+    from .joint_semantic.ledger import SemanticProposalLedger

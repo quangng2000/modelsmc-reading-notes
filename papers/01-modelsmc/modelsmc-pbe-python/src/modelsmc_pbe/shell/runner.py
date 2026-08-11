@@ -81,6 +81,9 @@ def _create_logger(
     selected_skeleton: str | None,
 ) -> RunLogger:
     joint_target = request.mode == "importance-smc" and request.proposal == "joint-target"
+    joint_semantic = (
+        request.mode == "importance-smc" and request.proposal == "joint-semantic"
+    )
     algorithm_config: dict[str, object] = {
         "experiment": config,
         "mode": request.mode,
@@ -97,15 +100,22 @@ def _create_logger(
         "hole_state_limit": request.hole_state_limit,
         "support_limit": request.support_limit,
         "materialize_reference": request.materialize_reference,
-        "temperature": None if joint_target else request.temperature,
+        "temperature": None if joint_target or joint_semantic else request.temperature,
         "llm_energy_normalization": (
-            None if joint_target else request.llm_energy_normalization
+            None if joint_target or joint_semantic else request.llm_energy_normalization
         ),
         "proposal_epsilon": None if joint_target else request.proposal_epsilon,
-        "deduction_mix": None if joint_target else request.deduction_mix,
+        "semantic_scale": request.semantic_scale if joint_semantic else None,
+        "semantic_slate_size": request.semantic_slate_size if joint_semantic else None,
+        "semantic_score_kind": (
+            "symmetrized-final-label-log-odds" if joint_semantic else None
+        ),
+        "deduction_mix": (
+            None if joint_target or joint_semantic else request.deduction_mix
+        ),
         "family_deduction_mix": (
             None
-            if joint_target
+            if joint_target or joint_semantic
             else (
                 request.deduction_mix
                 if request.family_deduction_mix is None
@@ -114,17 +124,19 @@ def _create_logger(
         ),
         "hole_deduction_mix": (
             None
-            if joint_target
+            if joint_target or joint_semantic
             else (
                 request.deduction_mix
                 if request.hole_deduction_mix is None
                 else request.hole_deduction_mix
             )
         ),
-        "deduction_strength": None if joint_target else request.deduction_strength,
+        "deduction_strength": (
+            None if joint_target or joint_semantic else request.deduction_strength
+        ),
         "candidate_batch_size": None if joint_target else request.candidate_batch_size,
         "max_scored_candidates": None if joint_target else request.max_scored_candidates,
-        "max_tokens": None if joint_target else request.max_tokens,
+        "max_tokens": None if joint_target or joint_semantic else request.max_tokens,
         "max_concurrency": None if joint_target else request.max_concurrency,
         "timeout_seconds": None if joint_target else request.timeout_seconds,
         "model": (
@@ -151,6 +163,8 @@ def _create_logger(
         claim = "importance_corrected_lazy_factorized_construction_target"
     if request.mode == "importance-smc" and request.proposal == "joint-target":
         claim = "oracle_normalized_finite_joint_execution_target"
+    if request.mode == "importance-smc" and request.proposal == "joint-semantic":
+        claim = "importance_corrected_joint_llm_semantic_proposal"
     return RunLogger.create(
         base_dir=config.runtime.artifacts_dir,
         run_name=f"{config.spec.name}-{request.mode}",
