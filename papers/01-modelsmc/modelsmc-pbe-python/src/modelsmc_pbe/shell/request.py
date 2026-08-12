@@ -53,3 +53,4 @@ class SynthesizeRequest:
     trace: bool = False
     semantic_scale: float = 1.0
     semantic_slate_size: int | None = None
+    semantic_prompt_protocol: str = "raw-v2"

@@ -23,6 +23,10 @@ from modelsmc_pbe.proposals.candidate_scoring import (
     CandidateLogprobSemantics,
     LLMEnergyNormalization,
 )
+from modelsmc_pbe.proposals.labels import (
+    SemanticPromptProtocol,
+    compatibility_add_special_tokens,
+)
 from modelsmc_pbe.shell.request import SynthesizeRequest
 from modelsmc_pbe.shell.skeletons import resolve_skeleton
 
@@ -38,9 +42,7 @@ def _api_key(environment_variable: str | None) -> str | None:
         return None
     value = os.environ.get(environment_variable)
     if value is None:
-        raise ValueError(
-            f"API key environment variable {environment_variable!r} is not set"
-        )
+        raise ValueError(f"API key environment variable {environment_variable!r} is not set")
     return value
 
 
@@ -63,9 +65,7 @@ def build_proposer(
         )
         return CatalogProposer(catalog)
     if request.proposal not in _DEFAULT_BASE_URLS:
-        raise ValueError(
-            "proposal must be catalog, ollama, vllm, or openai-compatible"
-        )
+        raise ValueError("proposal must be catalog, ollama, vllm, or openai-compatible")
     if not request.model.strip():
         raise ValueError("--model is required for a model-backed proposal")
     return OpenAICompatibleProposer(
@@ -95,9 +95,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
         raise ValueError("score cache mode must be off, read-write, or replay-only") from error
     if request.proposal == "catalog":
         if cache_mode is not ScoreCacheMode.OFF or request.score_cache_dir is not None:
-            raise ValueError(
-                "persistent candidate-score caching is available only for vllm"
-            )
+            raise ValueError("persistent candidate-score caching is available only for vllm")
         return UniformCandidateScorer()
     if request.proposal not in {"vllm", "joint-semantic"}:
         raise ValueError(
@@ -107,6 +105,12 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
         )
     if not request.model.strip():
         raise ValueError("--model is required for vLLM candidate scoring")
+    prompt_protocol = SemanticPromptProtocol(request.semantic_prompt_protocol)
+    add_special_tokens = (
+        compatibility_add_special_tokens(prompt_protocol)
+        if request.proposal == "joint-semantic"
+        else True
+    )
     scorer = VLLMPromptLogprobScorer(
         VLLMPromptLogprobConfig(
             model=request.model,
@@ -117,6 +121,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
             max_batch_size=request.candidate_batch_size,
             model_revision=request.model_revision,
             tokenizer_revision=request.tokenizer_revision,
+            add_special_tokens=add_special_tokens,
         )
     )
     if cache_mode is ScoreCacheMode.OFF:
@@ -138,8 +143,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
     missing = [name for name, value in required.items() if value is None]
     if missing:
         raise ValueError(
-            "persistent score caching requires reproducibility metadata: "
-            + ", ".join(missing)
+            "persistent score caching requires reproducibility metadata: " + ", ".join(missing)
         )
     assert cache_dir is not None
     assert model_repository is not None
@@ -163,6 +167,7 @@ def build_candidate_scorer(request: SynthesizeRequest) -> CandidateScorer:
                 if request.proposal == "joint-semantic"
                 else LLMEnergyNormalization(request.llm_energy_normalization)
             ),
+            add_special_tokens=add_special_tokens,
         ),
     )
 
@@ -187,8 +192,7 @@ def validate_joint_target_request(request: SynthesizeRequest) -> None:
     present = [name for name, value in provider_options.items() if value is not None]
     if present:
         raise ValueError(
-            "joint-target uses no model provider or score cache; remove: "
-            + ", ".join(present)
+            "joint-target uses no model provider or score cache; remove: " + ", ".join(present)
         )
 
 
@@ -199,10 +203,13 @@ def validate_joint_semantic_request(request: SynthesizeRequest) -> None:
         raise ValueError("joint-semantic proposal is available only for importance-smc")
     if request.materialize_reference:
         raise ValueError(
-            "joint-semantic executes only sampled programs; "
-            "remove --materialize-reference"
+            "joint-semantic executes only sampled programs; remove --materialize-reference"
         )
     if request.alpha not in {None, 0.0}:
         raise ValueError("joint-semantic proposal requires --alpha 0")
     if not request.model.strip():
         raise ValueError("--model is required for joint-semantic scoring")
+    try:
+        SemanticPromptProtocol(request.semantic_prompt_protocol)
+    except ValueError as error:
+        raise ValueError("semantic prompt protocol must be raw-v2 or harmony-gpt-oss-v1") from error

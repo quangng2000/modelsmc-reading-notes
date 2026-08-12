@@ -204,7 +204,7 @@ def build_figures(
                 output=temporary,
                 dpi=config.dpi,
             ),
-            "paragraph_attachment": "P-EXP-02",
+            "paragraph_attachment": "P-RES-03",
         }
         if pairs:
             figures["paired_q_vs_qd"] = {

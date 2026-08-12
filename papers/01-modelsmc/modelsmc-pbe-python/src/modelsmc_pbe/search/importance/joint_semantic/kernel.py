@@ -68,7 +68,10 @@ class LazyJointSemanticProposalKernel:
         self._config = config
         self._options = options
         self._support = support
-        self._scorer = SymmetrizedLabelCompatibilityScorer(scorer)
+        self._scorer = SymmetrizedLabelCompatibilityScorer(
+            scorer,
+            prompt_protocol=options.semantic_prompt_protocol,
+        )
         self._generator = generator
         self._emit = emit
         self._law: SemanticStageLaw | None = None
@@ -196,8 +199,7 @@ class LazyJointSemanticProposalKernel:
         )
         score_by_key = {score.program_key: score for score in batch.scores}
         semantic_scores = tuple(
-            score_by_key[key].compatibility_log_score
-            for key in prepared.trace_program_keys
+            score_by_key[key].compatibility_log_score for key in prepared.trace_program_keys
         )
         slate = attach_semantic_scores(
             self._support,

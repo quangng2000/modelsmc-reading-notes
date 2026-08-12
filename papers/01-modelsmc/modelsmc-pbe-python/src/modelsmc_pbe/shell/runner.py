@@ -81,9 +81,7 @@ def _create_logger(
     selected_skeleton: str | None,
 ) -> RunLogger:
     joint_target = request.mode == "importance-smc" and request.proposal == "joint-target"
-    joint_semantic = (
-        request.mode == "importance-smc" and request.proposal == "joint-semantic"
-    )
+    joint_semantic = request.mode == "importance-smc" and request.proposal == "joint-semantic"
     algorithm_config: dict[str, object] = {
         "experiment": config,
         "mode": request.mode,
@@ -107,12 +105,11 @@ def _create_logger(
         "proposal_epsilon": None if joint_target else request.proposal_epsilon,
         "semantic_scale": request.semantic_scale if joint_semantic else None,
         "semantic_slate_size": request.semantic_slate_size if joint_semantic else None,
+        "semantic_prompt_protocol": (request.semantic_prompt_protocol if joint_semantic else None),
         "semantic_score_kind": (
             "symmetrized-final-label-log-score-contrast" if joint_semantic else None
         ),
-        "deduction_mix": (
-            None if joint_target or joint_semantic else request.deduction_mix
-        ),
+        "deduction_mix": (None if joint_target or joint_semantic else request.deduction_mix),
         "family_deduction_mix": (
             None
             if joint_target or joint_semantic
@@ -141,8 +138,7 @@ def _create_logger(
         "timeout_seconds": None if joint_target else request.timeout_seconds,
         "model": (
             request.model
-            if request.mode != "grammar-smc"
-            and request.proposal not in {"catalog", "joint-target"}
+            if request.mode != "grammar-smc" and request.proposal not in {"catalog", "joint-target"}
             else None
         ),
         "model_repository": request.model_repository,

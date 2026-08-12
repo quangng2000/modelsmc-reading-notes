@@ -10,6 +10,7 @@ from modelsmc_pbe.observability import RunLogger
 from modelsmc_pbe.proposals import (
     LLMEnergyNormalization,
 )
+from modelsmc_pbe.proposals.labels import SemanticPromptProtocol
 from modelsmc_pbe.runtime import DeviceInfo, seed_everything
 from modelsmc_pbe.search.importance import (
     ImportanceProposalStrategy,
@@ -93,6 +94,7 @@ def execute_importance_smc(
         semantic_scale=request.semantic_scale,
         semantic_slate_size=request.semantic_slate_size,
         semantic_candidate_batch_size=request.candidate_batch_size,
+        semantic_prompt_protocol=SemanticPromptProtocol(request.semantic_prompt_protocol),
     )
     candidate_scorer = (
         None if request.proposal == "joint-target" else build_candidate_scorer(request)
@@ -162,8 +164,7 @@ def execute_importance_smc(
             f"LLM energy={result.llm_energy_normalization.value}",
         )
         deduction_details = (
-            "deduction-guide exact-program mass="
-            f"{result.deduction_guide_exact_mass:.7g}",
+            f"deduction-guide exact-program mass={result.deduction_guide_exact_mass:.7g}",
         )
         score_details = (
             "candidate scores: "

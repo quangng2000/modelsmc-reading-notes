@@ -105,23 +105,27 @@ return the probability of the canonical AST actually consumed by the search.
 % [P-INT-04]
 We study a narrower setting in which this proposal-density gap can be closed.
 The program language, constants, structural cost, and hole catalogs are bounded.
-The LLM does not generate arbitrary code; it assigns teacher-forced energies to
-a complete finite set of canonical family or hole choices. The application
-normalizes these energies, combines them with a sound deduction guide and a
-uniform floor, and records the probability of every selected construction
-step. This produces an evaluable proposal without pretending that it is the
-free-form probability of an AST.
+The LLM does not generate arbitrary code. Our staged proposal assigns
+teacher-forced energies to a complete finite set of canonical family or hole
+choices, combines their normalized distributions with a sound deduction guide
+and a uniform floor, and records every selected construction probability. A
+separate diagnostic instead scores a deterministic slate of complete canonical
+traces and mixes those semantic energies with an exact base-measure floor. Both
+produce evaluable proposals without pretending to recover the free-form
+probability of an AST.
 
 % [P-INT-05]
-Our contributions are: (i) a type-directed factorized construction space that combines
-structural generalization, sound refutation, and derived hole examples; (ii) a
-canonical finite LLM-energy proposal with explicit family, sequential-hole,
-construction-trace, and clone accounting; (iii) an importance-corrected Feynman--Kac target
-whose materialized finite controls can be checked against exact enumeration; and (iv) an
-evaluation protocol that separates uniform, deduction-only, LLM-only, and
-combined proposals and preserves negative results. We do not claim that the
-current bounded language is a general synthesizer, that finite-$N$ particles
-are a calibrated posterior, or that full enumeration is faster than search.
+Our contributions are: (i) a type-directed factorized construction space that
+combines structural generalization, sound refutation, and derived hole
+examples; (ii) canonical finite LLM-energy proposals at staged-choice and
+complete-program granularity, each with an explicit construction-trace
+probability; (iii) an importance-corrected Feynman--Kac target whose
+materialized finite controls can be checked against exact enumeration; and
+(iv) an evaluation protocol that separates uniform, deduction-only, LLM-only,
+and combined proposals and preserves negative results. We do not claim that
+the current bounded language is a general synthesizer, that finite-$N$
+particles are a calibrated posterior, or that full enumeration is faster than
+search.
 
 \section{Background and Problem Setting}
 \label{sec:background}
@@ -202,9 +206,10 @@ reported support; otherwise the two modes define different targets.
 \label{sec:proposal}
 
 % [P-PROP-01]
-At a construction node $A$ with finite choices $\mathcal{C}_A$, Qwen receives a
-common prompt containing the task, typed hole, sound deductions, current
-ancestor, and previous fillings. For each canonical choice $c$, vLLM returns
+In the staged family-and-hole proposal, a construction node $A$ has finite
+choices $\mathcal{C}_A$. Qwen receives a common prompt containing the task,
+typed hole, sound deductions, current ancestor, and previous fillings. For each
+canonical choice $c$, vLLM returns
 teacher-forced prompt-token log probabilities for the complete concatenated
 text. These values define an application-level finite energy; they are not
 interpreted as a continuation probability or the probability of a free-form
@@ -220,9 +225,9 @@ mean is not a candidate-suffix likelihood because no separate tokenizer
 boundary between the textual prefix and candidate is assumed.
 
 % [P-PROP-02]
-Let $s_\theta(A,c)$ be the declared Qwen energy and let $r_A(c)$ be the exact
-subtree marginal of an Occam-weighted deduction guide. The categorical used for
-both sampling and correction is
+For this staged proposal, let $s_\theta(A,c)$ be the declared Qwen energy and
+let $r_A(c)$ be the exact subtree marginal of an Occam-weighted deduction
+guide. The categorical used for both sampling and correction is
 \begin{equation}
 q_A(c)=(1-\varepsilon)\left[(1-\rho)
 \operatorname{softmax}\!\left(\frac{s_\theta(A,\cdot)}{\tau}\right)_c
@@ -241,11 +246,37 @@ A program trace $z$ selects one family and an ordered sequence of hole fillings:
 \prod_{k}q_{A_k}(c_k\mid a,h,c_{<k},\data).
 \label{eq:construct}
 \end{equation}
+For the filter--map skeleton in Equation~\ref{eq:filtermap}, a trace has the
+concrete form $z=(h,p,m)$, where $p$ fills the predicate hole and $m$ fills the
+mapper hole. Suppressing the fixed ancestor and dataset conditioning,
+Equation~\ref{eq:construct} specializes to
+\[
+\qconstruct(h,p,m)=q_H(h)\,q_P(p\mid h)\,q_M(m\mid h,p).
+\]
 When only one family survives, $q_H=1$ and no provider call is made. Identical
 requests created by resampling are scored once and fanned out without changing
 the distribution.
 
 % [P-PROP-04]
+On the sparse bounded-square task, deduction refutes the length-preserving map
+family and leaves three family choices. The specialized filter--map family has
+600 predicate choices and 60 mapper choices, so materializing its Cartesian
+product would produce
+\[
+600\times60=36{,}000
+\]
+complete leaf programs. Along one distinct staged construction path, however,
+the proposal scores at most the three surviving families, all 600 predicates,
+and the 60 mappers conditioned on the selected family and predicate, for
+\[
+3+600+60=663
+\]
+finite choices. This is a per-ancestry scorer-work bound, not a run-wide bound:
+different realized predicates can induce additional mapper waves across
+particles, while identical ancestor requests are deduplicated. It is also not
+a semantic ranking of all 36,000 complete filter--map programs.
+
+% [P-PROP-05]
 With clone probability $\alpha<1$, the transition on construction traces is
 \begin{equation}
 Q_\alpha(z'\mid z)=\alpha\mathbf{1}[z'=z]+(1-\alpha)
@@ -256,20 +287,52 @@ For $z'=z$, both routes are combined with a log-sum-exp. Provider errors abort
 the accountable mode because an unmodeled ancestor fallback would add unknown
 mass. A run-wide score budget is reserved before each request wave.
 
+% [P-PROP-06]
+We diagnose complete-program semantic ranking with a separate joint-semantic
+proposal. It operates on a deterministic slate
+$\mathcal{A}\subseteq\programs_{\data}$. For each canonical trace $z$, Qwen
+compares the complete program and examples through four teacher-forced answer
+paths across two mappings with swapped meanings for the single-token labels
+$\mathrm{A}$ and $\mathrm{B}$, without observing execution output or loss. If
+$\ell_+$ and $\ell_-$ denote the two label mappings, the compatibility score is
+\[
+a_\theta(e(z);\data)=\tfrac12\bigl[
+\ell_+(\mathrm{A})-\ell_+(\mathrm{B})+
+\ell_-(\mathrm{B})-\ell_-(\mathrm{A})\bigr].
+\]
+The normalized semantic component and defensive proposal are
+\begin{equation}
+r_{\mathcal{A},\theta}(z)=
+\frac{\mathbf{1}[z\in\mathcal{A}]p_0(z\mid\data)
+\exp[\eta a_\theta(e(z);\data)]}
+{\sum_{u\in\mathcal{A}}p_0(u\mid\data)
+\exp[\eta a_\theta(e(u);\data)]},\qquad
+q_{\mathcal{A},\theta}(z)=\varepsilon p_0(z\mid\data)
++(1-\varepsilon)r_{\mathcal{A},\theta}(z).
+\label{eq:jointsemantic}
+\end{equation}
+Exact prefix masses of this joint table induce family, predicate, and mapper
+conditionals whose product telescopes to the persisted leaf probability. The
+current diagnostic fixes $\alpha=0$; unlike the 663-choice staged scorer, a
+full slate deliberately scores every retained leaf to construct the proposal,
+while only initial and proposal-sampled programs are sent to the interpreter.
+
 \section{Importance-Corrected SMC}
 \label{sec:smc}
 
 % [P-SMC-01]
 For stages $t=1,\dots,T$, define the path target
-$\gamma_t(z_{1:t})=\prod_{s=1}^t\widetilde\pi_{\beta_s}(z_s)$ and transition
-$M_t=Q_\alpha$. The incremental potential is
+$\gamma_t(z_{1:t})=\prod_{s=1}^t\widetilde\pi_{\beta_s}(z_s)$. Let $Q_t$ denote
+the accountable transition: Equation~\ref{eq:clone} for the staged proposal, or
+$q_{\mathcal{A},\theta}$ with $\alpha=0$ for the joint-semantic diagnostic. The
+incremental potential is
 \begin{equation}
 G_t(z_{t-1},z_t)=
 \frac{\widetilde\pi_{\beta_t}(z_t)}
-{Q_\alpha(z_t\mid z_{t-1},\data)}.
+{Q_t(z_t\mid z_{t-1},\data)}.
 \label{eq:potential}
 \end{equation}
-Thus $M_tG_t=\widetilde\pi_{\beta_t}$ and the normalized terminal-state
+Thus $Q_tG_t=\widetilde\pi_{\beta_t}$ and the normalized terminal-state
 marginal is the declared finite target. If resampling occurs, ancestor weights
 reset to $1/N$; otherwise the previous normalized weights remain the base.
 
@@ -342,6 +405,47 @@ broad synthesis claim.
 
 \FloatBarrier
 
+% [P-EXP-04]
+The planned full-slate diagnostic uses the sparse bounded-square stress
+specification and fixes its deduction-refuted multi-family support at 36,198
+construction traces, including two reference-identified training-exact traces.
+A completed 512-trace preflight charged 2,048 raw label paths and validated
+transport, token-boundary checks, caching, proposal construction, ledger replay,
+and sampled execution. Its deterministic partial slate contained neither exact
+trace, so its search miss provides no evidence about the model's semantic
+discrimination. The decisive diagnostic therefore sets
+$\mathcal{A}=\programs_{\data}$ and scores all 36,198 traces---144,792 raw label
+paths---before any proposal draw. Reference enumeration supplies the two exact
+trace identities for retrospective analysis only; neither their identification
+nor full-slate construction is credited as LLM or SMC discovery. This is a
+controlled scoring diagnostic, not a scalable synthesis procedure.
+
+% [P-EXP-05]
+Let $\programs^\star\subset\programs_{\data}$ denote the two
+reference-identified exact traces. For each pinned model, we will report each
+trace's raw semantic rank
+$1+|\{u:a_\theta(e(u);\data)>a_\theta(e(z);\data)\}|$, its tie-block size, and its
+$p_0$, $r_{\programs_{\data},\theta}$, and
+$q_{\programs_{\data},\theta}$ masses. Reporting all three masses separates
+learned semantic reweighting from the defensive floor. Their combined proposal
+mass is
+\begin{equation}
+p^\star_\theta=\sum_{z\in\programs^\star}
+q_{\programs_{\data},\theta}(z).
+\label{eq:exactproposalmass}
+\end{equation}
+For $N$ independent one-stage proposal draws from this fixed $q$, the hit
+probability is $1-(1-p^\star_\theta)^N$ and, for failure tolerance $\delta$ with
+$0<p^\star_\theta<1$, the proposal-draw budget is
+$\lceil\log\delta/\log(1-p^\star_\theta)\rceil$. This calculation excludes the
+separately initialized $p_0$ population and is not a general SMC particle budget
+under cloning, adaptation, multiple stages, or resampling. The pinned
+Qwen2.5-Coder-32B checkpoint and any stronger model will be compared on
+identical support traces, canonical candidate text, prompt template, score
+semantics, $p_0$, $\eta$, and $\varepsilon$, with model and tokenizer revisions
+separately pinned. Until both complete ledgers pass replay, all ranks and masses
+remain pending and support no model-quality or scaling conclusion.
+
 \section{Exploratory Gate-2 Findings}
 \label{sec:pilot}
 
@@ -356,7 +460,7 @@ every discovery outcome. These 16 cells contain only one independent seed---the
 four particles are not replicates---so they neither estimate success rates nor
 establish a general model effect.
 
-\begin{figure}[t]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{generated/figures/gate2-size-transport32/outcome_matrix.pdf}
 \caption{Training and held-out outcomes for the complete exploratory Gate-2
@@ -364,8 +468,6 @@ grid under one amended protocol hash. Each tile is a raw one-seed cell; crosses
 and checks are not estimates with confidence intervals.}
 \label{fig:gate2-outcomes}
 \end{figure}
-
-\FloatBarrier
 
 % [P-RES-02]
 Checkpoint size did not separate outcomes: the 3B, 7B, 14B, and 32B columns
@@ -418,8 +520,9 @@ Write--Execute--Assess combines learned program policies with SMC
 uses LLM refinement \citep{wahl2026modelsmc}. SMC also steers token generation
 under probabilistic-program constraints \citep{lew2023steering,zhao2024twisted}.
 We do not claim the first use of SMC or LLMs in synthesis. The contribution is a
-finite setting in which family and hole proposal terms, defensive mixtures,
-and clone routes are all evaluable and can be checked against an exact target.
+finite setting in which family, hole, and complete-slate proposal terms,
+defensive mixtures, and clone routes are evaluable and can be checked against
+an exact target.
 
 \section{Limitations and Broader Impact}
 \label{sec:limitations}
@@ -429,11 +532,12 @@ The DSL and current tasks are deliberately small. Specialized filter--map
 catalogs encode useful structural knowledge, support depends on observed data,
 and multiple training-exact programs may disagree on unseen inputs. Exact
 enumeration scales poorly and is an oracle, not the online algorithm. The
-semantic core is extensively tested but not formally verified. Model and
-tokenizer revisions can change Qwen energies, and full-prompt scoring has a
-serialization-length confound. These boundaries rule out claims of general
-program synthesis, formal correctness, or a posterior over unbounded source
-code.
+full-slate semantic scorer is likewise an exhaustive diagnostic rather than the
+scalable staged algorithm. The semantic core is extensively tested but not
+formally verified. Model and tokenizer revisions can change Qwen energies, and
+staged full-prompt scoring has a serialization-length confound. These boundaries
+rule out claims of general program synthesis, formal correctness, or a
+posterior over unbounded source code.
 
 % [P-LIM-02]
 The lazy implementation avoids executing complete programs that are never
@@ -459,7 +563,8 @@ exploratory grid shows why that decomposition matters: Q alone failed every
 reported cell, whereas the defensive Q+D mixture succeeded. This finding
 attributes discovery to deduction under the tested conditions, not to Qwen
 alone, checkpoint size, or SMC resampling. Repeated-seed benchmarks with the D
-control must determine whether and where the LLM adds value.
+control and the predeclared full-slate rank-and-mass diagnostic must determine
+whether and where the LLM adds value.
 
 % [P-ACK-01]
 \acks{This draft received no declared external funding. Compute was
@@ -479,7 +584,11 @@ $\varepsilon>0$, each choice has mass at least
 $\varepsilon/|\mathcal{C}_A|$. Products over the finite construction trie are
 normalized by induction on trie depth. Equation~\ref{eq:clone} is a mixture of
 a point mass and this normalized construction distribution, so it is also
-normalized and has full support over the declared finite trace space.
+normalized and has full support over the declared finite trace space. In
+Equation~\ref{eq:jointsemantic}, $r_{\mathcal{A},\theta}$ normalizes over the
+nonempty deterministic slate and $q_{\mathcal{A},\theta}$ is a convex mixture
+with $p_0$. It therefore has full support whenever $\varepsilon>0$, and its
+prefix conditionals telescope to the same normalized leaf law.
 
 \section{Claim Boundary for Exact Enumeration}
 \label{app:oracle}
@@ -492,7 +601,9 @@ grid reports lazy search-success endpoints and no oracle TV or normalizer
 metrics. Any oracle comparison must remain external to that search, and both
 modes must count or label their realized traces separately. An exact state first
 observed during reference construction is never credited to Qwen or SMC
-discovery.
+discovery. In the full-slate diagnostic, oracle-identified exact traces are used
+only to read ranks and masses from a model-scored ledger after scoring is
+complete.
 
 \bibliography{references}
 

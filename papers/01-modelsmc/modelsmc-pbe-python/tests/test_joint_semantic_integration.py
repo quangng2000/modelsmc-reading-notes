@@ -26,6 +26,7 @@ from modelsmc_pbe.proposals import (
     LLMEnergyNormalization,
     VLLMPromptLogprobScorer,
 )
+from modelsmc_pbe.proposals.labels import SemanticPromptProtocol
 from modelsmc_pbe.runtime import make_cpu_generator, resolve_device
 from modelsmc_pbe.search.importance import (
     ImportanceProposalBudgetExceeded,
@@ -151,9 +152,9 @@ def test_lazy_engine_executes_particles_not_the_semantic_slate() -> None:
     assert len(ledger.selections) == 4
     assert scorer.scored_programs <= 8
     assert scorer.scored_programs < ledger.slate_traces
-    assert math.fsum(
-        family.proposal_mass or 0.0 for family in result.families
-    ) == pytest.approx(1.0)
+    assert math.fsum(family.proposal_mass or 0.0 for family in result.families) == pytest.approx(
+        1.0
+    )
     assert [item.log_q_proposal for item in ledger.selections] == pytest.approx(
         [particle.log_q_mixture for particle in result.final_particles]
     )
@@ -164,11 +165,14 @@ def test_lazy_engine_executes_particles_not_the_semantic_slate() -> None:
         options=options,
     ).build()
     for particle in result.final_particles:
-        log_gamma = trace_log_prior(
-            support,
-            particle.trace,
-            cost_scale=float(config.smc.cost_scale),
-        ) - float(config.smc.loss_scale) * particle.total_loss
+        log_gamma = (
+            trace_log_prior(
+                support,
+                particle.trace,
+                cost_scale=float(config.smc.cost_scale),
+            )
+            - float(config.smc.loss_scale) * particle.total_loss
+        )
         assert particle.log_q_mixture + particle.log_incremental_weight == pytest.approx(
             log_gamma,
             abs=1e-12,
@@ -178,9 +182,12 @@ def test_lazy_engine_executes_particles_not_the_semantic_slate() -> None:
 def test_semantic_budget_fails_before_any_label_provider_request() -> None:
     config = _config()
     raw = _SemanticRawScorer()
-    with ProgramScorer(config) as scorer, pytest.raises(
-        ImportanceProposalBudgetExceeded,
-        match="64 raw candidates",
+    with (
+        ProgramScorer(config) as scorer,
+        pytest.raises(
+            ImportanceProposalBudgetExceeded,
+            match="64 raw candidates",
+        ),
     ):
         asyncio.run(
             LazyImportanceSMCEngine(
@@ -202,19 +209,25 @@ def test_joint_semantic_requires_the_lazy_zero_clone_vllm_boundary() -> None:
         "model": "semantic-model",
     }
     with pytest.raises(ValueError, match="only for importance-smc"):
-        build_candidate_scorer(
-            SynthesizeRequest(**{**common, "mode": "paper-search"})
-        )
+        build_candidate_scorer(SynthesizeRequest(**{**common, "mode": "paper-search"}))
     with pytest.raises(ValueError, match="remove --materialize-reference"):
-        build_candidate_scorer(
-            SynthesizeRequest(**common, materialize_reference=True)
-        )
+        build_candidate_scorer(SynthesizeRequest(**common, materialize_reference=True))
     with pytest.raises(ValueError, match="requires --alpha 0"):
         build_candidate_scorer(SynthesizeRequest(**common, alpha=0.2))
 
     scorer = build_candidate_scorer(SynthesizeRequest(**common, alpha=0.0))
     assert isinstance(scorer, VLLMPromptLogprobScorer)
     assert scorer.config.model == "semantic-model"
+    assert scorer.config.add_special_tokens is True
+    harmony = build_candidate_scorer(
+        SynthesizeRequest(
+            **common,
+            alpha=0.0,
+            semantic_prompt_protocol=SemanticPromptProtocol.HARMONY_GPT_OSS_V1,
+        )
+    )
+    assert isinstance(harmony, VLLMPromptLogprobScorer)
+    assert harmony.config.add_special_tokens is False
     with pytest.raises(ValueError, match="guided proposals cannot"):
         ImportanceSMCOptions(
             llm_energy_normalization=(
@@ -222,9 +235,12 @@ def test_joint_semantic_requires_the_lazy_zero_clone_vllm_boundary() -> None:
             )
         )
     config = _config()
-    with ProgramScorer(config) as program_scorer, pytest.raises(
-        ValueError,
-        match="requires lazy factorized execution",
+    with (
+        ProgramScorer(config) as program_scorer,
+        pytest.raises(
+            ValueError,
+            match="requires lazy factorized execution",
+        ),
     ):
         ImportanceSMCEngine(
             config=config,
@@ -263,6 +279,8 @@ def test_joint_semantic_cli_seals_active_and_inactive_controls(
             "1.5",
             "--semantic-slate-size",
             "16",
+            "--semantic-prompt-protocol",
+            "harmony-gpt-oss-v1",
             "--proposal-epsilon",
             "0.2",
             "--candidate-batch-size",
@@ -280,12 +298,11 @@ def test_joint_semantic_cli_seals_active_and_inactive_controls(
     run_dir = next(path for path in tmp_path.iterdir() if (path / "result.json").exists())
     manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
     persisted = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))["result"]
-    assert manifest["probabilistic_claim"] == (
-        "importance_corrected_joint_llm_semantic_proposal"
-    )
+    assert manifest["probabilistic_claim"] == ("importance_corrected_joint_llm_semantic_proposal")
     configuration = manifest["configuration"]
     assert configuration["semantic_scale"] == 1.5
     assert configuration["semantic_slate_size"] == 16
+    assert configuration["semantic_prompt_protocol"] == "harmony-gpt-oss-v1"
     assert configuration["proposal_epsilon"] == 0.2
     assert configuration["temperature"] is None
     assert configuration["llm_energy_normalization"] is None

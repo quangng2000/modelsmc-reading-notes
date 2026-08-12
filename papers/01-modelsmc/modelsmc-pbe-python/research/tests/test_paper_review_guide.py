@@ -18,6 +18,6 @@ def test_every_manuscript_paragraph_has_both_review_plan_rows() -> None:
     manuscript_ids = PARAGRAPH_MARKER.findall(manuscript)
     guide_counts = Counter(GUIDE_ROW.findall(guide))
 
-    assert len(manuscript_ids) == len(set(manuscript_ids)) == 33
+    assert len(manuscript_ids) == len(set(manuscript_ids)) == 37
     assert set(guide_counts) == set(manuscript_ids)
     assert set(guide_counts.values()) == {2}

@@ -25,9 +25,10 @@ from modelsmc_pbe.proposals.labels.contracts import (
     RawCompatibilityScoreIdentity,
 )
 from modelsmc_pbe.proposals.labels.prompts import (
-    COMPATIBILITY_TEMPLATE_VERSION,
+    SemanticPromptProtocol,
     build_compatibility_prompt,
     build_program_paths,
+    compatibility_template_version,
 )
 
 
@@ -37,13 +38,20 @@ class SymmetrizedLabelCompatibilityScorer:
     name = "symmetrized-binary-compatibility"
     raw_candidates_per_program = 4
 
-    def __init__(self, scorer: CandidateScorer) -> None:
+    def __init__(
+        self,
+        scorer: CandidateScorer,
+        *,
+        prompt_protocol: SemanticPromptProtocol = SemanticPromptProtocol.RAW_V2,
+    ) -> None:
         self._scorer = scorer
+        self._prompt_protocol = prompt_protocol
+        self._template_version = compatibility_template_version(prompt_protocol)
 
     async def score(self, request: CompatibilityScoringRequest) -> CompatibilityScoreBatch:
         """Score one slate in bounded requests that all use one shared prefix."""
 
-        prompt = build_compatibility_prompt(request.dataset_context)
+        prompt = build_compatibility_prompt(request.dataset_context, self._prompt_protocol)
         programs_per_request = request.raw_candidate_batch_size // self.raw_candidates_per_program
         prompt_sha256 = hashlib.sha256(prompt.encode()).hexdigest()
         derived_scores: list[CompatibilityScore] = []
@@ -56,7 +64,11 @@ class SymmetrizedLabelCompatibilityScorer:
                 for start in range(0, len(wave), programs_per_request)
             )
             spec_chunks = tuple(
-                tuple(path for program in programs for path in build_program_paths(program))
+                tuple(
+                    path
+                    for program in programs
+                    for path in build_program_paths(program, self._prompt_protocol)
+                )
                 for programs in program_chunks
             )
             raw_requests = [
@@ -74,9 +86,7 @@ class SymmetrizedLabelCompatibilityScorer:
             ]
             raw_batches = await self._scorer.score_many(raw_requests)
             if len(raw_batches) != len(raw_requests):
-                raise ProposalError(
-                    "semantic scorer returned the wrong number of request batches"
-                )
+                raise ProposalError("semantic scorer returned the wrong number of request batches")
             self._derive_wave(
                 program_chunks,
                 spec_chunks,
@@ -88,7 +98,7 @@ class SymmetrizedLabelCompatibilityScorer:
             request_offset += len(raw_requests)
         return CompatibilityScoreBatch(
             scores=tuple(derived_scores),
-            template_version=COMPATIBILITY_TEMPLATE_VERSION,
+            template_version=self._template_version,
             prompt_sha256=prompt_sha256,
         )
 
@@ -124,6 +134,7 @@ class SymmetrizedLabelCompatibilityScorer:
                     raw_batch.scores[4 * index : 4 * index + 4],
                     prompt_sha256,
                     identity,
+                    self._template_version,
                 )
                 for index, program in enumerate(programs)
             )
@@ -147,6 +158,7 @@ class SymmetrizedLabelCompatibilityScorer:
         raw_scores: tuple[CandidateSequenceScore, ...],
         prompt_sha256: str,
         identity: RawCompatibilityScoreIdentity,
+        template_version: str,
     ) -> CompatibilityScore:
         plus_a, plus_b, plus_proof = extract_label_pair(
             CompatibilityMapping.A_IS_COMPATIBLE,
@@ -173,7 +185,7 @@ class SymmetrizedLabelCompatibilityScorer:
             compatibility_log_score=compatibility_log_score,
             paths=paths,
             boundary_proofs=(plus_proof, minus_proof),
-            template_version=COMPATIBILITY_TEMPLATE_VERSION,
+            template_version=template_version,
             prompt_sha256=prompt_sha256,
             raw_identity=identity,
         )

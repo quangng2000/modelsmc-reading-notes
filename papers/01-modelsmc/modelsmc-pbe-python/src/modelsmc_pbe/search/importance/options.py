@@ -8,6 +8,7 @@ from typing import Literal
 
 from modelsmc_pbe.grammar import SkeletonName, available_skeletons
 from modelsmc_pbe.proposals import LLMEnergyNormalization
+from modelsmc_pbe.proposals.labels import SemanticPromptProtocol
 
 IMPORTANCE_SMC_CLAIM = (
     "calibrated SMC for an explicit finite, typed, deduction-refuted program support "
@@ -66,6 +67,7 @@ class ImportanceSMCOptions:
     semantic_scale: float = 1.0
     semantic_slate_size: int | None = None
     semantic_candidate_batch_size: int = 128
+    semantic_prompt_protocol: SemanticPromptProtocol = SemanticPromptProtocol.RAW_V2
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -113,9 +115,7 @@ class ImportanceSMCOptions:
                 "multi-family support and a single conditioned skeleton are mutually exclusive"
             )
         if self.proposal_strategy not in {"guided", "joint-semantic", "joint-target"}:
-            raise ValueError(
-                "proposal_strategy must be guided, joint-semantic, or joint-target"
-            )
+            raise ValueError("proposal_strategy must be guided, joint-semantic, or joint-target")
         if not math.isfinite(self.semantic_scale) or self.semantic_scale < 0.0:
             raise ValueError("semantic_scale must be finite and nonnegative")
         if self.semantic_slate_size is not None and (
@@ -130,6 +130,8 @@ class ImportanceSMCOptions:
             or self.semantic_candidate_batch_size < 4
         ):
             raise ValueError("semantic_candidate_batch_size must be at least four")
+        if not isinstance(self.semantic_prompt_protocol, SemanticPromptProtocol):
+            raise TypeError("semantic_prompt_protocol must be a SemanticPromptProtocol")
         if not isinstance(self.llm_energy_normalization, LLMEnergyNormalization):
             raise TypeError("llm_energy_normalization must be an LLMEnergyNormalization")
         if (

@@ -16,12 +16,16 @@ from modelsmc_pbe.proposals import (
 )
 from modelsmc_pbe.proposals.labels import (
     COMPATIBILITY_TEMPLATE_VERSION,
+    HARMONY_GPT_OSS_TEMPLATE_VERSION,
     CompatibilityMapping,
     CompatibilityProgram,
     CompatibilityScoringRequest,
     LabelBoundaryError,
+    SemanticPromptProtocol,
     SymmetrizedLabelCompatibilityScorer,
+    build_compatibility_prompt,
     build_program_paths,
+    compatibility_add_special_tokens,
     extract_label_pair,
 )
 
@@ -137,6 +141,39 @@ def test_swapped_mapping_cancels_a_fixed_label_prior() -> None:
     assert minus.label_b_logprob - minus.label_a_logprob == pytest.approx(0.6)
     assert score.compatibility_log_score == pytest.approx(1.3)
     assert score.compatibility_log_score > 0
+
+
+def test_harmony_gpt_oss_paths_teacher_force_terminal_assistant_labels() -> None:
+    protocol = SemanticPromptProtocol.HARMONY_GPT_OSS_V1
+    prompt = build_compatibility_prompt("x -> x", protocol)
+    paths = build_program_paths(CompatibilityProgram("p", "identity(input)"), protocol)
+
+    assert prompt.startswith("<|start|>system<|message|>")
+    assert prompt.endswith("x -> x")
+    assert all(
+        "<|end|><|start|>assistant<|channel|>final<|message|>" in path.candidate for path in paths
+    )
+    assert [path.candidate[-1] for path in paths] == ["A", "B", "A", "B"]
+    assert all(not path.candidate.endswith("<|return|>") for path in paths)
+    assert compatibility_add_special_tokens(protocol) is False
+    assert compatibility_add_special_tokens(SemanticPromptProtocol.RAW_V2) is True
+
+
+def test_harmony_semantic_adapter_archives_its_distinct_template_version() -> None:
+    result = asyncio.run(
+        SymmetrizedLabelCompatibilityScorer(
+            _ScriptedRawScorer(),
+            prompt_protocol=SemanticPromptProtocol.HARMONY_GPT_OSS_V1,
+        ).score(
+            CompatibilityScoringRequest(
+                dataset_context="x -> x",
+                programs=(CompatibilityProgram("p", "identity(input)"),),
+            )
+        )
+    )
+
+    assert result.template_version == HARMONY_GPT_OSS_TEMPLATE_VERSION
+    assert result.scores[0].template_version == HARMONY_GPT_OSS_TEMPLATE_VERSION
 
 
 def test_semantic_adapter_chunks_only_at_whole_program_boundaries() -> None:

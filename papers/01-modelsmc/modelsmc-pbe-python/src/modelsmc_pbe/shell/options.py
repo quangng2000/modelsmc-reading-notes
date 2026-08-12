@@ -177,6 +177,12 @@ SemanticSlateSizeOption = Annotated[
         ),
     ),
 ]
+SemanticPromptProtocolOption = Annotated[
+    str,
+    typer.Option(
+        help=("Versioned joint-semantic wire format: raw-v2 or harmony-gpt-oss-v1."),
+    ),
+]
 DeductionMixOption = Annotated[
     float,
     typer.Option(
@@ -220,8 +226,7 @@ LLMEnergyNormalizationOption = Annotated[
     str,
     typer.Option(
         help=(
-            "Qwen finite energy: total-full-prompt-logprob or "
-            "mean-full-prompt-conditional-logprob."
+            "Qwen finite energy: total-full-prompt-logprob or mean-full-prompt-conditional-logprob."
         )
     ),
 ]
