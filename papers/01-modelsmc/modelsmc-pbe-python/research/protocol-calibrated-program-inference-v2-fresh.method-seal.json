@@ -1,0 +1,1 @@
+{"method_sha256":"05a62eef5012ced37c6ed844e97e5ffc908cef08030dadff389dc70c1d90454c","protocol":{"path":"research/protocol-calibrated-program-inference-v2-fresh.json","sha256":"0c19fe25c7228b09b0fcfe27809d646c416e255b664b3bafca686aac70796a23"},"schema":"provider-free-calibrated-program-inference-v2-fresh-method-seal-v1","sealed_before_secret_preparation":true}

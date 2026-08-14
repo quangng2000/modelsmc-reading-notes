@@ -1,0 +1,85 @@
+{
+  "bindings": {
+    "developmental_analysis": {
+      "path": "../../../artifacts/calibrated-program-inference-v2-screen/analysis.json",
+      "sha256": "ea74d8e3b71a23b8fdbb2a75f4a17048ce27510fe1f0310359ed33aa81dcd18c"
+    },
+    "developmental_inventory": {
+      "path": "../../../artifacts/calibrated-program-inference-v2-screen/inventory.json",
+      "sha256": "19bec17379a89a1709135cdfe067879ca3e4af2e823061b215235a9561d20a38"
+    },
+    "developmental_protocol": {
+      "path": "research/protocol-calibrated-program-inference-v2-screen.json",
+      "sha256": "74831d99d3055976faec95f9ee3b3218e2c48efd7f509feb20f43b5eefbbb66b"
+    },
+    "harness": {
+      "path": "research/calibrated_program_inference_v2_screen.py",
+      "sha256": "ba353f9af02f4ce6899c15dc21a905e35f67779fb87b32f027c2f59dbb166361"
+    },
+    "test": {
+      "path": "research/tests/test_calibrated_program_inference_v2_screen.py",
+      "sha256": "b6a46aff6a3f73600d2fe599956320c71e9e2520c64539b2ec55d4b394d534e6"
+    }
+  },
+  "claim_boundary": [
+    "This is a method selection made after a reused-task developmental screen.",
+    "The recorded numbers are not a fresh calibration gate or a provider result.",
+    "A separate fail-closed protocol must bind the fresh generator, tasks, repetitions, analysis, and source closure before confirmatory execution.",
+    "LLM-discovered mode banks are a later nested-factor experiment and are not part of the provider-free primary candidate."
+  ],
+  "developmental_evidence": {
+    "identity_maximum_absolute_error": 2.220446049250313e-16,
+    "n256": {
+      "exact_mass_bias": 0.007318606259811692,
+      "exact_mass_rmse": 0.09456565240732778,
+      "mean_logical_proposal_draws": 256.0,
+      "mean_maximum_normalized_weight": 0.010434029650655366,
+      "mean_relative_ess": 0.594870872082021,
+      "target_mean_loss_rmse": 0.3470911293332902
+    },
+    "n512": {
+      "exact_mass_bias": -4.785716089804352e-05,
+      "exact_mass_rmse": 0.08538283971321993
+    },
+    "n1024": {
+      "exact_mass_bias": 0.0027624392200181333,
+      "exact_mass_rmse": 0.06523484930763085
+    },
+    "per_task_n256_exact_mass_rmse": {
+      "calibration-equality-scale": 0.08926204097838446,
+      "calibration-lower-shift": 0.06534486972356011,
+      "calibration-upper-negate": 0.059946373646274094,
+      "foldr-bounded-square": 0.1412070068684257
+    },
+    "sticky_n256_exact_mass_rmse": 0.2887994787800583,
+    "sticky_n256_signed_bias": 0.12237419019579106
+  },
+  "method": {
+    "adaptive_conditional_ess_fraction": 0.8,
+    "algorithm": "proposal-bridge-smc",
+    "bridge": "pi_beta(p) proportional to q(p)^(1-beta) * gamma(p)^beta",
+    "discovery_grammar_draws": 4096,
+    "grammar_mass": 0.25,
+    "local_center_mass": 0.75,
+    "maximum_annealing_stages": 64,
+    "maximum_syntax_aliases_per_mode": 4,
+    "mh_moves": 0,
+    "mode_count": 8,
+    "mode_selection": "public-score ranking of a fixed grammar sample with finite-domain semantic deduplication and local predicate/mapper alias expansion",
+    "primary_particle_count": 256,
+    "resample_relative_ess_threshold": 0.5
+  },
+  "rationale": {
+    "accuracy_secondary": {
+      "arm": "sampled-modes-k8-a025-e075-proposal-bridge-mh",
+      "n256_exact_mass_rmse": 0.08027565491528907,
+      "n256_mean_logical_proposal_draws": 628.5,
+      "reason_not_primary": "The extra MH proposals improve accuracy but use approximately 2.45 times as many logical proposal draws."
+    },
+    "primary_arm": "sampled-modes-k8-a025-e075-proposal-bridge",
+    "selection": "Choose the simplest non-exhaustive arm crossing the historical pooled N=256 numerical thresholds while using exactly N initial proposal draws."
+  },
+  "schema": "calibrated-program-inference-v2-method-candidate-v1",
+  "selected_at": "2026-08-14",
+  "status": "selected-after-developmental-screen-before-fresh-task-generation"
+}
