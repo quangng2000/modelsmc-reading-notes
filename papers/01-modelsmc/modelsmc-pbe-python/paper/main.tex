@@ -722,12 +722,17 @@ online r5 search. Their discoveries, ranks, and work are never credited to the
 LLM or SMC search, and the positive control is not a practical synthesis
 algorithm.
 
-\section{Artifact Availability at Draft Time}
+\section{Artifact Availability}
 \label{app:availability}
 
 % [P-APP-AVAIL-01]
-At this draft's cutoff, the evidence is retained in the authors' local companion
-artifact tree; no public DOI or independent availability is claimed.
+The data-and-paper companion is available in the
+\href{https://huggingface.co/datasets/hackerprofile1/modelsmc-pbe-research}{public Hugging Face archive}.
+Implementation source and tests are available from the
+\href{https://github.com/quangng2000/modelsmc-reading-notes/tree/python-modelsmc-pbe}{GitHub publication branch};
+the completed-study revision is
+\texttt{d0eacd1e\allowbreak 6315cceb\allowbreak 640064c6\allowbreak
+b9a5fc59\allowbreak 19ec05a5}.
 \begin{quote}
 \small\raggedright
 R5 protocol SHA-256:
@@ -783,8 +788,12 @@ de327db0\allowbreak 8af050d3}; and
 850f4d63\allowbreak 926e3884}. These files remain under
 \path{artifacts/exedec-deepcoder-ho-debug-benchmark-v2-operations-evidence-failed-v1/mode-header-normalized-derivative-v1}.
 \end{quote}
-Before publication, these local locators must be replaced by an immutable public
-archive and an exact source revision.
+The companion archive distributes data, checksums, failure records, and the
+manuscript; implementation source is distributed through the GitHub revision
+above. The path locators in this appendix are relative to that source checkout
+and its companion artifact tree.
+
+\clearpage
 
 {\small
 \bibliography{references}
