@@ -35,24 +35,25 @@
 
 \begin{abstract}%
 % [P-ABS-01]
-Large language models can guide program synthesis, but sequential Monte Carlo
-correction requires an evaluable probability for the proposal actually sampled
-by the search. We
-introduce \method, a typed programming-by-example system that converts four
-model-proposed repairs---including failures and duplicates---into an
-application-computed, full-support proposal. In a method-frozen fresh-blind
-study of 12 finite-domain filter--map tasks, the LLM-guided system solved 10
-tasks within 29 logical complete-program slots, versus 2 for a matched
-grammar-random system; all eight discordant outcomes favored LLM guidance
-(one-sided exact sign test, $p=1/256$). However, a separately frozen
-provider-free calibration study failed its $N=256$ target-mass gate (RMSE
-0.2395; bias $+0.1130$), despite exact-program discovery in all 128 runs. A
-post-failure terminal diagnostic verified the finite-state importance
-identities and supported poor proposal--target overlap as a material error
-source, without validating the sequential procedure. The evidence therefore
-supports bounded discovery and auditable proposal accounting, but not
-calibrated finite-particle inference, general program synthesis, or wall-clock
-superiority.
+Large language models can guide program synthesis, but importance-corrected
+sequential Monte Carlo requires an evaluable proposal probability for every
+sampled program. We present \method, a typed programming-by-example
+system in which a model supplies four repair slots and the application converts
+the resulting shortlist, including invalid and duplicate entries, into a
+full-support proposal over the declared bounded grammar. In a fresh-blind study on 12
+finite-domain filter--map tasks, the LLM-guided system solved 10 tasks under a
+29-slot budget per task and arm, compared with 2 for a matched grammar-random
+system.
+All eight discordant pairs favored LLM guidance (one-sided exact sign test,
+$p=1/256$). This discovery result did not imply calibrated inference. In a
+separate provider-free study, the $N=256$ estimate of exact-program target mass
+missed both prespecified thresholds (RMSE 0.2395; bias $+0.1130$), even though
+all 128 $N=256$ runs found an exact program. A follow-up terminal
+diagnostic verified the finite-state importance identities and supported poor
+proposal--target overlap as a material error source in the conditioned terminal
+step. Together, the studies support \method as an auditable method for bounded
+discovery, but not as a calibrated inference procedure, a general synthesizer,
+or a wall-clock speedup.
 \end{abstract}
 
 \begin{keywords}
@@ -70,46 +71,83 @@ grows combinatorially. Classical systems control that space with domain
 languages, deduction, and structural search orders
 \citep{gulwani2011flashfill,feser2015datastructure}; learned policies and LLMs
 can instead prioritize plausible code
-\citep{kalyan2018ngds,barke2024hysynth,li2024enumerative}.
+\citep{kalyan2018ngds,barke2024hysynth,li2024enumerative}. That learned guidance
+changes the search order, but it also makes the source of any improvement harder
+to identify.
 
 % [P-INT-02]
-The empirical question ``did the LLM help?'' is easy to answer too broadly. A
-type checker, execution engine, or selector may account for a system's success,
-while an LLM supplies only candidates. Conversely, reporting a passing sample
-without its acquisition and selection rules hides failures and multiplicities.
-The scientific object should therefore be the complete model--interpreter--SMC
-system, with the proposal, target, budget, and comparator stated separately.
+That shift creates an attribution problem. A type checker, execution engine, or
+selector may determine success even when the model only proposes candidates.
+Reporting only the selected program also conceals invalid responses, duplicate
+proposals, and the rules used to choose among them. We therefore evaluate the
+complete model--interpreter--SMC system while stating its proposal, target,
+budget, and comparator separately.
 
 % [P-INT-03]
-Sequential Monte Carlo (SMC) supplies a population view of synthesis: programs
-are particles, semantic fit defines stage targets, and resampling concentrates
-computation. This view has precedents in neural program synthesis
+Sequential Monte Carlo (SMC) makes that accounting requirement precise.
+Programs become particles, semantic fit defines stage targets, and resampling
+concentrates computation. This view has precedents in neural program synthesis
 \citep{ellis2019repl} and executable model discovery
 \citep{wahl2026modelsmc}. Its probabilistic interpretation, however, requires
-an evaluable proposal probability. Free-form generation does not expose the
-probability of the canonical abstract syntax tree consumed by an interpreter,
-especially when invalid responses, duplicate repairs, and textual aliases are
-present.
+an evaluable proposal probability. A free-form response does not by itself
+provide the probability of the canonical abstract syntax tree consumed by an
+interpreter, especially when invalid responses, duplicate repairs, and textual
+aliases are present.
 
 % [P-INT-04]
-\method avoids that unsupported identification. The model returns four typed
-repair slots, but the application totalizes those slots and computes the law
-used for sampling and weighting. An auxiliary-variable construction cancels
-the unknown provider-response law from the importance weight. This makes the
-implemented transition probability accountable without claiming to recover an
-LLM probability over programs.
+\method addresses this gap without treating model output as a program
+probability. The model supplies four typed repair slots, and the application
+turns them into the distribution used for sampling and weighting. Treating the
+response as an auxiliary variable removes the unknown provider-response law
+from the importance weight. The resulting transition is fully evaluable without
+being presented as an LLM distribution over programs.
 
 % [P-INT-05]
-Our contribution is a bounded, auditable synthesis mechanism and an evidence
-sequence that keeps discovery distinct from calibration. We formalize typed
-execution evidence, four-slot failure totalization, a normalized grammar
-restart, the resulting SMC target and weights, and an online/reference
-execution boundary. We then report a fresh-blind paired discovery study, a
-method-frozen negative calibration study, and a separately frozen terminal
-mechanism diagnostic. A released-data ExeDec adapter study is described only as
-an integrity-limited debug exercise. Its descriptive outcome is reported with
-the public-data, repeated-seed, finite-probe, and operations-evidence boundaries
-kept explicit.
+The methodological contribution is a bounded synthesis mechanism whose
+proposal can be reconstructed from the recorded shortlist. It combines typed
+execution evidence, fixed four-slot totalization, a normalized grammar restart,
+explicit SMC weights, and a strict boundary between online search and exact
+reference computation. Together, these components turn each recorded shortlist
+into a replayable proposal.
+
+% [P-INT-06]
+We evaluate that proposal through three separate questions. A fresh-blind
+paired study asks whether LLM shortlists improve bounded discovery. A separately
+frozen provider-free study asks whether its particle system approximates the
+declared target, and a follow-up diagnostic examines why that calibration gate
+failed. We also report a released-data ExeDec adapter exercise as a limited
+stress test. The studies expose the paper's central distinction: a proposal can
+improve discovery while still approximating its target poorly.
+
+\section{Related Work}
+\label{sec:related}
+
+% [P-REL-01]
+\method lies at the intersection of symbolic PBE, learned search guidance, and
+particle inference. Symbolic PBE systems use domain languages, deduction, and
+structural biases to control ambiguity
+\citep{gulwani2011flashfill,feser2015datastructure}. Neural guided deduction and
+LLM-guided synthesis instead learn or prompt search priorities
+\citep{kalyan2018ngds,barke2024hysynth,li2024enumerative}. Our narrower focus is
+the sampling law created when a learned system proposes a finite repair
+shortlist.
+
+% [P-REL-02]
+SMC and related particle methods provide standard tools for sequential
+importance weighting and resampling
+\citep{delmoral2004feynman,delmoral2006smc,naesseth2019smc}, and prior synthesis
+systems have combined learned guidance with particle inference
+\citep{ellis2019repl,wahl2026modelsmc}. The contribution here is not the use of
+SMC itself. We focus on the totalized four-slot proposal and use exact
+references to show that evaluable proposal probabilities do not by themselves
+guarantee finite-$N$ calibration.
+
+% [P-REL-03]
+ExeDec studies execution decomposition across released DeepCoder and RobustFill
+tasks \citep{shi2024exedec}. Our adapter neither implements the complete
+DeepCoder language nor reproduces ExeDec's official split structure. We use it
+only as a released-data stress test after defining the much narrower typed
+filter--map setting below.
 
 \section{Typed Filter--Map Synthesis}
 \label{sec:setting}
@@ -121,10 +159,12 @@ $\data$ when $e(x_j)=y_j$ for every $j$. The bounded typed DSL contains integer
 and Boolean expressions, lists, conditionals, \texttt{map}, and right folds. A
 structural cost favors compact programs, following the minimum-cost perspective
 of Lambda$^2$ \citep{feser2015datastructure}. Exactness on examples is not, by
-itself, evidence of semantics outside the declared evaluation domain.
+itself, evidence of semantics outside the declared evaluation domain, so every
+study states that domain explicitly.
 
 % [P-SYM-01]
-The confirmatory study uses the strict filter--map skeleton
+The confirmatory study restricts programs to the following filter--map
+skeleton:
 \begin{equation}
 \operatorname{foldr}(\lambda i,a.\;\mathbf{if}\;p(i)\;\mathbf{then}\;
 g_m(i)::a\;\mathbf{else}\;a,\;[],\;x),
@@ -133,25 +173,24 @@ g_m(i)::a\;\mathbf{else}\;a,\;[],\;x),
 with typed holes $p:\mathrm{Int}\rightarrow\mathrm{Bool}$ and
 $g_m:\mathrm{Int}\rightarrow\mathrm{Int}$. A normalized recursive grammar
 defines a law $g(e)$ over complete programs within the declared bounds. The
-method does not require the provider to know or enumerate the complete-program
-support.
+provider need not know or enumerate that complete-program support.
 
 % [P-SYM-02]
-Execution supplies sound local evidence. Singleton examples determine facts
-such as $p(-3)=\mathrm{false}$ or $g_m(2)=4$ when the alignment is unambiguous;
-ambiguous examples generate no such fact. For a current program, the harness
-records predicate and mapper violations, execution loss, the selected typed
-hole, and legal local grammar. The provider sees only this public evidence and
-never a hidden target, generator secret, exhaustive catalog, or comparator
-outcome.
+Examples constrain individual holes only when their effects can be isolated. A
+singleton example may establish, for instance, that
+$p(-3)=\mathrm{false}$ or $g_m(2)=4$; an ambiguous example yields no hole-level
+fact. For each current program, the harness records predicate and mapper
+violations, execution loss, the selected typed hole, and the legal local
+grammar. Only this public execution evidence is supplied to the provider.
 
 % [P-SYM-03]
-The application is authoritative at every boundary: it parses candidate
-syntax, checks types, executes programs under fixed resource limits, and
-canonicalizes states before caching. The provider proposes repairs but does not
-declare validity, semantic success, or confidence. This division permits a
-matched grammar acquisition arm to share the interpreter, evidence, target,
-weighting, and resampling machinery.
+All validity decisions remain with the application. It parses and type-checks
+candidate syntax, executes programs under fixed resource limits, and
+canonicalizes states before caching. The provider proposes repairs but cannot
+certify their validity or success. This separation lets the grammar-random arm
+share the interpreter, evidence, target, weighting, and resampling code. With
+validity and execution fixed by the application, the remaining problem is to
+define the law from which repairs are actually sampled.
 
 \section{Probability-Accountable Repair Shortlists}
 \label{sec:proposal}
@@ -167,44 +206,50 @@ H_S(y)=\frac{1}{4}\sum_{j=1}^4\mathbf{1}[s_j=y]
 q(y\mid S,x,h)=(1-\varepsilon)H_S(y)+\varepsilon g(y).
 \label{eq:shortlist-proposal}
 \end{equation}
-The r5, V1, ExeDec V2, and sticky V2 arm use $\varepsilon=0.05$; terminal V2
-additionally evaluates prespecified diagnostic alternatives. Because $g$ is
-normalized and has full declared grammar support, $q$ is normalized, evaluable,
-and positive on every grammar program. Retries and backfills are forbidden: a
-failed response remains four current-state sentinel slots in the
-fixed-denominator record.
 
 % [P-PROP-SHORT-02]
-The raw response is an auxiliary variable rather than a claimed program
-probability. Let $R_t^a(S_t\mid x_{t-1},h_t,\data)$ be the shortlist law induced
-by acquisition arm $a$. For the LLM arm this law is unknown; for the
-grammar-random arm it is weighted sampling without replacement among legal
-non-current repairs. For the deterministic V1 ranking oracle, $R_t^a$ is a
-point mass on its mechanically ranked four-tuple. At an exact V1 parent,
-acquisition is skipped and this tuple is $(x,x,x,x)$; only the shortlist
-component is absorbing because the $\varepsilon g$ restart retains full
-support. Terminal V2 deliberately replaces this sticky shortlist in its
-diagnostic alternatives. For every arm, the extended target and proposal
-include the same acquisition factor, so it cancels. For the four-slot method
-arms, the remaining denominator is exactly
-Equation~\ref{eq:shortlist-proposal}; terminal V2 alternatives use their
-separately declared evaluable $q$, including a 64-slot empirical law for the
-top-64 control.
+Because $g$ is normalized and has full support over the declared bounded
+grammar, $q$ is normalized, evaluable, and positive on every grammar program.
+We neither retry nor backfill a failed response; it contributes four copies of
+the current state and preserves the fixed denominator. The r5, V1, ExeDec V2,
+and sticky V2 arms use
+$\varepsilon=0.05$, while terminal V2 also evaluates prespecified diagnostic
+alternatives.
 
 % [P-PROP-SHORT-03]
-This construction is probability-accountable, not automatically efficient.
-Shortlists that overlap poorly with a target can yield highly variable weights
-even when every proposal probability is correct. The calibration studies below
-therefore treat discovery of an exact program and approximation of target mass
-as separate endpoints.
+We treat the raw response as an auxiliary variable, not as a probability
+distribution over programs. Let $R_t^a(S_t\mid x_{t-1},h_t,\data)$ be the
+shortlist law for acquisition arm $a$. This law is unknown for the LLM arm,
+weighted sampling without replacement among legal non-current repairs for
+grammar-random, and a point mass for the deterministic V1 ranking oracle. At an
+exact V1 parent, acquisition is skipped and the shortlist contains four copies
+of the current program, although the grammar restart still gives the overall
+proposal full support.
+
+% [P-PROP-SHORT-04]
+The same factor $R_t^a$ appears in the extended target and proposal, so it
+cancels from the importance weight. The four-slot arms are then weighted with
+Equation~\ref{eq:shortlist-proposal}. Terminal V2 uses separately specified
+proposal laws, including a 64-slot empirical distribution for its top-64
+control. This cancellation accounts for the transition actually used without
+claiming to recover the model's marginal probability for a program.
+
+% [P-PROP-SHORT-05]
+An evaluable sampling law need not be an efficient importance proposal. If the
+shortlist places little mass where the target does, the weights may have high
+variance even when every proposal probability is correct. The next section uses
+this explicit law as the denominator in the particle correction. The studies
+then evaluate exact-program discovery and target-mass approximation as separate
+endpoints.
 
 \section{Importance-Corrected SMC}
 \label{sec:smc}
 
 % [P-SMC-01]
-Let $V_p(x)$ and $V_m(x)$ be frozen predicate- and mapper-singleton violation
-counts, let $L_{\data}(x)$ be the capped soft execution loss, and let $C(x)$
-be program cost. The r5 and V1/V2 tasks use
+The stage targets combine grammar mass, execution evidence, and program cost.
+Let $V_p(x)$ and $V_m(x)$ be fixed predicate- and mapper-singleton violation
+counts, let $L_{\data}(x)$ be capped soft execution loss, and let $C(x)$ be
+program cost. The r5 and V1/V2 tasks use
 $(\lambda_L,\lambda_C,\lambda_E)=(0.75,0.02,2)$; ExeDec V2 uses its frozen
 scorer defaults $(2.0,0.15,2)$. Write
 $\ell(x)=-\lambda_L L_{\data}(x)-\lambda_C C(x)$. The four unnormalized
@@ -217,11 +262,12 @@ single-program stage densities are
 \gamma_4(x)&=g(x)\exp[\ell(x)].
 \label{eq:stage-targets}
 \end{align}
-These are declared finite computational targets; the soft-loss exponential is
-not presented as a real-world likelihood or a posterior over unbounded code.
+These densities define finite computational targets. The soft-loss exponential
+is not a real-world likelihood or a posterior over unbounded code.
 
 % [P-SMC-02]
-Conditioning on the realized initial program $x_0$, arm $a$ has extended-path
+We can now write the cancellation on an extended state space that includes the
+realized shortlists. Conditioning on the initial program $x_0$, arm $a$ has
 target and proposal
 \begin{align}
 \Gamma_t^a(x_{1:t},S_{1:t})
@@ -236,10 +282,11 @@ G_t(x_{t-1},S_t,x_t)=
 \frac{\gamma_t(x_t)}{q(x_t\mid S_t,x_{t-1},h_t)}.
 \label{eq:potential}
 \end{equation}
-This cancellation does not identify the marginal free-form LLM probability of
-$x_t$.
+The realized shortlist still affects $q$, but evaluating the marginal
+free-form LLM probability of $x_t$ is unnecessary.
 
 % [P-SMC-03]
+The particle implementation applies this potential to every scheduled child.
 If parent $i$ has normalized weight $W_{t-1}^i$ and produces $B_{t,i}$ children,
 child $b$ receives unnormalized weight
 \begin{equation}
@@ -252,80 +299,92 @@ The factor $1/B_{t,i}$ allocates parent mass across scheduled offspring. After
 stages 1--3, systematic resampling selects the frozen parent count and resets
 retained weights. Marginalizing auxiliary shortlists and previous states gives
 terminal marginal $\gamma_4/Z_4$; the product-path normalizer is a different
-quantity and is not used as a terminal-target calibration claim.
+quantity. The calibration endpoint below concerns the terminal target, not that
+path normalizer.
 
 % [P-SMC-04]
-The implementation keeps online synthesis separate from exact reference work.
-The r5 and ExeDec V2 online accounts cover only scheduled complete-program
-executions. Both report logical slots, online physical scorer calls, and
-provider calls; r5 additionally reports cache reuse and tokens. The
-provider-free V1/V2 studies and ExeDec V2's
-later public-reference step separately enumerate bounded supports; those
-reference evaluations are excluded from online work counts. Programs found
-during reference enumeration are never credited as online discovery.
+The studies also separate online search from exact reference computation. The
+r5 and ExeDec V2 online
+accounts cover only scheduled complete-program executions and report logical
+slots, online physical scorer calls, and provider calls; r5 also reports cache
+reuse and tokens. The provider-free V1/V2 studies and ExeDec V2's later
+reference step enumerate bounded supports separately. Those evaluations are
+excluded from online work, and programs found there are never credited as
+online discoveries.
 
 \section{Studies}
 \label{sec:studies}
 
 % [P-EXP-01]
-The evidence has three ordered layers. The r5 study tests bounded discovery by
-the complete LLM-shortlist SMC system against a matched grammar-shortlist arm.
-Calibration V1 tests finite-particle approximation against exact references and
-retains a failed gate. Terminal diagnostic V2 probes a mechanism for that
-failure without revising it. A fourth, clearly separated ExeDec V2 subsection
-records an adapter debug protocol whose public-data and custody limitations
-preclude an efficacy claim.
+The evaluation begins with bounded discovery: r5 compares the complete
+LLM-shortlist system with a matched grammar-shortlist system. Calibration V1
+then asks whether the weighted particles approximate an exactly enumerable
+target. When that gate fails, terminal V2 investigates the conditioned terminal
+step without changing the decision. ExeDec V2 is reported separately as a
+limited stress test of the released-data adapter.
 
 \subsection{Fresh-blind r5 paired discovery}
 
 % [P-EXP-R5-01]
-The r5 method was frozen before a new custodial secret generated 12 independently drawn
+Before task generation, the r5 method and analysis plan were frozen. A new
+custodial secret initialized a seeded generator, which then drew 12 independent
 targets from the rejection-conditioned recursive filter--map grammar. Each
-public task contained complete singleton coverage of the declared integer
-domain $\{-3,\ldots,4\}$ plus list examples. The provider was GPT-OSS-120B at a
-sealed revision \citep{openai2025gptoss}. Provider calls in r5 and ExeDec V2
-shared frozen settings: temperature zero, low reasoning effort, a 1,200-token
-output cap, a 420-second timeout, concurrency two, and no retries. Private target material remained
-outside the provider environment until public execution, reveal-free analysis,
-and public sealing were complete.
+public task contained every singleton input in the declared integer domain
+$\{-3,\ldots,4\}$ together with list examples.
 
 % [P-EXP-R5-02]
+The provider was GPT-OSS-120B at a sealed revision
+\citep{openai2025gptoss}. Its settings, also used in ExeDec V2, were temperature
+zero, low reasoning effort, a 1,200-token output cap, a 420-second timeout,
+concurrency two, and no retries. Private target material stayed outside the
+provider environment until public execution, reveal-free analysis, and public
+sealing had finished.
+
+% [P-EXP-R5-03]
 For each task, grammar-random ran before the LLM arm. Both used the same initial
 law, evidence, hole policy, four-slot totalization, grammar restart, stage
 targets, importance weights, resampling, and 29-slot trajectory. They differed
 only in shortlist acquisition. Task-specific start, proposal-mixture sampling,
-and resampling seeds were paired; only acquisition seeds differed. Starting from one executed program, stage 1
-drew four children; stages 2--4 drew four children from each of two resampled
-parents, yielding $1+4+3\times8=29$ logical slots and eight terminal weighted
-particles. The primary endpoint was zero public-example
-loss by slot 29; complete singleton coverage made that endpoint equivalent to
-itemwise filter--map behavior on the declared domain, which the post-unblind
-audit verified. The task was the statistical unit, and the frozen analysis used
-a one-sided exact sign test over discordant outcomes. All trajectories ran the
-full budget without outcome-dependent stopping.
+and resampling seeds were paired; only acquisition seeds differed. The paired
+design therefore compares shortlist-acquisition mechanisms within the complete
+shared system.
+
+% [P-EXP-R5-04]
+Each trajectory began with one executed program. Stage 1 drew four children,
+and stages 2--4 drew four children from each of two resampled parents, yielding
+$1+4+3\times8=29$ logical slots and eight terminal weighted particles. The
+primary endpoint was zero public-example loss by slot 29. Complete singleton
+coverage made this endpoint equivalent to itemwise filter--map behavior on the
+declared domain, a relationship checked only after unblinding. The task was the
+statistical unit, and the analysis used a one-sided exact sign test over
+discordant outcomes. Every trajectory ran the full budget without
+outcome-dependent stopping.
 
 \subsection{Calibration V1 and terminal diagnostic V2}
 
 % [P-EXP-CAL-01]
 Calibration V1 was frozen separately and used no provider. Four developmental
 filter--map tasks each had an exactly enumerable 36,000-program support. A
-deterministic public-evidence ranking oracle supplied four local slots and was
-mixed with the same grammar restart; it was an exhaustive diagnostic component,
-not an LLM or a search baseline. The study used
-$N\in\{32,64,128,256,512\}$ and 32 repetitions per task--$N$ cell. Here $N$ is
-the terminal weighted-particle count; each repetition scheduled $1+4N$ logical
-slots and did not stop early. Its frozen
-$N=256$ gate required pooled exact-program-mass RMSE below 0.10 and signed bias
-inside $[-0.03,0.03]$.
+deterministic public-evidence oracle ranked legal local repairs exhaustively and
+supplied four slots, which were mixed with the same grammar restart. This oracle
+was a diagnostic component, not an LLM or a search baseline.
 
 % [P-EXP-CAL-02]
-After V1 failed, terminal diagnostic V2 was frozen before new Monte Carlo draws.
-It checked the finite-state importance identities and compared the sticky V1
-terminal proposal with local alternatives and an exhaustive global top-64,
-$\varepsilon=0.50$ positive control. It evaluated six arms at
+The study used $N\in\{32,64,128,256,512\}$ terminal weighted particles and 32
+repetitions for each task and value of $N$. Each repetition scheduled $1+4N$
+logical slots and did not stop early. The frozen $N=256$ gate required pooled
+exact-program-mass RMSE below 0.10 and signed bias inside $[-0.03,0.03]$.
+
+% [P-EXP-CAL-03]
+Because V1 failed that gate, terminal diagnostic V2 was frozen before any new
+Monte Carlo draws. It checked the finite-state importance identities and
+compared the sticky V1 terminal proposal with local alternatives and a global
+top-64, $\varepsilon=0.50$ positive control selected after exhaustive support
+scoring. It evaluated six arms at
 $N\in\{256,512\}$ with 128 repetitions per task--arm--$N$ cell. The diagnostic
-conditions on a mechanically selected zero-loss parent and addresses only the terminal calculation. It cannot rescue
-V1, validate the four-stage recurrence, or establish online search efficiency.
+conditions on a mechanically selected zero-loss parent and addresses only the
+terminal calculation. It leaves V1's decision unchanged and does not test the
+four-stage recurrence or online search efficiency.
 
 \subsection{ExeDec V2 released-data debug}
 \label{sec:exedec-debug}
@@ -341,40 +400,34 @@ runs. Its endpoint is exactness on finite private debug probes, with an exact
 two-sided discordant-pair test and no efficacy gate.
 
 % [P-EXP-EXEDEC-V2-02]
-The targets and released examples are public and potentially present in model
-training data. The private probes are finite debug checks, not fresh hidden
-generalization or a proof of semantic equivalence. The hash-bound shared-FUSE
-staging tree was not an exclusive operating-system custody boundary. The
-64-run study archive was independently verified and imported, but the separate
-operations-evidence export failed its frozen safe-mode verifier because tar
-header modes violated the sealed contract. Independent audit found its content
-and cross-bindings valid; the original failure remains preserved. A local
-mode-header-normalized derivative was validated but is noncanonical and was not
-imported. The result is therefore debug-only and integrity-limited.
+The targets and examples are public and may have appeared in model training
+data. The private probes are finite debug checks, not evidence of fresh
+generalization or a proof of semantic equivalence. In addition, the shared-FUSE
+staging tree did not provide exclusive operating-system custody, and a separate
+operations-evidence export failed its packaging verifier. We therefore treat
+ExeDec V2 only as an adapter debug study. Appendix~\ref{app:integrity} records
+the custody and packaging limitations.
 
 \section{Results}
 \label{sec:results}
 
 % [P-RES-01]
-We report the findings in the same order as the study designs and do not pool
-bounded discovery with target-mass calibration or adapter debugging.
+The r5 study supports bounded discovery, whereas V1 does not support calibrated
+finite-particle inference. The ExeDec stress test is reported separately because
+its released data and repeated-seed design give it a different evidential
+status.
 
 \subsection{Fresh-blind r5 discovery}
 
 % [P-RES-R5-01]
 The r5 LLM arm found a finite-domain exact program by slot 29 on 10 of 12 tasks,
-versus 2 of 12 for grammar-random. There were eight LLM-only successes, no
-grammar-random-only successes, and two tasks solved by both arms. Thus the
-paired advantage was eight. The one-sided exact sign-test value was
-$p_{\mathrm{sign}}=2^{-8}=1/256=0.00390625$. As a post hoc sensitivity that
-treats the observed-but-invalid r4 diagnostic as an additional numerical look,
-a two-look Bonferroni adjustment gives 0.0078125. This is not the frozen r5
-analysis: r3 had no numerical outcome, and r4 remains invalid and excluded. The frozen thresholds were at
-least 6 LLM successes and at least a four-task advantage; both were met. At the
-descriptive slot-21 checkpoint, the counts were 8 of 12 and 2 of 12. These data
-compare the complete LLM-shortlist system with its matched grammar-shortlist
-arm; they do not isolate the model from shared execution, weighting, or
-resampling.
+compared with 2 of 12 for grammar-random. All eight discordant tasks favored the
+LLM arm, yielding a one-sided exact sign-test value of
+$p=1/256=0.00390625$. The prespecified requirements of at least six LLM
+successes and a four-task advantage were both met. At the descriptive slot-21
+checkpoint, the two arms had solved 8 and 2 tasks. These results compare
+complete systems that differ only in shortlist acquisition; they do not isolate
+the model from the shared interpreter, weighting, or resampling machinery.
 
 % [P-RES-R5-02]
 The 24 trajectories executed 696 logical program slots. Scorer caching reduced
@@ -384,9 +437,10 @@ Two responses ended at the 1,200-token limit and, as frozen, each was totalized
 to four current-state sentinel slots without retry or backfill.
 
 % [P-RES-R5-03]
-Reveal-free analysis and a 415-file public checksum inventory were sealed before
-unblinding. The audit then verified the secret and target commitments,
-reproduced all 12 public tasks, and re-executed every hidden target. Across the
+The post-unblind audit verified the secret and target commitments, reproduced
+all 12 public tasks, and re-executed every hidden target. It ran only after
+reveal-free analysis and a 415-file public checksum inventory had been sealed.
+Across the
 12 successful task--arm trajectories, four first-exact programs were
 syntax-identical to the target and eight were semantic aliases. Because public
 singletons covered the complete declared domain, this is finite-domain semantic
@@ -398,8 +452,8 @@ recovery, not unique-AST or out-of-domain recovery.
 % [P-RES-CAL-01]
 V1 failed both frozen $N=256$ gate components despite exact-program discovery
 in all 128 task--repetition runs (Table~\ref{tab:calibration-gate}). The result
-directly separates the ability to encounter an exact program from the ability
-to estimate the target mass assigned to exact programs.
+shows that discovering an exact program did not answer the calibration
+question.
 
 \begin{table}[!htbp]
 \centering
@@ -420,21 +474,22 @@ Zero-loss discovery & descriptive & 128/128 & Not gated \\
 
 % [P-RES-CAL-02]
 For $N=32,64,128,256,512$, pooled exact-mass RMSE was 0.32468, 0.26776,
-0.26536, 0.23953, and 0.25592, respectively. This grid does not support a
-reference $N^{-1/2}$ error rate. Exact evaluation of $q$ was necessary for
-correction but insufficient for the frozen finite-budget calibration target
-under this proposal, schedule, and four-task suite.
+0.26536, 0.23953, and 0.25592, respectively. Across this grid, RMSE did not
+decrease at the reference $N^{-1/2}$ rate. Exact evaluation of $q$ was
+necessary for correction, but it was insufficient to meet the finite-budget
+target under this proposal, schedule, and four-task suite.
 
 % [P-RES-CAL-03]
-In terminal diagnostic V2, the finite-state importance identities held to a
-maximum absolute error of $2.22\times10^{-16}$. The exhaustive public-score
-global top-64, $\varepsilon=0.50$ positive control had a larger exact population ESS fraction than the
-sticky proposal on every task and reduced pooled $N=512$ exact-mass RMSE from
-0.2792 to 0.0626. The frozen mechanism-support rule was met, supporting poor
-proposal--terminal-target overlap as a material source of error in the tested
-terminal step. Because the control exhaustively scores the finite support and
-conditions on a zero-loss parent, it is not a search algorithm and does not
-revise V1's failed gate.
+Terminal V2 first verified the finite-state importance identities to a maximum
+absolute error of $2.22\times10^{-16}$. The positive control used
+$\varepsilon=0.50$ and a global top-64 shortlist selected by exhaustively
+scoring the public support. It increased the exact population ESS fraction on
+every task and reduced pooled $N=512$ exact-mass RMSE from 0.2792 to 0.0626
+relative to the sticky proposal. This met the prespecified mechanism-support
+rule and implicated poor proposal--target overlap in the conditioned terminal
+step. Because the control scores the complete finite support and starts from a
+zero-loss parent, it is a diagnostic rather than a practical search method and
+leaves the V1 failure unchanged.
 
 \subsection{ExeDec V2 debug}
 
@@ -444,10 +499,10 @@ stored private debug probe in 17/32 blocks, versus 3/32 for grammar-random, a
 success-fraction difference of 0.4375. There were 16 LLM-only successes, two
 grammar-random-only successes, one success in both arms, and 13 in neither arm,
 so the 18 discordant blocks gave an exact two-sided conditional sign-test value
-of $p=0.001312255859375$. This value is descriptive and is not treated as a
-statistical-significance or confirmatory claim: eight repeated seeds are nested
-within each of only four public released targets, and the protocol specified no
-efficacy gate.
+of $p=0.001312255859375$. We treat this comparison as descriptive because the
+eight seeds per task are repeated measurements on only four released targets
+and the protocol specified no efficacy gate. This exact calculation is not
+evidence of statistical significance or confirmation.
 
 % [P-RES-EXEDEC-V2-02]
 Public-example exactness was 21/32 for LLM-SMC and 5/32 for grammar-random. The
@@ -455,15 +510,18 @@ runs used 1,856 logical program slots and 1,040 online physical scorer calls
 before reference enumeration; exhaustive public-reference evaluations are
 excluded from that count. LLM-SMC
 made 188 provider calls under the frozen aggregate cap of 224;
-grammar-random made none. Conditional on hidden-probe success, the mean first
-success slot was 12 for LLM-SMC and 9 for grammar-random; mean terminal ESS out
-of eight particles was 4.7512 and 3.0567, respectively. The conditional slot summary is not a speed
-comparison, and passing finitely many private probes does not establish semantic
-equivalence.
+grammar-random made none.
+
+% [P-RES-EXEDEC-V2-03]
+Among runs that passed the private probes, the mean first-success slot was 12
+for LLM-SMC and 9 for grammar-random. Because this summary conditions on
+success, it is not a speed comparison. Mean terminal ESS out of eight particles
+was 4.7512 and 3.0567, respectively, and passing finitely many probes does not
+establish semantic equivalence.
 
 \begin{table}[!htbp]
 \centering
-\caption{ExeDec V2 hidden-probe exact successes by released target. Each row
+\caption{ExeDec V2 private-debug exact successes by released target. Each row
 contains eight repeated paired seed blocks; these four targets, not 32 fresh
 tasks, define the limited target diversity.}
 \label{tab:exedec-task-results}
@@ -482,97 +540,64 @@ Overall & 17/32 & 3/32 \\
 \end{table}
 \FloatBarrier
 
-% [P-RES-EXEDEC-V2-03]
-The canonical study analysis passed its internal integrity checks, including
-validation of all public run artifacts before private debug oracles were
-opened. The auxiliary operations-evidence packaging failure nevertheless
-remains part of the result's provenance: neither its valid content audit nor a
-noncanonical mode-header derivative creates an exclusive custody boundary or
-turns this released-data adapter exercise into efficacy evidence.
-
-\section{Related Work}
-\label{sec:related}
-
-% [P-REL-01]
-Symbolic PBE systems use domain languages, deduction, and structural biases to
-control ambiguity \citep{gulwani2011flashfill,feser2015datastructure}. Neural
-guided deduction and LLM-guided synthesis instead learn or prompt search
-priorities \citep{kalyan2018ngds,barke2024hysynth,li2024enumerative}. \method
-shares their hybrid view but makes a narrower contribution: the application
-turns a fixed repair shortlist into an explicit, replayable sampling law and
-compares shortlist acquisition inside otherwise shared mechanics.
-
-% [P-REL-02]
-SMC and related particle methods provide standard tools for sequential
-importance weighting and resampling
-\citep{delmoral2004feynman,delmoral2006smc,naesseth2019smc}. Prior program and
-model synthesis work already uses learned guidance and particle inference
-\citep{ellis2019repl,wahl2026modelsmc}. We do not claim the first use of SMC for
-synthesis. The distinction here is the totalized four-slot auxiliary-variable
-proposal and an empirical program that explicitly tests, and fails, finite-$N$
-calibration rather than inferring it from exact proposal accounting.
-
-% [P-REL-03]
-ExeDec studies execution decomposition across released DeepCoder and RobustFill
-tasks \citep{shi2024exedec}. Our narrow adapter neither implements the complete
-DeepCoder language nor reproduces ExeDec's official split structure. It is
-included only to expose adapter behavior and accounting on released examples
-before any future external confirmation.
-
 \section{Limitations and Integrity}
 \label{sec:limitations}
 
 % [P-LIM-01]
-The r5 result covers 12 generated filter--map tasks over eight integer values
-with public singleton examples that identify behavior on that domain. It uses
-one pinned model revision and one matched acquisition comparator. The tasks are
-not representative of arbitrary PBE, the result provides no extrapolation
-beyond the observed domain, and temperature-zero calls are not independent
-model replicates. Exact references in calibration are available only because
-the four developmental supports are small enough to enumerate.
+The r5 result covers a narrow setting: 12 generated filter--map tasks over eight
+integer values, with public singleton examples that identify behavior on that
+domain, one pinned model revision, and one matched acquisition comparator. It
+does not support extrapolation beyond the observed domain or represent
+arbitrary PBE, and temperature-zero calls are not independent model replicates.
 
 % [P-LIM-02]
-The calibration evidence is intentionally negative. V1's failed gate remains
-failed; terminal V2 identifies one material mechanism only within a
-conditioned, provider-free terminal calculation. Neither exact proposal
+Calibration imposes an additional limit. V1 did not pass its gate, and terminal
+V2 supports one material mechanism only within a conditioned, provider-free
+terminal calculation. Neither exact proposal
 accounting nor high discovery establishes low-variance importance weights,
-calibrated posterior mass, an unbiased log normalizer, or validity of the full
-sequential approximation.
+accurate target-mass estimates, normalizer accuracy, or validity of the full
+sequential approximation. Exact references were possible only because the four
+developmental supports were small enough to enumerate.
 
 % [P-LIM-03]
-The ExeDec study is weaker still: it uses four deduplicated released targets,
-eight repeated seeds within each target, an unofficial strict Filter-then-Map
-adapter, potentially contaminated public data, and finite debug probes. The 32
-blocks are therefore not 32 independent targets, and the exact test value is
-descriptive rather than a significance or confirmation claim. Its frozen
-scorer scales also differ from r5, so it is not a scale-matched external
-confirmation. Nonexclusive
-FUSE staging and the failed original operations-evidence safe-mode verification
-add an integrity limit that the noncanonical local derivative does not remove.
-More generally, equal logical slots do not imply equal wall time, provider
-compute, or total compute; the studies establish no speedup over enumeration or
-other synthesizers. Generated programs require sandboxing and review. Appendix
-\ref{app:integrity} preserves the reported-study failure history.
+The ExeDec result has narrower evidential value than r5. It uses four
+deduplicated released targets, eight repeated seeds within each target, an
+unofficial strict Filter-then-Map adapter, potentially contaminated public data,
+and finite debug probes. Its 32 blocks are not 32 independent targets, and its
+exact test value is descriptive rather than confirmatory. The scorer scales
+also differ from r5. Nonexclusive FUSE staging and the failed original
+operations-evidence safe-mode verification impose a further integrity limit
+that the noncanonical local derivative does not remove.
+
+% [P-LIM-04]
+Across the studies, equal logical-slot budgets do not imply equal wall time,
+provider cost, or total computation. We therefore make no speedup claim against
+enumeration or other synthesizers. Generated programs also require sandboxed
+execution and human review. Appendix~\ref{app:integrity} records the failed and
+superseded protocols relevant to these limits.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
 % [P-CON-01]
 \method turns four typed LLM repair slots into an application-computed,
-full-support proposal law and uses that law in an explicit SMC correction. In a
-fresh-blind bounded study, the complete LLM-shortlist mechanism solved 10 of 12
-tasks versus 2 of 12 for matched grammar acquisition. This supports a narrow
-discovery advantage for the tested system, not an LLM-only, speed, or broad
-generalization claim.
+full-support proposal law over the declared bounded grammar and uses that law
+in an explicit SMC correction. In the fresh-blind study, the complete
+LLM-shortlist mechanism solved 10 of 12 tasks versus 2 of 12 for matched grammar
+acquisition. This supports a bounded discovery advantage for the complete
+tested system. It does not isolate an LLM-only effect or establish a speedup or
+broad generalization.
 
 % [P-CON-02]
-The accompanying calibration result is equally central: an exactly evaluable
-proposal and discovery in every $N=256$ run did not produce an accurate
-finite-particle target-mass estimate. The terminal diagnostic makes poor
-proposal--target overlap a concrete mechanism for future work without erasing
-the failed gate. Stronger evidence now requires a revised, freshly calibrated
-proposal and independently confirmed external tasks, with discovery,
-distributional accuracy, and compute kept as separate endpoints.
+The calibration study qualifies that discovery result. Although every
+$N=256$ run found an exact program and every proposal probability was
+evaluable, the particle approximation did not estimate exact-program target
+mass accurately. The terminal diagnostic points to poor proposal--target
+overlap as a material mechanism in the conditioned terminal step while leaving
+the failed gate unchanged; it does not validate the full SMC procedure. The
+next step is to redesign and recalibrate the proposal before evaluating it on
+independently selected external tasks. Discovery, distributional accuracy, and
+computational cost should remain separate endpoints.
 
 % [P-ACK-01]
 \acks{This draft received no declared external funding. Compute and hardware
@@ -586,15 +611,15 @@ funding, compute, competing-interest, and author disclosures.}
 
 % [P-APP-NORM-01]
 For the four-slot method arms, totalization guarantees that $S$ has exactly four
-slots, so $H_S$ in Equation~\ref{eq:shortlist-proposal} sums to one even if
-every provider slot fails or all four slots are duplicates. The recursive
-grammar law $g$ also sums to one. Their convex mixture is therefore normalized,
-and because $\varepsilon>0$, every grammar program receives positive mass. The
-V2 top-64 control uses the analogous normalized 64-slot empirical law. In the
-extended target and proposal, the same normalized acquisition factor $R_t^a$
-appears at each stage and cancels from Equation~\ref{eq:potential}. These
-statements prove the corresponding implemented proposal laws; they do not imply
-finite-$N$ calibration.
+entries. Thus $H_S$ in Equation~\ref{eq:shortlist-proposal} sums to one even if
+every provider slot fails or all four entries are duplicates. The recursive
+grammar law $g$ also sums to one, so their convex mixture is normalized; when
+$\varepsilon>0$, every program in the declared grammar receives positive mass.
+The V2 top-64 control uses the analogous normalized 64-slot empirical law. In
+the extended target and proposal, the same normalized acquisition factor
+$R_t^a$ appears at each stage and cancels from
+Equation~\ref{eq:potential}. This proves normalization of the implemented
+proposal laws, not finite-$N$ calibration.
 
 \section{Task-Level Results}
 \label{app:task-results}
@@ -676,25 +701,26 @@ Task & Reference mass & RMSE & Bias & Discovery & Mean ESS/$N$ \\
 \label{app:integrity}
 
 % [P-APP-INTEGRITY-01]
-The following chronology is part of the evidence rather than a second results
-narrative. Blind-confirmation revisions r1 and r2 were superseded before secret
+This appendix records protocol revisions that affected the status of the
+evidence. Blind-confirmation revisions r1 and r2 were superseded before secret
 preparation. R3 aborted before program execution or provider calls because a
-derived run record omitted two harness-required fields. R4 completed public
-execution and reveal-free analysis but failed its frozen sealing gate before
-unblinding; it remains blinded and excluded. Its invalidated reveal-free
-diagnostic was 11/12 versus 2/12 at slot 29 and 10/12 versus 0/12 at slot 21;
-these values are preserved only to disclose the revision path and are not
-evidence. Before any new secret or call, r5 changed only the sealer contract and
-focused test, retained r4's scientific execution method, and generated a fresh
-secret and suite.
+derived run record omitted two required fields. R4 completed public execution
+and reveal-free analysis but failed its sealing gate before unblinding, so it
+remains blinded and excluded. Its invalidated diagnostic was 11/12 versus 2/12
+at slot 29 and 10/12 versus 0/12 at slot 21; these values disclose the revision
+path but are not evidence. Counting that diagnostic as a second numerical look
+gives the post hoc r5 Bonferroni value 0.0078125. Before any new secret or call,
+r5 changed only the sealer contract and focused test, retained r4's scientific
+execution method, and generated a fresh secret and suite.
 
 % [P-APP-INTEGRITY-02]
-Provider-free calibration V1 failed and remains failed. Terminal V2 was frozen
-after that failure and is diagnostic only. ExeDec benchmark V1 was superseded
-before provider calls because its source closure omitted import-time files.
-ExeDec V2 is the final debug protocol. Its 1,143-file study archive passed the
-frozen transfer verifier and was atomically imported; the canonical analysis
-then passed its own run-integrity checks.
+The calibration and adapter studies have separate revision histories.
+Provider-free calibration V1 failed and remains failed; terminal V2 was frozen
+afterward and is diagnostic only. ExeDec benchmark V1 was superseded before
+provider calls because its source closure omitted import-time files. ExeDec V2
+is the final debug protocol. Its 1,143-file study archive passed the transfer
+verifier and was atomically imported, after which the canonical analysis passed
+its run-integrity checks.
 
 % [P-APP-INTEGRITY-03]
 The separate original ExeDec V2 operations-evidence archive failed its frozen
@@ -707,20 +733,21 @@ changed only the 150 tar mode headers to 146 files at \texttt{0600} and four
 executables at \texttt{0700}. That derivative and its report and seal are
 explicitly noncanonical and were not imported. Public-data, adapter,
 finite-probe, contamination, and nonexclusive-custody limits therefore apply to
-every report. Frozen protocols, failed transfers, and artifact directories
-remain in place rather than being rewritten to fit the final narrative.
+every report. We preserve the original archive, its failed verification, the
+noncanonical derivative, and the protocol history as separate records; none is
+rewritten to fit the final narrative.
 
 \section{Exact-Reference Claim Boundary}
 \label{app:oracle}
 
 % [P-APP-ORACLE-01]
-Reference enumeration determines whether exact programs exist while computing
-target functionals. It therefore supports probability-accounting and estimator
-diagnostics, not faster synthesis. The V1 local ranking oracle and the V2 global
-top-64, $\varepsilon=0.50$ control both use exhaustive public-score information unavailable to the
-online r5 search. Their discoveries, ranks, and work are never credited to the
-LLM or SMC search, and the positive control is not a practical synthesis
-algorithm.
+Exact reference enumeration serves two purposes: it determines whether exact
+programs exist and supplies target functionals for calibration. It does not
+measure synthesis speed. The V1 local ranking oracle and the V2 global top-64,
+$\varepsilon=0.50$ control both use exhaustive public-score information that is
+unavailable to the online r5 search. Their discoveries, ranks, and work are not
+credited to the LLM or SMC search, and the positive control is not a practical
+synthesis algorithm.
 
 \section{Artifact Availability}
 \label{app:availability}
