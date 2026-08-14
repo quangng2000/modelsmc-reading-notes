@@ -1,0 +1,31 @@
+{
+  "schema": "post-hoc-developmental-evidence-frontier-freeze-seal-v1",
+  "classification": "POST-HOC DEVELOPMENTAL; NON-BLIND; NON-CONFIRMATORY",
+  "sealed_before_followup_provider_calls": true,
+  "sealed_at_utc": "2026-08-13T05:48:15Z",
+  "study_protocol": {
+    "path": "papers/01-modelsmc/modelsmc-pbe-python/research/protocol-developmental-evidence-frontier-blind02-03-v1.json",
+    "sha256": "0b799bc8d455ad50d27587c9007847613be8031d11f41b9501ccd9860f7d1332"
+  },
+  "harness_sha256": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3",
+  "prompt_source_bundle_sha256": "82d7f0754a00e1ba65eac10b592d449c01d7f9126d487ef41cae08a9480bb67f",
+  "beam_test_sha256": "1c7f0e116518aa8cf66a6dbb51fca1c292240b383fdc26ef942b80e9edd1b632",
+  "analyzer_sha256": "ab3c92ce8e99aa079b036727613d282a8acfd25234f675f8c4d90c518b74ee6d",
+  "analyzer_test_sha256": "3f8133761d53b92cd7ec46efe153b24d2ea8d4fac34bf43ee46c7556e35a22b4",
+  "endpoint_health_record_sha256": "66e0b67cf38e5828aa603f3f2664c92946697e4471ce43768e7e1f2518711d17",
+  "public_manifest_sha256": "e312e1f0c540e766aa58c2739b8ee10304290676c138a41b22d3db4b225a78e4",
+  "public_task_sha256": {
+    "blind-02": "4053ac3273dde06116f8b62ed021a41dd93822f16e4fb7f935169acd674f9457",
+    "blind-03": "a37e013d0d91f86d890ba7e3b1d509a39ab0bc017e1a32aebff248f10b48aff0"
+  },
+  "test_results": {
+    "remote_ruff": "passed",
+    "remote_beam_tests": "29 passed",
+    "analyzer_tests": "8 passed"
+  },
+  "fixed_run_order": [
+    "blind-02",
+    "blind-03"
+  ],
+  "no_retuning_after_first_call": true
+}

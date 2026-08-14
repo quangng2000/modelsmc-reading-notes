@@ -1,0 +1,26 @@
+{
+  "schema": "blind-filter-map-confirmation-v3-method-supersession-v1",
+  "status": "superseded-before-secret-preparation",
+  "superseded": {
+    "protocol_path": "research/protocol-blind-filter-map-confirmation-v3.json",
+    "protocol_sha256": "17960cefe55f4ffb119588d007ffe9dc1ecd28845fb12c97af33eb150a77ba14",
+    "method_seal_path": "research/protocol-blind-filter-map-confirmation-v3.method-seal.json",
+    "method_seal_sha256": "9cb53b0f1bc7729a272f004c22b1d582c3c2b28a5265f0945887790e09408a48"
+  },
+  "replacement": {
+    "protocol_path": "research/protocol-blind-filter-map-confirmation-v3-r2.json",
+    "protocol_sha256": "f0a6a2cb3ccbbbf14497586bfc359493a353d654992eba00f3e6711395f58fc8",
+    "method_seal_path": "research/protocol-blind-filter-map-confirmation-v3-r2.method-seal.json",
+    "method_seal_sha256": "bf12ed1d88bfd3d72e736123c13924bc3ab7b8816a43fe8c68f288eafa08dc40"
+  },
+  "reason": [
+    "bind the finalized shared proposal-arm harness and focused test bytes",
+    "recompute and verify every exact provider inventory artifact during reveal-free analysis",
+    "freeze a fail-closed reveal-free public artifact bundle sealer"
+  ],
+  "custody_assertion": {
+    "suite_secret_prepared_under_superseded_seal": false,
+    "task_generated_under_superseded_seal": false,
+    "provider_completion_called_under_superseded_seal": false
+  }
+}

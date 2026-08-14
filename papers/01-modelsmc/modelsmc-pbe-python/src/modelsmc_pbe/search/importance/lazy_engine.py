@@ -1,0 +1,257 @@
+"""Visit-only importance-SMC over a factorized typed construction support."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import torch
+
+from modelsmc_pbe.config import ExperimentConfig
+from modelsmc_pbe.core import ProgramScorer
+from modelsmc_pbe.observability import RunLogger
+from modelsmc_pbe.proposals import CandidateScorer
+from modelsmc_pbe.smc import (
+    effective_sample_size,
+    normalize_log_weights,
+    relative_effective_sample_size,
+    systematic_resample,
+)
+
+from .factorized import (
+    sample_prior_trace,
+)
+from .joint_semantic import LazyJointSemanticProposalKernel
+from .lazy_proposal import LazyGuidedProposalKernel
+from .lazy_realization import realize_traces
+from .lazy_records import (
+    ConstructionTrace,
+    FactorizedImportanceSupport,
+    LazyImportancePopulation,
+    LazyImportanceSMCResult,
+    LazyImportanceState,
+    LazyStageDiagnostic,
+)
+from .lazy_results import assemble_lazy_result
+from .lazy_support import FactorizedSupportBuilder
+from .records import ImportanceSMCOptions
+
+
+class LazyImportanceSMCEngine:
+    """Run SMC while assembling and executing only visited complete traces."""
+
+    def __init__(
+        self,
+        *,
+        config: ExperimentConfig,
+        options: ImportanceSMCOptions,
+        scorer: ProgramScorer,
+        candidate_scorer: CandidateScorer,
+        generator: torch.Generator,
+        logger: RunLogger | None = None,
+    ) -> None:
+        if generator.device.type != "cpu":
+            raise ValueError("lazy importance-smc requires a CPU generator")
+        if config.smc.alpha >= 1.0:
+            raise ValueError("lazy importance-smc requires alpha < 1")
+        if options.proposal_strategy == "joint-target":
+            raise ValueError("joint-target proposal requires materialized importance support")
+        if options.proposal_strategy == "joint-semantic" and config.smc.alpha != 0.0:
+            raise ValueError("joint-semantic proposal requires alpha=0")
+        self._config = config
+        self._options = options
+        self._scorer = scorer
+        self._candidate_scorer = candidate_scorer
+        self._generator = generator
+        self._logger = logger
+        self._states: dict[ConstructionTrace, LazyImportanceState] = {}
+
+    async def run(self) -> LazyImportanceSMCResult:
+        support = FactorizedSupportBuilder(
+            spec=self._config.spec,
+            smc=self._config.smc,
+            options=self._options,
+            emit=self._emit,
+        ).build()
+        population, initial_new = self._initialize(support)
+        kernel: LazyGuidedProposalKernel | LazyJointSemanticProposalKernel
+        kernel_type = (
+            LazyJointSemanticProposalKernel
+            if self._options.proposal_strategy == "joint-semantic"
+            else LazyGuidedProposalKernel
+        )
+        kernel = kernel_type(
+            config=self._config,
+            options=self._options,
+            support=support,
+            scorer=self._candidate_scorer,
+            generator=self._generator,
+            emit=self._emit,
+        )
+        diagnostics: list[LazyStageDiagnostic] = []
+        log_path_z_estimate = 0.0
+        first_exact_stage = (
+            0
+            if any(self._states[trace].score.exact_program for trace in population.traces)
+            else None
+        )
+        self._emit(
+            "importance.lazy.population.initialized",
+            message="prior particles sampled before any complete-state product was built",
+            particles=len(population.traces),
+            unique_programs=len(set(population.traces)),
+            newly_evaluated_programs=initial_new,
+            support_states=support.support_states,
+        )
+
+        for stage in range(1, self._config.smc.iterations + 1):
+            beta = self._options.beta_max * stage / self._config.smc.iterations
+            weights_before = torch.tensor(population.weights, dtype=torch.float64)
+            ess_before = effective_sample_size(weights_before)
+            relative_ess = relative_effective_sample_size(weights_before)
+            ancestors, base_weights, resampled = self._ancestors(population, relative_ess)
+            ancestor_states = tuple(self._states[trace] for trace in ancestors)
+            proposals = await kernel.sample_many(ancestor_states, stage=stage, beta=beta)
+            states, newly_evaluated = self._realize(
+                support,
+                tuple(proposal.trace for proposal in proposals),
+            )
+            log_q = torch.tensor(
+                [proposal.log_q_mixture for proposal in proposals], dtype=torch.float64
+            )
+            log_gamma = torch.tensor(
+                [
+                    state.log_prior
+                    - beta * float(self._config.smc.loss_scale) * state.score.total_loss
+                    for state in states
+                ],
+                dtype=torch.float64,
+            )
+            incremental = log_gamma - log_q
+            normalized = normalize_log_weights(torch.log(base_weights) + incremental)
+            log_path_z_estimate += normalized.log_normalizer
+            population = LazyImportancePopulation(
+                traces=tuple(proposal.trace for proposal in proposals),
+                weights=tuple(float(value) for value in normalized.weights.tolist()),
+                ancestor_traces=ancestors,
+                log_q_mixture=tuple(float(value) for value in log_q.tolist()),
+                log_incremental_weight=tuple(float(value) for value in incremental.tolist()),
+                cloned=tuple(proposal.cloned for proposal in proposals),
+            )
+            exact_mass = sum(
+                weight
+                for trace, weight in zip(population.traces, population.weights, strict=True)
+                if self._states[trace].score.exact_program
+            )
+            exact_particles = sum(
+                self._states[trace].score.exact_program for trace in population.traces
+            )
+            if first_exact_stage is None and exact_particles:
+                first_exact_stage = stage
+            diagnostic = LazyStageDiagnostic(
+                stage=stage,
+                beta=beta,
+                ess_before=ess_before,
+                relative_ess_before=relative_ess,
+                resampled=resampled,
+                clones=sum(proposal.cloned for proposal in proposals),
+                unique_programs=len(set(population.traces)),
+                exact_particles=exact_particles,
+                exact_particle_mass=exact_mass,
+                ess_after=effective_sample_size(normalized.weights),
+                newly_evaluated_programs=newly_evaluated,
+                cumulative_evaluated_programs=len(self._states),
+                mean_log_q=float(log_q.mean().item()),
+                min_log_q=float(log_q.min().item()),
+                max_log_importance_ratio=float(incremental.max().item()),
+                log_path_z_estimate=log_path_z_estimate,
+            )
+            diagnostics.append(diagnostic)
+            self._emit(
+                "importance.lazy.stage.completed",
+                message="lazy importance-SMC stage completed",
+                stage=diagnostic.stage,
+                beta=diagnostic.beta,
+                resampled=diagnostic.resampled,
+                exact_particle_mass=diagnostic.exact_particle_mass,
+                newly_evaluated_programs=diagnostic.newly_evaluated_programs,
+                cumulative_evaluated_programs=diagnostic.cumulative_evaluated_programs,
+            )
+
+        result = assemble_lazy_result(
+            config=self._config,
+            options=self._options,
+            support=support,
+            population=population,
+            kernel=kernel,
+            diagnostics=tuple(diagnostics),
+            states=self._states,
+            first_exact_stage=first_exact_stage,
+            log_path_z_estimate=log_path_z_estimate,
+        )
+        self._emit(
+            "importance.lazy.completed",
+            message="visit-only importance-SMC completed without exact enumeration",
+            support_states=result.support_states,
+            evaluated_programs=result.search.evaluated_programs,
+            exact_found=result.search.exact_found,
+            reference_metrics_available=False,
+        )
+        return result
+
+    def _initialize(
+        self,
+        support: FactorizedImportanceSupport,
+    ) -> tuple[LazyImportancePopulation, int]:
+        traces = tuple(
+            sample_prior_trace(
+                support,
+                cost_scale=float(self._config.smc.cost_scale),
+                generator=self._generator,
+            )
+            for _ in range(self._config.smc.particles)
+        )
+        _, newly = self._realize(support, traces)
+        count = len(traces)
+        weights = tuple(1.0 / count for _ in traces)
+        return (
+            LazyImportancePopulation(
+                traces=traces,
+                weights=weights,
+                ancestor_traces=traces,
+                log_q_mixture=tuple(0.0 for _ in traces),
+                log_incremental_weight=tuple(0.0 for _ in traces),
+                cloned=tuple(False for _ in traces),
+            ),
+            newly,
+        )
+
+    def _realize(
+        self,
+        support: FactorizedImportanceSupport,
+        traces: tuple[ConstructionTrace, ...],
+    ) -> tuple[tuple[LazyImportanceState, ...], int]:
+        return realize_traces(
+            config=self._config,
+            options=self._options,
+            scorer=self._scorer,
+            support=support,
+            traces=traces,
+            states=self._states,
+        )
+
+    def _ancestors(
+        self,
+        population: LazyImportancePopulation,
+        relative_ess: float,
+    ) -> tuple[tuple[ConstructionTrace, ...], torch.Tensor, bool]:
+        weights = torch.tensor(population.weights, dtype=torch.float64)
+        count = len(population.traces)
+        if relative_ess >= self._config.smc.ess_threshold:
+            return population.traces, weights, False
+        slots = systematic_resample(weights, generator=self._generator)
+        traces = tuple(population.traces[int(slot)] for slot in slots.tolist())
+        return traces, torch.full((count,), 1.0 / count, dtype=torch.float64), True
+
+    def _emit(self, name: str, *, message: str, level: str = "info", **data: Any) -> None:
+        if self._logger is not None:
+            self._logger.event(name, message=message, level=level, **data)

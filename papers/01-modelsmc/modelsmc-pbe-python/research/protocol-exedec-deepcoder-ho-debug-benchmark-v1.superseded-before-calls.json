@@ -1,0 +1,20 @@
+{
+  "schema": "frozen-protocol-supersession-record-v1",
+  "status": "superseded-before-provider-calls",
+  "recorded_at": "2026-08-13-before-any-exedec-debug-benchmark-execution",
+  "superseded_protocol": {
+    "path": "research/protocol-exedec-deepcoder-ho-debug-benchmark-v1.json",
+    "sha256": "81b9b04ac76d79222359a88d2e863f85292439e6cc34b43759d8a6c3af9d1f8f"
+  },
+  "successor_protocol": {
+    "path": "research/protocol-exedec-deepcoder-ho-debug-benchmark-v2.json",
+    "sha256": "305cd2d89fbe0918a52b8e0ea6b3c4dfce23ad04ae669c48bcc3fcaa37c15b7d"
+  },
+  "reason": "The V1 protocol did not explicitly bind research/__init__.py and research/protocol.py even though Python executes them while importing the runner package.",
+  "call_boundary": {
+    "v1_benchmark_executions": 0,
+    "v1_provider_calls": 0,
+    "v1_run_output_directories": 0,
+    "v1_preflight_only_validations": 64
+  }
+}

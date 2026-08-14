@@ -1,0 +1,9 @@
+{
+  "schema": "adaptive-shortlist-failure-v1",
+  "status": "invalid-trial",
+  "stage": "second-mapper-wave",
+  "reason": "invalid-shortlist-and-transport-failure",
+  "detail": "One branch generated sub(item,-4), but -4 was not declared; a separate concurrent branch ended with an HTTP ReadError. The preregistered no-repair/no-retry policy invalidated the trial.",
+  "methodological_finding": "Raw DSL generation does not reliably enforce grammar membership. The replacement typed grammar encoding constrains constants and operators without enumerating the program catalog.",
+  "raw_provider_artifacts_preserved": true
+}

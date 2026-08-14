@@ -1,0 +1,1 @@
+{"diagnosis":"The predicate must include -1 while still excluding -2 and lower. Changing to lt(-2,item) achieves this, matching all examples with zero loss.","elapsed_seconds":111.9954157549655,"finish_reason":"stop","selected_repair_id":"p1","status":"valid","usage":{"completion_tokens":463,"prompt_tokens":1390,"prompt_tokens_details":null,"total_tokens":1853}}

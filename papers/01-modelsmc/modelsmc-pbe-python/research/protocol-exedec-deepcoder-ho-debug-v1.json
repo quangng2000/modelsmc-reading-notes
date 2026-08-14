@@ -1,0 +1,85 @@
+{
+  "schema": "exedec-deepcoder-filter-map-ho-adapter-v1",
+  "status": "debug-only-adapter-preparation",
+  "name_boundary": "DeepCoder-HO is a local working label for this strict higher-order compatibility subset; it is not an official ExeDec split or benchmark name.",
+  "source": {
+    "repository": "https://github.com/google-deepmind/exedec",
+    "commit": "ef046ce2cc3fcd024e32f5dfe00e69700dac82ed",
+    "commit_date": "2024-05-09T12:13:50Z",
+    "paper": "Shi et al., ExeDec: Execution Decomposition for Compositional Generalization in Neural Program Synthesis, ICLR 2024",
+    "paper_url": "https://openreview.net/forum?id=oTRwljRgiv",
+    "released_data_path": "data/test_data/deepcoder/COMPOSE_DIFFERENT_CONCEPTS.jsonl",
+    "released_data_sha256": "0acdb1d9a502278ea6f3d2ec92db1b903e849464af4b9a078cdbc801f1457cb5",
+    "deepcoder_semantics_path": "tasks/deepcoder/deepcoder_dsl.py",
+    "deepcoder_semantics_sha256": "b5564c6956ea1a49225c8e8d24b4a5118cda399ecfdadd7f2abca4e7960f4c42",
+    "data_schema_path": "data/data_utils.py",
+    "data_schema_sha256": "9771477c073b8a7fc3932a5ef115a38aa8ad18270ab8adc94edc441346eb228d",
+    "license_path": "LICENSE",
+    "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "software_license": "Apache-2.0",
+    "data_and_other_materials_license": "CC-BY-4.0",
+    "attribution_note": "Generated debug bundles must retain the repository, paper citation, commit, and license fields."
+  },
+  "supported_subset": {
+    "source_shape": "one List<Int> input; exactly x1 = Filter P x0 followed by x2 = Map M x1; linear data flow and distinct variables",
+    "predicates": ["(<0)", "(>0)"],
+    "mappers": ["(+1)", "(-1)", "(*2)", "(*(-1))", "(**2)", "(*3)", "(*4)"],
+    "source_integer_domain": [-50, 50],
+    "source_maximum_input_list_length": 5,
+    "target_skeleton": "foldr-filter-map",
+    "target_integer_constants": [-1, 0, 1, 2, 3, 4],
+    "translation": "Filter becomes the FoldRight condition; Map becomes the retained PrependInt head; the empty list is the initial value; order is preserved.",
+    "excluded": [
+      "division lambdas because the current typed AST has no floor-division node",
+      "even and odd predicates because the current typed AST has no modulo node",
+      "Map-then-Filter and longer chains",
+      "Count, ZipWith, Scanl1, and every first-order DeepCoder operation",
+      "multiple inputs, branching data flow, scalar inputs, and local-variable states",
+      "arbitrary DeepCoder programs and the RobustFill domain"
+    ]
+  },
+  "released_debug_audit": {
+    "bound_split_records": 1000,
+    "compatible_occurrences": 8,
+    "distinct_semantic_targets_after_complete_singleton_deduplication": 4,
+    "canonical_lowest_source_indices": [131, 245, 258, 608],
+    "duplicate_source_index_groups": [[131, 475], [245], [258, 891], [608, 629, 894]],
+    "all_released_deepcoder_test_and_llm_files_subset_occurrences": 22,
+    "all_released_deepcoder_test_and_llm_files_distinct_subset_targets": 8,
+    "total_possible_declared_subset_targets": 14,
+    "interpretation": "Occurrence counts are not independent tasks. Public target and few-shot programs are contamination evidence, so all adapted released tasks are debug-only."
+  },
+  "hidden_semantic_evaluation": {
+    "classification": "provider-private debug oracle, not a secret or confirmatory oracle",
+    "source_semantics": "independent direct Filter/Map evaluation with DeepCoder's inclusive [-50,50] result validation",
+    "fixed_probes": "empty list and every target-defined singleton in [-50,50]",
+    "seeded_probes": "128 unique target-defined lists by default, lengths 2 through 5, cycling the official value ranges [0,4], [0,9], [-10,10], and [-50,50]",
+    "undefined_target_inputs": "excluded because the DeepCoder DSL is partial outside executions whose intermediate and final values validate",
+    "candidate_interpreter": "the existing modelsmc_pbe typed interpreter and scorer",
+    "acceptance": "exact output equality on every stored hidden probe",
+    "behavioral_scope": "singleton coverage is complete for source programs in this pointwise order-preserving subset; finite multi-list probes do not establish equivalence for arbitrary candidate ASTs",
+    "target_syntax_recovery_required": false
+  },
+  "contamination_and_collision_policy": {
+    "released_source_binding": "fail if the exact JSONL SHA-256 differs from the pinned commit",
+    "within_split_deduplication": "group by partial behavior on every singleton in the full [-50,50] scalar domain, including undefined outcomes, and select the lowest source index",
+    "released_registry": "scan target and few-shot programs in every released DeepCoder test_data and llm_data JSONL; fail a future candidate whose complete-singleton semantic fingerprint occurs",
+    "local_registry_requirement": "before any future confirmatory generation, separately bind and scan all project tasks, pilot targets, prompt fixtures, and prior provider-visible programs; this cross-DSL local scan is not yet implemented",
+    "model_training_contamination": "cannot be ruled out for any released task, even when a syntax pair is absent from the repository's released JSONL"
+  },
+  "authorization": {
+    "released_debug_bundle_generation": true,
+    "confirmatory_seed_generation": false,
+    "provider_calls": false,
+    "confirmatory_claims": false
+  },
+  "claim_limits": [
+    "This adapter establishes format and semantic compatibility only.",
+    "It does not reproduce ExeDec, its learned decomposition method, or its reported train/test evaluation.",
+    "It does not test the official compositional-generalization estimand because the current target collapses a two-line source program into one filter-map skeleton.",
+    "It does not support a claim about all DeepCoder higher-order operations or the full DeepCoder DSL.",
+    "Released-task success cannot be called blind, contamination-free, confirmatory, out-of-distribution, or evidence of external-benchmark generalization.",
+    "Equal logical executions would not imply equal wall-clock time, provider compute, or total compute.",
+    "No SMC accuracy, discovery, speedup, LLM advantage, or semantic-equivalence result exists until a separately frozen run is executed."
+  ]
+}

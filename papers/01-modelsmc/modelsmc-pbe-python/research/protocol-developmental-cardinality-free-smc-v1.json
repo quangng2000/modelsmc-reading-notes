@@ -1,0 +1,172 @@
+{
+  "schema": "developmental-cardinality-free-evidence-smc-protocol-v1",
+  "status": "frozen-before-large-space-provider-calls",
+  "study_class": "developmental-nonblind",
+  "frozen_at": "2026-08-13-after-fail-closed-preflight-before-large-space-provider-calls",
+  "purpose": [
+    "validate an importance-accounted GPT shortlist proposal without complete-program enumeration or a disclosed support count",
+    "separate equal-budget exact discovery from higher-compute posterior approximation",
+    "test the same interface on a developmental grammar with more than one hundred million complete construction traces"
+  ],
+  "source_bindings": {
+    "harness": {
+      "path": "research/evidence_shortlist_smc.py",
+      "sha256": "7ff6cab610537f9818c727dd9c1abc92835a2025f013d50fabfd1c9a8aa6f87a"
+    },
+    "focused_tests": {
+      "path": "research/tests/test_evidence_shortlist_smc.py",
+      "sha256": "9aa7e8ef41a9b0b78f0c6b470bcc5ff0761d5745b4e0e375b7fe85cf259ce124",
+      "result": "15 focused tests passed in the pinned remote environment; Ruff clean"
+    },
+    "large_public_task": {
+      "path": "examples/foldr-large-opaque-v1.json",
+      "sha256": "c02445ac662125aceb6e22a2a3535d1f16241e0af6d9d32453dff41f23381f01"
+    },
+    "bounded_public_task": {
+      "path": "examples/foldr-bounded-square.json",
+      "sha256": "4c2a678f026b2c90677e581ff42d12de689bc97bcb8e6e428f4742e443fc130e"
+    },
+    "modelsmc_python_tree": {
+      "schema": "sha256-python-tree-v1",
+      "root": "src/modelsmc_pbe",
+      "include": "**/*.py",
+      "file_count": 140,
+      "manifest_sha256": "6b3ecdb7a75129edf23f6fad29ad9701ce6c633de21e0e8f1eb28e806e8ddfde"
+    },
+    "dependency_bundle": [
+      {"path": "research/automatic_shortlist_experiment.py", "sha256": "f757a9c32cc29974e5fa6f2a63a6cefc5f3aa235acbaa07265324016d975d782"},
+      {"path": "research/automatic_repair_feedback.py", "sha256": "99afa5fbda4b006b371c892754aaf4606c84f95a5d3f7157fffe9a73382164bc"},
+      {"path": "research/iterative_beam_experiment.py", "sha256": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3"},
+      {"path": "research/execution_guided_repair.py", "sha256": "632bf8cf6591bbd038939f0376d61c1d248d46a9f18fe3a48b80bf708a6cac53"},
+      {"path": "research/direct_json_repair_choice.py", "sha256": "8601d05b9cc756db0f6e3cafaad4d6c9cb9c9f77fe4ff184545155e2d7eb14e0"},
+      {"path": "research/adaptive_shortlist_experiment.py", "sha256": "77e411006c3834c251c4dd563027ac5c2ed07afcbedb7eaa0f81d86ac745df85"},
+      {"path": "research/local_repair_importance.py", "sha256": "854a2ece7537636a61e17c5a8f6444c35485bc23ad1b34c866dfbb34f5a84c12"},
+      {"path": "src/modelsmc_pbe/config.py", "sha256": "c7fab168572f76e15c64b986696ee80fef44f1a63df962637b7388ce8049407a"},
+      {"path": "src/modelsmc_pbe/core/__init__.py", "sha256": "a0ebf45b48ea1502583c87a2d9ef0d4da6e329f7f32cd10c2e927d65dfa00d76"},
+      {"path": "src/modelsmc_pbe/core/cost.py", "sha256": "84f8cb8a89b457c99ea21482dc33f058c1e88e2a6f741335018c91eb6097f66b"},
+      {"path": "src/modelsmc_pbe/core/errors.py", "sha256": "b62c105c422ca9dd09ce44d16afa2a992be6a12ef40b19b43f572d74f0b9c6c2"},
+      {"path": "src/modelsmc_pbe/core/evaluate.py", "sha256": "d60d2dce06683c0e54def5a1b2ab677a191ff22e2c46d5d832f948449920fbef"},
+      {"path": "src/modelsmc_pbe/core/loss.py", "sha256": "c6316a30611d4ae90b9d4f993a30cecb873512365c81ea8aefbf13be4baf562f"},
+      {"path": "src/modelsmc_pbe/core/render.py", "sha256": "a8bd61199f52802d2e91b7f55616070c04258a817daa8b0e50edfe58c8bbb42d"},
+      {"path": "src/modelsmc_pbe/core/results.py", "sha256": "45fde639b07de91f5c56a173aef93c348280a8f85ee5795230c3f728476c92d8"},
+      {"path": "src/modelsmc_pbe/core/scorer.py", "sha256": "4cc10dabc051b7bce7dbd025bc4db4293585ab46dc6694bc5941592a79de773a"},
+      {"path": "src/modelsmc_pbe/core/typecheck.py", "sha256": "1977fa2d0d2dbd167d26b432ec786fc0bf695b32fcbaee985b5f818c02ba27e1"},
+      {"path": "src/modelsmc_pbe/core/types.py", "sha256": "eddba0837662c9429ae51e2163c7435af26a4e0d2bfec9d5ff3ddd58340c4233"},
+      {"path": "src/modelsmc_pbe/domain/ast.py", "sha256": "859a2828d432cd6d0e3b0f056039a27b2bf2e1916c913196f3c70f8cb592cfd6"},
+      {"path": "src/modelsmc_pbe/domain/models.py", "sha256": "50089a603b42198619d1d9c8f5141b157bb1bb1cc7ab6e4c5726b242169e0b82"},
+      {"path": "src/modelsmc_pbe/domain/__init__.py", "sha256": "c34c5a8dd0a99495826ddd721189b90457bf6f04d6b6f6021132a084f69f21ae"},
+      {"path": "src/modelsmc_pbe/grammar/__init__.py", "sha256": "20082159db9ee25d46368d6abacbba8d637d6f7d68550a283d3afb76f7642f5b"},
+      {"path": "src/modelsmc_pbe/grammar/fragments.py", "sha256": "61618e68dbf74a3012f27bf3efdfba37c12c48c71c6935fa343873ff2d627f5d"},
+      {"path": "src/modelsmc_pbe/grammar/skeletons.py", "sha256": "84358f7bd13d9bfd50fd6384380e7690958161198914f204fcaa04f1e3ec2785"},
+      {"path": "src/modelsmc_pbe/smc/__init__.py", "sha256": "cf93528ea3e3f2de42dda734ad6320a41537dc1d4dd92f4fb040248acfd270d5"},
+      {"path": "src/modelsmc_pbe/smc/numerics.py", "sha256": "fe256c29737752185dde0666eacdc05312a86036c8dea8047f53ae137fcd1295"},
+      {"path": "pyproject.toml", "sha256": "98537b41b0e3881e107795c6b51c18462c23ea39c57c942b0d90b340a3197275"},
+      {"path": "uv.lock", "sha256": "9570361d0a057b7ffed07f493c32dc74616182dd8cc35296de9c984e8b69f56c"}
+    ]
+  },
+  "provider": {
+    "base_url": "http://127.0.0.1:18000/v1",
+    "model": "gpt-oss-120b",
+    "model_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_output_tokens": 1200,
+    "timeout_seconds": 420,
+    "retry_policy": "none"
+  },
+  "model_information_boundary": {
+    "allowed": [
+      "public input-output examples",
+      "current complete program and its interpreter traces",
+      "sound singleton constraints and local feedback",
+      "typed grammar productions",
+      "the inclusive allowed-constant interval",
+      "the selected repair hole and round"
+    ],
+    "forbidden": [
+      "complete-program support count",
+      "complete program catalog",
+      "component catalog cardinalities",
+      "hidden target AST or target indices",
+      "posthoc exhaustive reference results",
+      "other-run outcomes"
+    ],
+    "claim": "the count can be derived from the public grammar; provider-guided search and g require neither the joint count nor pair enumeration, and the count is not explicitly disclosed"
+  },
+  "proposal": {
+    "llm_shortlist_size": 4,
+    "epsilon": 0.05,
+    "law": "q(y|S,x,h)=(1-epsilon) EmpiricalUniform(totalized four slots)+epsilon*g(y)",
+    "g": "normalized top-down recursive grammar prior; g(y) is the product of local production probabilities",
+    "failure_semantics": "missing, malformed, invalid, no-op, and whole-response failure slots map to current state; duplicate multiplicity is retained; no retry or backfill",
+    "exact_parent_semantics": "skip provider and use four current-state slots, while still drawing every child from sticky local mass plus the epsilon recursive-grammar restart",
+    "full_support": true,
+    "complete_program_count_required": false
+  },
+  "target_schedule": {
+    "evidence_scale": 2.0,
+    "round_1": "g(z)*exp(-2*predicate_singleton_violations)",
+    "round_2": "g(z)*exp(-2*(predicate+mapper singleton violations))",
+    "round_3": "g(z)*exp(-(predicate+mapper singleton violations)+0.5*scorer.log_target)",
+    "round_4": "g(z)*exp(scorer.log_target)",
+    "early_stop": false
+  },
+  "runs": [
+    {
+      "id": "bounded-inference-p32-b8-v1",
+      "task": "examples/foldr-bounded-square.json",
+      "task_sha256": "4c2a678f026b2c90677e581ff42d12de689bc97bcb8e6e428f4742e443fc130e",
+      "role": "known-task inference accuracy diagnostic with exhaustive post-provider reference",
+      "parent_count": 32,
+      "offspring_per_parent": 8,
+      "first_round_offspring": 256,
+      "terminal_weighted_particles": 256,
+      "logical_execution_cap": 1025,
+      "provider_call_cap": 97,
+      "provider_seed": 151000,
+      "start_seed": 17,
+      "sample_seed": 151100,
+      "resample_seed": 151200,
+      "max_concurrency": 16,
+      "exact_reference_limit": 100000
+    },
+    {
+      "id": "large-136m-discovery-p2-b4-v1",
+      "task": "examples/foldr-large-opaque-v1.json",
+      "task_sha256": "c02445ac662125aceb6e22a2a3535d1f16241e0af6d9d32453dff41f23381f01",
+      "role": "developmental large-space equal-cap discovery demonstration",
+      "parent_count": 2,
+      "offspring_per_parent": 4,
+      "first_round_offspring": 4,
+      "terminal_weighted_particles": 8,
+      "logical_execution_cap": 29,
+      "provider_call_cap": 7,
+      "provider_seed": 152000,
+      "start_seed": 17,
+      "sample_seed": 152100,
+      "resample_seed": 152200,
+      "max_concurrency": 2,
+      "exact_reference_limit": 0
+    }
+  ],
+  "endpoints": {
+    "bounded_inference": [
+      "absolute error of self-normalized exact mass against exhaustive reference",
+      "absolute error of target mean loss against exhaustive reference",
+      "terminal ESS and relative ESS",
+      "exact discovery and first exact logical slot"
+    ],
+    "large_discovery": [
+      "zero-loss program by logical slot 29",
+      "first exact slot",
+      "unique physical scorer calls, cache hits, provider calls, invalid responses, and terminal ESS"
+    ]
+  },
+  "claim_limits": [
+    "the large task and method are developmental, not blind or confirmatory",
+    "the 29-slot run may be compared only as an equal logical-execution cap, not equal model compute or wall time",
+    "importance accounting validates weighted inference for the declared target; it does not itself guarantee exact discovery",
+    "a successful run does not establish universal or asymptotic speedup",
+    "semantic zero loss does not imply recovery of a unique hidden AST"
+  ]
+}

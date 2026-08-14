@@ -4,6 +4,7 @@
 
   <p>
     <a href="https://arxiv.org/abs/2602.18266"><img alt="arXiv paper" src="https://img.shields.io/badge/arXiv-2602.18266-b31b1b?style=flat-square"></a>
+    <a href="https://github.com/mackelab/ModelSMC"><img alt="Official ModelSMC code" src="https://img.shields.io/badge/code-official_ModelSMC-24292f?style=flat-square"></a>
     <img alt="Topic: ModelSMC" src="https://img.shields.io/badge/topic-ModelSMC-6f42c1?style=flat-square">
     <img alt="Format: reading notes" src="https://img.shields.io/badge/format-reading_notes-0969da?style=flat-square">
   </p>
@@ -89,7 +90,29 @@ The output is a weighted collection of plausible scientific models, not only one
 
 ## Executable prototype
 
-The [`program-synthesis-prototype`](program-synthesis-prototype/README.md) directory contains a deliberately hybrid programming-by-example experiment. It uses Paper 2-style typed input-output examples, family hypotheses, and deductions; Paper 1-style SMC searches a population of complete program ASTs. Its LemmaScript/Dafny-verified core supports scalar expressions plus recursive `List<Int>`/`List<Bool>` programs built with `map`, `foldr`, typed empty lists, and prepend. Deterministic examples synthesize an affine scalar function, map-increment, fold-sum, and a fold-based filter; an optional Ollama backend can ask a frozen local open-weight LLM to propose strict JSON ASTs.
+[`modelsmc-pbe-python`](modelsmc-pbe-python/README.md) is the standalone,
+modular research implementation. It contains the bounded PBE language,
+semantic scorer, search engines, LLM adapters, GPU-aware numerics, examples,
+and structured logging in one Python project. Its `paper-search` mode follows
+ModelSMC's practical resample/clone/revise lifecycle but is explicitly
+heuristic because the black-box LLM proposal density is unknown. Its no-LLM
+`grammar-smc` control has a known finite-skeleton Gibbs target and compares the
+particle approximation with exact enumeration. Its `importance-smc` experiment
+combines typed skeleton generalization, sound refutation, and hole-example
+deduction from Paper 2 with a finite Qwen-scored proposal. The shell samples
+that categorical proposal itself and includes its exact family, hole, and
+clone-mixture probability in the importance denominator. This removes the
+free-form JSON, unknown fallback, and unavailable proposal-density problems,
+while keeping the claim explicitly limited to the enumerated support.
+
+The Python package uses the authors' [official ModelSMC
+repository](https://github.com/mackelab/ModelSMC) as a reference but does not
+depend on or vendor it: the upstream scientific-discovery implementation is
+coupled to a broader simulator, distributed-computing, and learned-likelihood
+stack than this PBE experiment needs. Program type inference, evaluation,
+structural cost, loss, and exact acceptance now live in the package's
+pure-Python semantic core. The implementation is extensively tested but is not
+formally verified.
 
 ## Glossary
 

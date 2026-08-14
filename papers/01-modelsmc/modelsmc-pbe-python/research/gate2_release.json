@@ -1,0 +1,85 @@
+{
+  "schema_version": 2,
+  "release_label": "exploratory-gate2-size-grid-v0.2.0",
+  "authors": [
+    "Tri Nguyen",
+    "Thanh-Dat Nguyen"
+  ],
+  "evidence_status": "exploratory-not-confirmatory",
+  "warning": "This is a one-seed exploratory size grid. It supports artifact-level audit, not population inference or a claim that larger checkpoints improve synthesis.",
+  "implementation": {
+    "repository": "https://github.com/quangng2000/modelsmc-reading-notes",
+    "branch": "python-modelsmc-pbe",
+    "revision": null,
+    "path": "papers/01-modelsmc/modelsmc-pbe-python",
+    "artifact_recorded_base_revision": "9c94d2906d4d89290d22b4b90ac308bbf6f6c8a0",
+    "artifact_worktree_was_dirty": true,
+    "provenance_note": "The release builder fills revision only from a clean checked-out publication commit. Experimental run manifests separately record artifact_recorded_base_revision and dirty=true, so the packaged ledgers and checksums are authoritative for the archived observations."
+  },
+  "protocol": {
+    "path": "research/protocol-size-study-transport32.json",
+    "sha256": "56c590864d456f884c82bf62ada3c11c1c2504d21b021e650bc323007553fc60",
+    "id": "modelsmc-pbe-size-study-transport32-v2",
+    "status": "frozen-exploratory-transport-amendment-before-rerun"
+  },
+  "manuscript": {
+    "path": "paper/main.pdf",
+    "sha256": "0cd49c9eb54325df5302b2745e4877cd98d5557ac73d6adf3eb78fe60ce2f12f"
+  },
+  "figures": {
+    "path": "paper/generated/figures/gate2-size-transport32",
+    "required_manifest": "figure_manifest.json"
+  },
+  "grid": {
+    "stage_id": "gate-2-size-pilot",
+    "analysis_population": "intention-to-treat",
+    "tasks": [
+      "map-increment",
+      "foldr-signed-window"
+    ],
+    "arms": [
+      "Q",
+      "QD"
+    ],
+    "seeds": [
+      101
+    ],
+    "expected_cells": 16,
+    "groups": [
+      {
+        "model_id": "qwen25-coder-3b",
+        "model_repository": "Qwen/Qwen2.5-Coder-3B-Instruct",
+        "model_revision": "488639f1ff808d1d3d0ba301aef8c11461451ec5",
+        "tokenizer_revision": "488639f1ff808d1d3d0ba301aef8c11461451ec5",
+        "source_path": "research/outputs/size-gate2-3b-transport32"
+      },
+      {
+        "model_id": "qwen25-coder-7b",
+        "model_repository": "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "model_revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+        "tokenizer_revision": "c03e6d358207e414f1eca0bb1891e29f1db0e242",
+        "source_path": "research/outputs/size-gate2-7b-transport32"
+      },
+      {
+        "model_id": "qwen25-coder-14b",
+        "model_repository": "Qwen/Qwen2.5-Coder-14B-Instruct",
+        "model_revision": "aedcc2d42b622764e023cf882b6652e646b95671",
+        "tokenizer_revision": "aedcc2d42b622764e023cf882b6652e646b95671",
+        "source_path": "research/outputs/size-gate2-14b-transport32"
+      },
+      {
+        "model_id": "qwen25-coder-32b",
+        "model_repository": "Qwen/Qwen2.5-Coder-32B-Instruct",
+        "model_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+        "tokenizer_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+        "source_path": "research/outputs/size-gate2-32b-transport32-rerun"
+      }
+    ]
+  },
+  "packaging": {
+    "large_text_compression": "deterministic-gzip-mtime-0",
+    "compression_threshold_bytes": 1048576,
+    "score_cache_blobs_included": false,
+    "source_code_included": false
+  }
+}

@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/steve/modelsmc-reading-notes/research/evidence_shortlist_smc.py", line 1627, in <module>
+    main()
+  File "/workspace/steve/modelsmc-reading-notes/research/evidence_shortlist_smc.py", line 1623, in main
+    asyncio.run(run(args))
+  File "/root/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/steve/modelsmc-reading-notes/research/evidence_shortlist_smc.py", line 910, in run
+    frozen_invocation = validate_frozen_invocation(args)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/steve/modelsmc-reading-notes/research/evidence_shortlist_smc.py", line 740, in validate_frozen_invocation
+    cast(dict[str, object], study["proposal"])["epsilon"],
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'epsilon'

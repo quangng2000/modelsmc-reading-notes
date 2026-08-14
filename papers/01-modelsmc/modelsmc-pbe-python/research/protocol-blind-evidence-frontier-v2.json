@@ -1,0 +1,196 @@
+{
+  "schema": "blind-evidence-frontier-confirmation-v2",
+  "protocol_status": "method-frozen-before-task-generation",
+  "classification": {
+    "blind": true,
+    "confirmatory": true,
+    "fresh_tasks": true,
+    "activation_evidence": "The frozen post-hoc developmental evidence-frontier gate passed 2/2, with both exact programs found at proposal slot 10.",
+    "excluded_tasks": [
+      "blind-01",
+      "blind-02",
+      "blind-03",
+      "blind-04",
+      "all bounded-square, sparse-square, opaque-A, and opaque-B development tasks"
+    ]
+  },
+  "claim_scope": {
+    "primary": "Compare exact program discovery by proposal slot 29 for the frozen GPT-OSS evidence-frontier beam against a matched syntax-uniform random beam on a fresh balanced 12-task generator distribution.",
+    "not_claimed": [
+      "wall-clock speedup",
+      "speedup over every exhaustive-search implementation",
+      "performance on arbitrary or billion-program spaces outside this grammar and distribution",
+      "valid importance sampling or posterior inference",
+      "known or calibrated LLM proposal probabilities"
+    ]
+  },
+  "freeze_requirements": {
+    "protocol_sha256_binding": "external-provider-seal-and-run-protocol-records",
+    "generator": {
+      "path": "research/generate_blinded_filter_map_tasks.py",
+      "sha256": "88cd68f31d222e6424dd91e5d2ccf7bb5e6ad2b08c68c25f4a142c1b030bf31a"
+    },
+    "harness": {
+      "path": "research/iterative_beam_experiment.py",
+      "sha256": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3"
+    },
+    "runner": {
+      "path": "research/run_blind_evidence_frontier_v2.py",
+      "sha256": "7e6ba997dc3dc750b5432066a6d7ab29bbf94f1e0cc578a2dbac974c0e365fec"
+    },
+    "analysis": {
+      "path": "research/analyze_blind_evidence_frontier_v2.py",
+      "sha256": "c5a132a993edd681c430b44bc57f2f457cba4cefc0c4467d1ea093412cea3578"
+    },
+    "prompt_template_sha256": "295e44e6301a4822f5c1f21a43a007b696dabbc398b2a1b3bceb5971821e6f67",
+    "prompt_template_binding": {
+      "scheme": "SHA256(domain || NUL || repeated(path || NUL || exact_file_bytes || NUL))",
+      "domain": "execution-guided-beam-prompt-source-bundle-v2",
+      "paths_in_order": [
+        "research/automatic_shortlist_experiment.py",
+        "research/adaptive_shortlist_experiment.py",
+        "research/iterative_beam_experiment.py"
+      ],
+      "source_sha256": {
+        "research/automatic_shortlist_experiment.py": "f757a9c32cc29974e5fa6f2a63a6cefc5f3aa235acbaa07265324016d975d782",
+        "research/adaptive_shortlist_experiment.py": "77e411006c3834c251c4dd563027ac5c2ed07afcbedb7eaa0f81d86ac745df85",
+        "research/iterative_beam_experiment.py": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3"
+      },
+      "bundle_sha256": "295e44e6301a4822f5c1f21a43a007b696dabbc398b2a1b3bceb5971821e6f67"
+    },
+    "test_bundle": {
+      "scheme": "SHA256(domain || NUL || repeated(path || NUL || exact_file_bytes || NUL))",
+      "domain": "blind-evidence-frontier-v2-test-bundle-v1",
+      "paths_in_order": [
+        "research/tests/test_generate_blinded_filter_map_tasks.py",
+        "research/tests/test_iterative_beam_experiment.py",
+        "research/tests/test_run_blind_evidence_frontier_v2.py",
+        "research/tests/test_analyze_blind_evidence_frontier_v2.py"
+      ],
+      "source_sha256": {
+        "research/tests/test_generate_blinded_filter_map_tasks.py": "892c5392fb47f83babdb0d4e8c3c61bfe4bb46ecb88660beb945d28c8dda41b0",
+        "research/tests/test_iterative_beam_experiment.py": "1c7f0e116518aa8cf66a6dbb51fca1c292240b383fdc26ef942b80e9edd1b632",
+        "research/tests/test_run_blind_evidence_frontier_v2.py": "082600db610d0ce32b8326a9819a97e7b2af61893882998af5e24e5dbdd40014",
+        "research/tests/test_analyze_blind_evidence_frontier_v2.py": "229c7cd8330ef32a3b7550d63035605092446963c530971fd029e5f7aa54e922"
+      },
+      "bundle_sha256": "5fcac6dd300046af5eb415797dde432be9d6b37adb9404de47490ff6acb017f8"
+    },
+    "test_result": "Remote pinned environment: Ruff passed and 49 combined tests passed before task generation.",
+    "task_secret_commitment_sha256": "ec9985b322f8dafa1c0ae93461de31526a40b553535564a680de60a14e0b5d8e",
+    "run_seeds": [
+      {"task_id": "blind-v2-01", "provider_seed": 301000, "tie_seed": 301100, "matched_random_seed": 301200},
+      {"task_id": "blind-v2-02", "provider_seed": 302000, "tie_seed": 302100, "matched_random_seed": 302200},
+      {"task_id": "blind-v2-03", "provider_seed": 303000, "tie_seed": 303100, "matched_random_seed": 303200},
+      {"task_id": "blind-v2-04", "provider_seed": 304000, "tie_seed": 304100, "matched_random_seed": 304200},
+      {"task_id": "blind-v2-05", "provider_seed": 305000, "tie_seed": 305100, "matched_random_seed": 305200},
+      {"task_id": "blind-v2-06", "provider_seed": 306000, "tie_seed": 306100, "matched_random_seed": 306200},
+      {"task_id": "blind-v2-07", "provider_seed": 307000, "tie_seed": 307100, "matched_random_seed": 307200},
+      {"task_id": "blind-v2-08", "provider_seed": 308000, "tie_seed": 308100, "matched_random_seed": 308200},
+      {"task_id": "blind-v2-09", "provider_seed": 309000, "tie_seed": 309100, "matched_random_seed": 309200},
+      {"task_id": "blind-v2-10", "provider_seed": 310000, "tie_seed": 310100, "matched_random_seed": 310200},
+      {"task_id": "blind-v2-11", "provider_seed": 311000, "tie_seed": 311100, "matched_random_seed": 311200},
+      {"task_id": "blind-v2-12", "provider_seed": 312000, "tie_seed": 312100, "matched_random_seed": 312200}
+    ],
+    "no_retuning_rule": "After this method protocol is externally sealed, do not change the method, prompt, generator, tasks, selector, budgets, seeds, endpoint, model settings, failure handling, or analysis in response to any generated task or outcome."
+  },
+  "model": {
+    "served_name": "gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "timeout_seconds": 420,
+    "max_concurrency": 2,
+    "provider_retry_policy": "none",
+    "provider_seed_note": "At temperature zero, provider seeds are deterministic bookkeeping and are not independent model replicates.",
+    "information_boundary": "The provider receives one public PBE task, current program, structured interpreter feedback, singleton-derived constraints, selected repair hole, and typed grammar. It receives no private reveal, target AST, target family, task secret, full program enumeration, catalog cardinality, or other-task outcomes."
+  },
+  "fresh_task_generator": {
+    "schema": "blinded-filter-map-suite-v2",
+    "task_count": 12,
+    "integer_constants_and_observed_domain": [-3, -2, -1, 0, 1, 2, 3, 4],
+    "program_skeleton": "order-preserving filter followed by pointwise arithmetic map",
+    "fixed_balanced_schedule": [
+      ["blind-v2-01", "bounded-open-interval", "quadratic-item-times-item"],
+      ["blind-v2-02", "lower-half-line", "nontrivial-integer-scale"],
+      ["blind-v2-03", "upper-half-line", "nonzero-integer-shift"],
+      ["blind-v2-04", "bounded-open-interval", "reverse-affine-constant-minus-item"],
+      ["blind-v2-05", "lower-half-line", "quadratic-item-times-item"],
+      ["blind-v2-06", "upper-half-line", "nontrivial-integer-scale"],
+      ["blind-v2-07", "bounded-open-interval", "nonzero-integer-shift"],
+      ["blind-v2-08", "lower-half-line", "reverse-affine-constant-minus-item"],
+      ["blind-v2-09", "upper-half-line", "quadratic-item-times-item"],
+      ["blind-v2-10", "bounded-open-interval", "nontrivial-integer-scale"],
+      ["blind-v2-11", "lower-half-line", "nonzero-integer-shift"],
+      ["blind-v2-12", "upper-half-line", "reverse-affine-constant-minus-item"]
+    ],
+    "structural_acceptance": [
+      "target predicate retains three to five observed-domain values",
+      "target mapper has at least three distinct values on retained inputs",
+      "target predicate differs from the frozen initial predicate on at least two observed values",
+      "target mapper differs from the frozen initial mapper on at least two retained inputs",
+      "initial complete program is not exact",
+      "target components belong to the frozen grammar",
+      "target joint finite-domain behavior is unique within blind-v2"
+    ],
+    "forbidden_rejection_reasons": [
+      "model or matched-random outcome",
+      "loss magnitude beyond initial non-exactness",
+      "human judgment of difficulty",
+      "target syntax-alias count"
+    ],
+    "public_examples": "12 per task: empty, eight ascending singletons, ascending full domain, one seeded permutation, and two concatenated seeded permutations.",
+    "custody": "The secret and private reveal remain outside the repository and provider machine until all 12 provider inventories and public analysis are sealed."
+  },
+  "search": {
+    "selection_policy": "evidence-frontier",
+    "branching_factor": 4,
+    "beam_width": 2,
+    "maximum_rounds": 4,
+    "start_seed": 17,
+    "singleton_evidence": true,
+    "stall_policy": "alternate-hole",
+    "maximum_proposal_slots": 29,
+    "maximum_provider_calls": 7,
+    "proposal_slot_checkpoints": [1, 5, 13, 21, 29],
+    "selector": "After syntax and finite-semantic deduplication, retain the best complete-program-loss anchor and the singleton evidence frontier ordered by predicate violations, mapper violations, loss, proposal rank, parent rank, and frozen SHA-256 tie break.",
+    "hole_order": "violated singleton predicate facts; violated retained-singleton mapper facts; certified predicate toggles; conditional mapper constraints; frozen unsupported fallback",
+    "schedule": "One expansion in Round 1 and exactly two in each later active round; cycle an underfilled beam. Invalid responses consume four slots without retry or backfill.",
+    "exact_stop": "Finish every scheduled expansion in the active round before stopping.",
+    "importance_sampling_claim": false,
+    "proposal_probability_claim": false
+  },
+  "matched_random_baseline": {
+    "trials_per_task": 10000,
+    "run_after_task_provider_seal": true,
+    "policy": "Use the identical public task, initial state, evidence, hole rule, selector, K, W, R, slot accounting, stopping, semantic deduplication, and no-op exclusion; replace only each LLM shortlist with four syntax-uniform legal non-no-op repairs sampled without replacement.",
+    "aggregate_replicates": "For replicate j, sum exact-at-slot-29 indicators from task-specific matched-random trial j across all 12 tasks.",
+    "primary_randomization_p_value": "(1 + number of 10000 aggregate random replicates with successes at least X_LLM) / 10001",
+    "random_evidence_distribution_note": "The frozen harness records random exact slots and losses but not random state signatures; random evidence-violation distributions are unavailable and are not part of the primary endpoint."
+  },
+  "confirmatory_endpoints": {
+    "primary_statistic": "X_LLM, the number of 12 fresh tasks solved exactly by proposal slot 29",
+    "primary_comparison": "one-sided preregistered trial-index-matched randomization test",
+    "alpha": 0.05,
+    "practical_effect_threshold": "X_LLM at least 6 of 12",
+    "study_success_rule": "Integrity must validate, X_LLM must be at least 6 of 12, and the randomization p-value must be at most 0.05.",
+    "secondary": "exact discovery by slot 21, descriptive only",
+    "fixed_denominator": 12
+  },
+  "failure_and_reveal_policy": {
+    "infrastructure_failure": "Any task lacking a complete sealed run aborts the confirmatory attempt; do not compute or claim the preregistered p-value.",
+    "semantic_failure": "A completed non-exact run remains a fixed non-success and is never retried or replaced.",
+    "unblind_timing": "Verify and publish the secret, reveal, rejection logs, target commitments, and oracle executions only after all provider inventories and the reveal-free public analysis are sealed."
+  },
+  "reporting": {
+    "report_every_task": true,
+    "required": [
+      "X_LLM/12 at slots 21 and 29",
+      "trial-index matched-random aggregate distribution and p-value",
+      "mean paired success advantage",
+      "per-task loss and singleton-violation trajectories",
+      "provider calls, proposal slots, scorer calls, cache hits, tokens, time, and semantic redundancy"
+    ],
+    "interpretation": "A pass supports a bounded exact-discovery advantage over the matched random proposal mechanism on this frozen 12-task distribution, not general billion-space or exhaustive-search speedup."
+  }
+}

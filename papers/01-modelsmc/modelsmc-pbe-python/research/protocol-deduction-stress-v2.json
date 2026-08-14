@@ -1,0 +1,157 @@
+{
+  "schema_version": 3,
+  "protocol_id": "modelsmc-pbe-deduction-stress-v2",
+  "status": "draft-exploratory-corrected-target-provider-unrun",
+  "correction": {
+    "classification": "exploratory-mathematical-contract-correction",
+    "supersedes_protocol_id": "modelsmc-pbe-deduction-stress-v1",
+    "supersedes_protocol_sha256": "e261f910da00eb61a825728d9f1ef1b13a74a3c872b6f7af16a1401259c76156",
+    "source_spec_sha256": "651e1a853d0212896c32c0ccfdd7b3459506b82ab4921f6694d7808180419f0b",
+    "reason": "The v1 lossScale of 0.75 allowed a loss-6 expression trace to outrank both exact loss-0 traces under the declared equal-family Occam target. V2 changes only lossScale to 2.0 and separates family-level deduction from hole-level deduction."
+  },
+  "study_scope": {
+    "primary_question": "Under a corrected finite target whose exact traces outrank every inexact trace, does family-level deduction plus finite-choice Qwen scoring improve exact discovery over family-level deduction alone?",
+    "primary_endpoint": "paired exploratory exact discovery for D versus QD on one provider-gated seed",
+    "secondary_endpoint": "held-out exact correctness on the unchanged bounded-square oracle",
+    "design_disclosure": "This is a corrected exploratory successor to v1, created after the v1 negative result and mathematical audit. It is not confirmatory and must not be pooled with v1.",
+    "gpu_gate": "Do not run the paired provider stage until the provider-free reference audit passes. The paid provider stage remains intentionally unrun in this change.",
+    "failure_policy": "Every planned cell remains in the analysis. Timeout, provider failure, invalid artifact, failed target-dominance audit, or non-exact training result counts as failure."
+  },
+  "target_contract": {
+    "base_measure": "equal-family-within-family-occam",
+    "likelihood": "soft-loss-gibbs",
+    "loss_scale": 2.0,
+    "beta_max": 1.0,
+    "terminal_dominance_requirement": "min-exact-log-target-strictly-greater-than-max-inexact-log-target",
+    "v1_empirical_critical_loss_scale": 1.267634513308855,
+    "reference_audit_required": true,
+    "reference_audit_stage": "provider-free-reference-audit"
+  },
+  "seeds": [101],
+  "caps": {
+    "particles": 4,
+    "iterations": 1,
+    "alpha": 0.0,
+    "ess_threshold": 1.0,
+    "max_scored_candidates": 2652,
+    "support_limit": 250000,
+    "hole_state_limit": 250000,
+    "hole_max_cost": 3,
+    "wall_time_seconds": 1200,
+    "provider_timeout_seconds": 300
+  },
+  "shared_arguments": {
+    "beta_max": 1.0,
+    "candidate_batch_size": 32,
+    "deduction_strength": 4.0,
+    "proposal_epsilon": 0.05,
+    "temperature": 0.7,
+    "llm_energy_normalization": "mean-full-prompt-conditional-logprob"
+  },
+  "materialize_reference": true,
+  "provider": {
+    "base_url_env": "MODELSMC_VLLM_32B_BASE_URL",
+    "api_key_env": null,
+    "vllm_server_config": "vllm=0.11.0;image=vllm/vllm-openai:v0.11.0@sha256:014a95f21c9edf6abe0aea6b07353f96baa4ec291c427bb1176dc7c93a85845c;logprobs_mode=processed_logprobs;dtype=bfloat16;max_model_len=4096;gpu_memory_utilization=0.90;gpu=NVIDIA-A100-SXM4-80GB",
+    "score_cache_dir": "cache/deduction-stress-v2",
+    "score_cache_mode": "read-write"
+  },
+  "models": [
+    {
+      "id": "qwen25-coder-32b",
+      "alias": "qwen25-coder-32b",
+      "hf_repository": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "architecture": "Qwen2ForCausalLM",
+      "parameterization": "dense",
+      "total_parameters_billion": 32.0,
+      "active_parameters_billion": 32.0,
+      "dtype": "bfloat16",
+      "quantization": "none",
+      "model_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "tokenizer_revision": "381fc969f78efac66bc87ff7ddeadb7e73c218a7",
+      "base_url_env": "MODELSMC_VLLM_32B_BASE_URL"
+    }
+  ],
+  "stages": [
+    {
+      "id": "provider-free-reference-audit",
+      "description": "Materialize the complete finite reference locally and audit support, exact-state count, and terminal target dominance before any provider call.",
+      "tasks": ["foldr-sparse-bounded-square"],
+      "arms": ["D"],
+      "seeds": [101],
+      "models": ["qwen25-coder-32b"],
+      "caps": {
+        "particles": 4,
+        "iterations": 1,
+        "max_scored_candidates": 2652
+      },
+      "max_provider_scored_candidates": 0
+    },
+    {
+      "id": "paired-d-qd-32b-pilot",
+      "description": "One-seed exploratory D versus QD pilot, authorized only after the provider-free reference audit passes.",
+      "tasks": ["foldr-sparse-bounded-square"],
+      "arms": ["D", "QD"],
+      "seeds": [101],
+      "models": ["qwen25-coder-32b"],
+      "caps": {
+        "particles": 4,
+        "iterations": 1,
+        "max_scored_candidates": 2652
+      },
+      "max_provider_scored_candidates": 2652,
+      "requires_audit_stage": "provider-free-reference-audit"
+    }
+  ],
+  "arms": [
+    {
+      "id": "U",
+      "proposal": "catalog",
+      "deduction_mix": 0.0,
+      "family_deduction_mix": 0.0,
+      "hole_deduction_mix": 0.0,
+      "description": "Uniform finite-catalog proposal; no Qwen and no deduction guide at either level."
+    },
+    {
+      "id": "D",
+      "proposal": "catalog",
+      "deduction_mix": 0.75,
+      "family_deduction_mix": 0.75,
+      "hole_deduction_mix": 0.0,
+      "description": "Uniform finite-catalog scores with deduction mixed only into family selection; specialized holes receive no deduction/Occam mixture."
+    },
+    {
+      "id": "Q",
+      "proposal": "vllm",
+      "deduction_mix": 0.0,
+      "family_deduction_mix": 0.0,
+      "hole_deduction_mix": 0.0,
+      "description": "Qwen finite-choice scores with a uniform support floor and no deduction guide at either level."
+    },
+    {
+      "id": "QD",
+      "proposal": "vllm",
+      "deduction_mix": 0.75,
+      "family_deduction_mix": 0.75,
+      "hole_deduction_mix": 0.0,
+      "description": "Qwen finite-choice scores with deduction mixed only into family selection; specialized holes use Qwen plus the uniform support floor."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "foldr-sparse-bounded-square",
+      "spec": "../examples/foldr-sparse-bounded-square-v2.json",
+      "analysis_label": "exploratory",
+      "seen_during_development": true,
+      "heldout": {
+        "oracle": "bounded_square",
+        "seed": 1401,
+        "count": 96,
+        "minimum": -8,
+        "maximum": 8,
+        "max_length": 10,
+        "corpus_sha256": "4b1ac93177418236e597c91bef5ebf7f192a7de04f344baf137c7460539271ab"
+      }
+    }
+  ]
+}

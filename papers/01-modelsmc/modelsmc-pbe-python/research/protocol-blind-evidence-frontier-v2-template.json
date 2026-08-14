@@ -1,0 +1,241 @@
+{
+  "schema": "blind-evidence-frontier-confirmation-v2-template",
+  "protocol_status": "conditional-draft-not-yet-confirmatory",
+  "activation_condition": "Activate only if protocol-developmental-evidence-frontier-blind02-03-v1 passes its frozen Round-4 go/no-go gate without another method change.",
+  "activation_procedure": [
+    "Freeze the final evidence-frontier harness, prompt template, generator, and analysis code by SHA-256.",
+    "Replace every TO_BE_BOUND field below, validate the complete protocol, and change protocol_status to frozen-before-task-generation-and-provider-calls.",
+    "Place a fresh 256-bit task secret with an independent advisor or automated custodian that does not expose the reveal to the experiment runner.",
+    "Only after the frozen protocol is sealed, generate exactly the 12 scheduled tasks and publish their public hashes and hidden-manifest commitment.",
+    "Run all 12 tasks in fixed order without inspection-driven replacement or retuning."
+  ],
+  "separation_from_development": {
+    "fresh_tasks_only": true,
+    "excluded_from_confirmation": [
+      "blind-01",
+      "blind-02",
+      "blind-03",
+      "blind-04",
+      "all opaque-A/opaque-B and bounded development tasks",
+      "any task viewed while implementing or debugging evidence-frontier selection"
+    ],
+    "method_change_after_task_generation": "Any semantic method, prompt, selector, budget, or analysis change after task generation terminates confirmation. Results remain reportable as an aborted confirmatory attempt; a revised method requires a new secret and an entirely fresh task set.",
+    "no_peeking_rule": "Neither the runner nor model-request process may read target ASTs, family parameters, rejection logs, or the task secret until every provider artifact is sealed."
+  },
+  "claim_scope": {
+    "primary": "Whether the frozen GPT-OSS evidence-frontier beam has a higher exact-discovery rate by 29 proposal slots than its matched syntax-uniform random beam on this preregistered 12-task generator distribution.",
+    "not_claimed": [
+      "wall-clock speedup",
+      "speedup over every exhaustive-search implementation",
+      "performance on arbitrary or billion-program spaces outside the frozen grammar/distribution",
+      "valid importance sampling",
+      "known or calibrated LLM proposal probabilities"
+    ]
+  },
+  "freeze_requirements": {
+    "protocol_sha256": "TO_BE_BOUND",
+    "generator": {
+      "path": "research/generate_blinded_filter_map_tasks.py",
+      "sha256": "TO_BE_BOUND"
+    },
+    "harness": {
+      "path": "research/iterative_beam_experiment.py",
+      "sha256": "TO_BE_BOUND"
+    },
+    "prompt_template_sha256": "TO_BE_BOUND",
+    "analysis_code_sha256": "TO_BE_BOUND",
+    "test_suite_sha256": "TO_BE_BOUND",
+    "task_secret_commitment_sha256": "TO_BE_BOUND_BEFORE_TASK_GENERATION",
+    "public_manifest_sha256": "TO_BE_BOUND_AFTER_DETERMINISTIC_GENERATION_BEFORE_PROVIDER_CALLS",
+    "hidden_target_manifest_sha256": "TO_BE_BOUND_AFTER_DETERMINISTIC_GENERATION_BEFORE_PROVIDER_CALLS",
+    "public_task_sha256": "TO_BE_BOUND_FOR_ALL_12_TASKS_BEFORE_PROVIDER_CALLS",
+    "run_order_and_all_provider_tie_random_seeds": "TO_BE_BOUND_BEFORE_PROVIDER_CALLS",
+    "no_retuning_rule": "No task, call, trajectory, or endpoint may be removed, replaced, rerun, or relabeled because of LLM or random-baseline performance."
+  },
+  "model": {
+    "served_name": "gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "timeout_seconds": 420,
+    "provider_retry_policy": "none",
+    "provider_information_boundary": "The model receives one public task, current program, structured interpreter feedback, singleton-derived constraints, the selected repair hole, and the finite legal repair grammar for that hole. It receives no target AST, hidden family, task secret, full program enumeration, search-space cardinality, or outcomes from other confirmation tasks."
+  },
+  "fresh_task_generator": {
+    "task_count": 12,
+    "signature": {
+      "input": "List<Int>",
+      "output": "List<Int>"
+    },
+    "integer_constants_and_observed_domain": [
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "program_skeleton": "order-preserving filter followed by pointwise arithmetic map",
+    "predicate_families": [
+      "bounded-open-interval",
+      "lower-half-line",
+      "upper-half-line"
+    ],
+    "mapper_families": [
+      "quadratic-item-times-item",
+      "nontrivial-integer-scale",
+      "nonzero-integer-shift",
+      "reverse-affine-constant-minus-item"
+    ],
+    "fixed_balanced_schedule": [
+      [
+        "blind-v2-01",
+        "bounded-open-interval",
+        "quadratic-item-times-item"
+      ],
+      [
+        "blind-v2-02",
+        "lower-half-line",
+        "nontrivial-integer-scale"
+      ],
+      [
+        "blind-v2-03",
+        "upper-half-line",
+        "nonzero-integer-shift"
+      ],
+      [
+        "blind-v2-04",
+        "bounded-open-interval",
+        "reverse-affine-constant-minus-item"
+      ],
+      [
+        "blind-v2-05",
+        "lower-half-line",
+        "quadratic-item-times-item"
+      ],
+      [
+        "blind-v2-06",
+        "upper-half-line",
+        "nontrivial-integer-scale"
+      ],
+      [
+        "blind-v2-07",
+        "bounded-open-interval",
+        "nonzero-integer-shift"
+      ],
+      [
+        "blind-v2-08",
+        "lower-half-line",
+        "reverse-affine-constant-minus-item"
+      ],
+      [
+        "blind-v2-09",
+        "upper-half-line",
+        "quadratic-item-times-item"
+      ],
+      [
+        "blind-v2-10",
+        "bounded-open-interval",
+        "nontrivial-integer-scale"
+      ],
+      [
+        "blind-v2-11",
+        "lower-half-line",
+        "nonzero-integer-shift"
+      ],
+      [
+        "blind-v2-12",
+        "upper-half-line",
+        "reverse-affine-constant-minus-item"
+      ]
+    ],
+    "sampling": "Derive family parameters and every run seed deterministically from independent domain-separated streams of the advisor-held secret. Generate the first candidate satisfying only the frozen structural checks and log every deterministic rejection privately.",
+    "structural_acceptance": [
+      "target predicate retains three to five observed-domain values",
+      "target mapper has at least three distinct values on retained inputs",
+      "target predicate differs from the frozen initial predicate on at least two observed-domain values",
+      "target mapper differs from the frozen initial mapper on at least two retained inputs",
+      "initial complete program is not exact",
+      "target components belong to the frozen grammar",
+      "target joint finite-domain behavior is unique within blind-v2"
+    ],
+    "forbidden_rejection_reasons": [
+      "any model or matched-random outcome",
+      "loss magnitude beyond the structural initial-nonexact check",
+      "human judgment of difficulty",
+      "target syntactic alias count"
+    ],
+    "public_examples_in_order": [
+      "empty list",
+      "all eight singleton lists in ascending domain order",
+      "complete domain in ascending order",
+      "one task-seeded permutation",
+      "two concatenated independently task-seeded permutations"
+    ],
+    "private_custody": "The private reveal must be inaccessible to the experiment runner and provider process until all 12 provider inventories are sealed."
+  },
+  "search": {
+    "selection_policy": "evidence-frontier",
+    "branching_factor": 4,
+    "beam_width": 2,
+    "maximum_rounds": 4,
+    "start_seed": 17,
+    "singleton_evidence": true,
+    "stall_policy": "alternate-hole",
+    "maximum_proposal_slots": 29,
+    "maximum_provider_calls": 7,
+    "proposal_slot_checkpoints": {
+      "initial": 1,
+      "round_1": 5,
+      "round_2": 13,
+      "round_3_descriptive": 21,
+      "round_4_primary": 29
+    },
+    "selector": "After syntax and finite-semantic deduplication, retain the best-loss anchor and the singleton evidence frontier ordered by predicate violations, mapper violations, loss, proposal rank, parent rank, and frozen SHA-256 tie break. Fill any remaining slot by component novelty then the same frontier order.",
+    "hole_order": "violated singleton predicate facts; violated retained-singleton mapper facts; certified predicate toggles; conditional mapper constraints; frozen unsupported fallback",
+    "schedule_and_invalid_policy": "One expansion in Round 1 and exactly two in each later active round. Cycle an underfilled nonempty beam. Each expansion consumes four slots even when invalid, with no retry or backfill.",
+    "exact_stop": "Finish every scheduled expansion in the active round before exact stopping.",
+    "importance_sampling_claim": false,
+    "proposal_probability_claim": false
+  },
+  "matched_random_baseline": {
+    "trials_per_task": 10000,
+    "run_after_each_task_provider_seal": true,
+    "policy": "Identical task, evidence, hole choices, evidence-frontier selection, K, W, R, slot accounting, stopping, deduplication, and invalid policy; replace only the LLM shortlist with syntax-uniform legal non-no-op repairs without replacement.",
+    "seed_derivation": "Freeze a domain-separated task/trial/round/expansion/state/hole stream before provider calls.",
+    "aggregate_replicates": "For matched-random replicate j, sum exact-at-slot-29 indicators from independent task-specific trial-j streams across all 12 tasks.",
+    "primary_randomization_p_value": "(1 + number of the 10000 aggregate matched-random replicates with successes at least X_LLM) / 10001",
+    "required_task_level_reporting": [
+      "exact count and Wilson interval at slots 21 and 29",
+      "best-loss and evidence-violation distributions",
+      "first-exact slot",
+      "invalid calls, physical evaluations, cache hits, and semantic redundancy"
+    ]
+  },
+  "confirmatory_endpoints": {
+    "primary_statistic": "X_LLM, the number of the 12 fresh tasks solved exactly by completion of Round 4 at or before proposal slot 29",
+    "primary_comparison": "One-sided preregistered aggregate matched-random randomization test at alpha=0.05",
+    "practical_effect_threshold": "X_LLM must be at least 6 of 12",
+    "study_success_rule": "Both the one-sided matched-random p-value must be at most 0.05 and X_LLM must be at least 6 of 12, with no method-integrity failure.",
+    "round_3_endpoint": "Exact discovery by slot 21 is secondary and descriptive; it cannot replace a failed Round-4 primary endpoint.",
+    "method_integrity_failure": "Any post-generation semantic code/prompt change, target leak, task replacement, unlogged retry, missing task, or baseline-policy mismatch makes the confirmatory result invalid and must be reported as an aborted attempt.",
+    "estimand_scope": "The frozen 12-task balanced generator distribution and model revision only."
+  },
+  "reporting": {
+    "fixed_denominator": 12,
+    "report_every_task": true,
+    "report_infrastructure_failures_twice": "once as intention-to-run non-success and once as an operational failure",
+    "reveal_timing": "Publish the secret, private target manifest, all rejection logs, and commitment verification only after all provider artifacts are sealed.",
+    "required_aggregate_metrics": [
+      "X_LLM/12 at slots 21 and 29",
+      "matched-random aggregate distribution and preregistered p-value",
+      "paired success advantage",
+      "task-level loss and singleton violation trajectories",
+      "provider calls, proposal slots, physical evaluations, token usage, elapsed time, and semantic-cell counts"
+    ],
+    "interpretation_rule": "A successful result supports a bounded exact-discovery advantage over the matched random proposal mechanism on the frozen distribution. It does not establish exhaustive-search or billion-space speedup by itself."
+  }
+}

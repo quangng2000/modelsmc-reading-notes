@@ -1,0 +1,1 @@
+{"current_expression":"lt(item,0)","policy":"consume K slots; generate no children; never backfill","shortlist":["lt(item,1)","lt(item,0)","lt(item,2)","lt(item,-1)"],"status":"invalid-no-op"}

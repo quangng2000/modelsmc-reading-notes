@@ -1,0 +1,11 @@
+{
+  "schema": "blind-filter-map-confirmation-v3-endpoint-health-v1",
+  "endpoint": "http://127.0.0.1:18000/v1",
+  "health_http_status": 200,
+  "max_model_len": 4096,
+  "model": "gpt-oss-120b",
+  "model_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+  "model_root": "/workspace/steve/.cache/huggingface/hub/models--openai--gpt-oss-120b/snapshots/b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+  "queried_before_completion_calls": true,
+  "vllm_version": "0.27.1"
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "protocol_id": "modelsmc-pbe-conditional-ranking-gptoss120b-v1",
+  "status": "frozen-before-provider-execution",
+  "analysis_label": "exploratory-interface-diagnostic",
+  "frozen_on": "2026-08-12",
+  "motivation": "The prior full-slate teacher-forced semantic diagnostic did not rank the two exact complete programs well enough for practical discovery. This follow-up tests whether the same pinned model can identify the exact components when explicit task reasoning is separated from candidate scoring and the construction is factorized predicate-then-mapper.",
+  "claims": {
+    "primary_question": "Does a frozen model-generated reasoning prefix improve the exact-component ranks and the resulting fixed top-k proposal mass relative to a paired no-reasoning control?",
+    "scope": "This is a fixed-task, post-hoc interface diagnosis. It is not a model benchmark, an unbiased estimate over tasks, or an SMC success-rate experiment.",
+    "oracle_disclosure": "The two training-exact predicate ASTs are predeclared before execution and used only to construct the two required counterfactual mapper-prefix slates; they are never labeled or exposed in the predicate-ranking prompts. The exact mapper AST and all gold rank/mass joins are loaded only after raw model score artifacts are persisted and hash-committed. Mapper-prefix results are not credited as end-to-end discovery."
+  },
+  "task": {
+    "path": "examples/foldr-sparse-bounded-square-v2.json",
+    "family": "foldr-filter-map",
+    "model_visible_evidence": "raw PBE examples and fixed skeleton only",
+    "deduction_disclosure": "The repository's sound deduction report derives zero predicate examples and zero mapper examples for this sparse specification. No evaluator-inferred keep/drop or item-to-output labels enter model prompts.",
+    "candidate_support": {
+      "predicates": 600,
+      "mappers_per_predicate": 60,
+      "exact_predicate_asts": 2,
+      "exact_mapper_asts": 1,
+      "pointwise_choices_per_arm_per_trial": 720
+    }
+  },
+  "oracle_reference": {
+    "predicate_indices_zero_based": [238, 537],
+    "mapper_index_zero_based": 42,
+    "usage": "Predicate indices define the two disclosed counterfactual mapper prefixes. The mapper index and all target-key joins are accessed only by the evaluation phase after the complete scores bundle is sealed."
+  },
+  "model": {
+    "served_name": "gpt-oss-120b",
+    "repository": "openai/gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "tokenizer_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "quantization": "mxfp4",
+    "vllm_version": "0.27.1",
+    "max_model_len": 4096,
+    "reasoning_generation": {
+      "reasoning_effort": "high",
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_completion_tokens": 1600,
+      "response_format": "json_object"
+    },
+    "candidate_scoring": {
+      "method": "symmetrized-final-label-log-score-contrast",
+      "prompt_protocol": "harmony-gpt-oss-v1",
+      "paths_per_choice": 4,
+      "score_formula": "a(c)=0.5*[(log p(A|positive=A)-log p(B|positive=A))+(log p(B|positive=B)-log p(A|positive=B))]",
+      "candidate_batch_size": 128
+    }
+  },
+  "design": {
+    "arms": [
+      {
+        "id": "N",
+        "description": "Paired no-reasoning control: raw task, fixed skeleton, conditional prefix, and one candidate only."
+      },
+      {
+        "id": "R",
+        "description": "Same pointwise slate plus the exact frozen model-generated reasoning JSON from phase 1."
+      }
+    ],
+    "trial_seeds": [1729, 2718, 3141],
+    "trial_randomization": "Each seed fixes an example permutation and a provider request-order permutation. Candidate identities and canonical candidate text are unchanged; every candidate is scored in a fresh pointwise comparison, so catalog position is absent from the prompt.",
+    "reasoning_phase": "One stateless greedy chat call per trial sees only the permuted raw examples and fixed skeleton. It returns compact JSON describing its inferred filtering and mapping relationships without choosing from or seeing the catalogs. Exact response bytes are frozen before any R-arm scoring.",
+    "predicate_phase": "Score all 600 predicate ASTs independently in each arm/trial.",
+    "mapper_phase": "Score all 60 mapper ASTs independently under each of the two exact predicate AST prefixes in each arm/trial. Prompt wording calls each a predicate under evaluation, never a correct predicate.",
+    "contamination_control": "No prompt includes candidate index, cost, mismatch count, gold status, execution loss, target name, oracle keep/drop labels, or oracle item-to-output pairs."
+  },
+  "ranking": {
+    "primary_rank": "competition rank: 1 plus the number of candidates with strictly greater score",
+    "tie_interval": "[1 plus number strictly greater, number greater than or equal]",
+    "tie_break": "HMAC-SHA256 with key UTF8('modelsmc-pbe-conditional-ranking-v1:' + decimal trial seed) and message UTF8(phase + NUL + prefix SHA-256 + NUL + canonical candidate SHA-256), sorted ascending; used only to make the operational top-k proposal deterministic, never to hide score ties",
+    "recall_cutoffs": [1, 5, 10, 20]
+  },
+  "proposal": {
+    "shortlist_mass": "uniform",
+    "epsilon": 0.05,
+    "predicate_k": 10,
+    "mapper_k": 5,
+    "predicate_formula": "q_P,t(p)=(1-epsilon)/K_P + epsilon/600 for p in the deterministically tie-broken top K_P, otherwise epsilon/600",
+    "mapper_formula": "q_M,t(m|p)=(1-epsilon)/K_M + epsilon/60 for m in the deterministically tie-broken top K_M under prefix p, otherwise epsilon/60",
+    "trial_exact_mass": "Q_t=sum_{p in exact predicates} q_P,t(p)*q_M,t(m_exact|p)",
+    "ensemble_exact_mass": "Q=(1/T)*sum_t Q_t for an equal random mixture of the T frozen trial channels",
+    "n50": "ceil(log(0.5)/log(1-Q)); interpreted only as IID draws from the declared fixed ensemble proposal"
+  },
+  "primary_metrics": [
+    "N-versus-R exact-predicate competition ranks, tie intervals, and recall at 1, 5, 10, and 20",
+    "N-versus-R exact-mapper competition rank and tie interval under each exact predicate prefix",
+    "per-trial and equal-mixture exact-program proposal mass",
+    "conditional IID N50 under the declared fixed proposal"
+  ],
+  "validity": {
+    "response_contract": "A reasoning response must be one JSON object. Each label-score response must satisfy the existing equal-path token-boundary contract for the pinned tokenizer and produce finite four-path evidence.",
+    "context_preflight": "Every exact request path must tokenize to at most 4096 positions. Preparation fails before provider execution if any path exceeds the bound.",
+    "failure_policy": "Transport, timeout, or HTTP 5xx failures may be retried at most twice with identical request bytes. There are no semantic repair prompts. Token-boundary, schema, truncation, invalid-label, or non-finite-score failure invalidates the run while retaining all completed raw artifacts.",
+    "immutability": "Phase-1 preparation writes and hashes the protocol snapshot, task snapshot, catalogs, counterfactual predicate prefixes, randomization, reasoning request bodies, pointwise prompt templates, and request metadata before the first inference call. After reasoning responses are persisted and hash-committed, phase-2 preparation renders and hashes the exact N/R scoring contexts before any label-score call. Each execution phase requires the caller to supply the corresponding exact bundle SHA-256 and refuses pre-existing response files.",
+    "reporting": "All three trials, both arms, and both exact predicate prefixes are reported. No completed trial, arm, or prefix may be dropped after inspection. Exact mass is NOT_IDENTIFIED unless every required prefix slate validates."
+  }
+}
