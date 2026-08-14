@@ -35,24 +35,24 @@
 
 \begin{abstract}%
 % [P-ABS-01]
-Large language models can guide program synthesis, but importance correction
-requires the probability of the proposal actually consumed by the search.
-We introduce \method, a typed programming-by-example system that totalizes four
-model-proposed repairs and samples from the application-computed law
-$q=(1-\varepsilon)H_S+\varepsilon g$, where $H_S$ preserves shortlist
-multiplicity and $g$ is a normalized full-support grammar law. In a
-method-frozen fresh-blind study on 12 finite-domain filter--map tasks, the LLM
-arm solved 10 tasks within 29 logical complete-program slots versus 2 for a matched
-grammar-random acquisition arm; all eight discordant outcomes favored the LLM
-arm (one-sided exact sign test, $p=1/256$). A separately frozen provider-free
-calibration study nevertheless failed its target-mass gate at $N=256$
-(RMSE 0.2395; bias $+0.1130$), despite discovery in all 128 $N=256$ runs. A
+Large language models can guide program synthesis, but sequential Monte Carlo
+correction requires an evaluable probability for the proposal actually sampled
+by the search. We
+introduce \method, a typed programming-by-example system that converts four
+model-proposed repairs---including failures and duplicates---into an
+application-computed, full-support proposal. In a method-frozen fresh-blind
+study of 12 finite-domain filter--map tasks, the LLM-guided system solved 10
+tasks within 29 logical complete-program slots, versus 2 for a matched
+grammar-random system; all eight discordant outcomes favored LLM guidance
+(one-sided exact sign test, $p=1/256$). However, a separately frozen
+provider-free calibration study failed its $N=256$ target-mass gate (RMSE
+0.2395; bias $+0.1130$), despite exact-program discovery in all 128 runs. A
 post-failure terminal diagnostic verified the finite-state importance
-identities and implicated poor proposal--target overlap in that terminal step,
-but did not rescue the failed gate or validate the sequential procedure. The
-evidence supports bounded system-level discovery and exact proposal accounting,
-not calibrated finite-particle inference, general program synthesis, or
-wall-clock superiority.
+identities and supported poor proposal--target overlap as a material error
+source, without validating the sequential procedure. The evidence therefore
+supports bounded discovery and auditable proposal accounting, but not
+calibrated finite-particle inference, general program synthesis, or wall-clock
+superiority.
 \end{abstract}
 
 \begin{keywords}
