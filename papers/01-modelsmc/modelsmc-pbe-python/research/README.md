@@ -1,7 +1,8 @@
 # Research evidence index
 
 This directory contains the experiment code and frozen protocols supporting the
-r5-centered ModelSMC-PBE paper. The concise publication plan is
+r5-centered ModelSMC-PBE paper and its provider-free calibration evidence
+chain. The concise publication plan is
 [PUBLICATION_EXPERIMENT_PLAN.md](PUBLICATION_EXPERIMENT_PLAN.md). It is the
 authoritative map from completed studies to allowed manuscript claims.
 
@@ -81,7 +82,71 @@ RMSE from 0.2792 to 0.0626 relative to the sticky V1 terminal proposal. This
 supports poor proposal-target overlap as a material terminal mechanism; the
 exhaustive control is not a search algorithm and V2 does not rescue V1.
 
-### 4. ExeDec V2 released-data debug
+### 4. Fresh calibration V2
+
+This is a second frozen negative calibration gate on 20 freshly generated
+provider-free tasks.
+
+- Protocol:
+  [protocol-calibrated-program-inference-v2-fresh.json](protocol-calibrated-program-inference-v2-fresh.json)
+- Method seal:
+  [protocol-calibrated-program-inference-v2-fresh.method-seal.json](protocol-calibrated-program-inference-v2-fresh.method-seal.json)
+- Imported evidence:
+  [../../../../artifacts/calibrated-program-inference-v2-fresh](../../../../artifacts/calibrated-program-inference-v2-fresh)
+
+At 256 particles, exact-mass RMSE was 0.2612355 and bias was -0.0748415;
+the task-first bootstrap upper-95 RMSE was 0.3767653. The frozen gate failed
+and remains failed.
+
+### 5. Factorized V3 reused-task diagnostic
+
+This post-failure diagnostic changed mode acquisition and reused the 20 fresh
+V2 tasks, particle counts, and seeds.
+
+- Protocol:
+  [protocol-calibrated-program-inference-v3-factorized-diagnostic.json](protocol-calibrated-program-inference-v3-factorized-diagnostic.json)
+- Imported evidence:
+  [../../../../artifacts/calibrated-program-inference-v3-factorized-diagnostic](../../../../artifacts/calibrated-program-inference-v3-factorized-diagnostic)
+
+At 256 particles, exact-mass RMSE was 0.0221995, bootstrap upper-95 RMSE was
+0.0245201, and the central 90% bias interval was
+[-0.0081112, -0.0057479]. Because the method was designed after seeing V2 and
+the tasks were reused, this is mechanism evidence rather than confirmation.
+
+### 6. Fresh V3 R2 terminal finite-support confirmation
+
+This is the second fresh provider-free suite and the final calibration result
+in the current evidence chain.
+
+- R2 protocol:
+  [protocol-calibrated-program-inference-v3-fresh-r2.json](protocol-calibrated-program-inference-v3-fresh-r2.json)
+- R2 method seal:
+  [protocol-calibrated-program-inference-v3-fresh-r2.method-seal.json](protocol-calibrated-program-inference-v3-fresh-r2.method-seal.json)
+- R1 pre-secret supersession record:
+  [CALIBRATED_PROGRAM_INFERENCE_V3_FRESH_R1_SUPERSESSION.md](CALIBRATED_PROGRAM_INFERENCE_V3_FRESH_R1_SUPERSESSION.md)
+- Imported evidence:
+  [../../../../artifacts/calibrated-program-inference-v3-fresh](../../../../artifacts/calibrated-program-inference-v3-fresh)
+- Deterministic replay receipt:
+  [../../../../artifacts/calibrated-program-inference-v3-fresh-replay-verification.json](../../../../artifacts/calibrated-program-inference-v3-fresh-replay-verification.json)
+- Unblind verification:
+  [../../../../artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json](../../../../artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json)
+
+The frozen gate passed. At 256 particles, exact-mass RMSE was 0.0398662,
+bias was -0.0109472, bootstrap upper-95 RMSE was 0.0494323, and the central
+90% bias interval was [-0.0149663, -0.00763969]. Point RMSE decreased to
+0.0304513 and 0.0258555 at 512 and 1,024 particles. The result is limited to
+provider-free terminal exact-program mass on the declared singleton-complete
+synthetic law. It does not calibrate the LLM, the four-stage recurrence, the
+full PBE system, a large DSL, or target mean loss (whose 256-particle RMSE was
+0.2991).
+
+The R2 protocol, method, custody, and replay SHA-256 values are respectively
+`36f4a6c5930c2da2c89c1515d44267b6cc9bab94e7a000352f4343fd97fc97d6`,
+`788a44cc32ed617aa853a9e7ac97ab2236844382825149eba0073cc6d0a31dc4`,
+`32631befddaecd28aa4008c73232475b3676b26a7e1e0fe457dac6995ab0932f`,
+and `c7b08c0385867436e3e2d7a08cfe5a506ed8dfaea702defcabeff1e88b1859a7`.
+
+### 7. ExeDec V2 released-data debug
 
 This is descriptive, non-confirmatory adapter evidence.
 
@@ -96,7 +161,7 @@ This is descriptive, non-confirmatory adapter evidence.
 - Post-import audit:
   [../../../../artifacts/exedec-deepcoder-ho-debug-benchmark-v2.POST_IMPORT_AUDIT.md](../../../../artifacts/exedec-deepcoder-ho-debug-benchmark-v2.POST_IMPORT_AUDIT.md)
 
-All 64 runs and 32 paired blocks completed. Hidden-probe exactness was 17/32
+All 64 runs and 32 paired blocks completed. Private-debug-probe exactness was 17/32
 for LLM-SMC and 3/32 for grammar-random; the exact two-sided conditional
 sign-test value was 0.001312255859375. The blocks are repeated seeds nested in
 only four public and potentially contaminated targets, so the value is
@@ -127,6 +192,9 @@ noncanonical and unimported; it is not a second successful import.
   were missing.
 - R4 completed public execution but failed its frozen sealing gate before
   unblinding and remains blinded and excluded.
+- Fresh V3 R1 was superseded before secret creation or any numerical work to
+  align bias-interval wording with the already strict validator; it had no
+  outcome.
 - ExeDec V1 was superseded before provider calls because source closure was
   incomplete.
 - Developmental matrices, blind evidence-frontier studies, Gate-2 transport
@@ -150,7 +218,12 @@ Targeted tests for the final studies include
 `test_evidence_shortlist_smc.py`,
 `test_analyze_blind_filter_map_confirmation_v3.py`,
 `test_particle_calibration_study_v1.py`,
-`test_particle_calibration_terminal_diagnostic_v2.py`, and
+`test_particle_calibration_terminal_diagnostic_v2.py`,
+`test_calibrated_program_inference_v2_fresh.py`,
+`test_calibrated_program_inference_v3_factorized_diagnostic.py`,
+`test_calibrated_program_inference_v3_fresh.py`,
+`test_calibrated_program_inference_v3_replay.py`,
+`test_calibrated_program_inference_v3_validation.py`, and
 `test_exedec_deepcoder_ho_debug_benchmark_v2.py`.
 
 These checks are provider-free. They validate code and fixtures; they do not

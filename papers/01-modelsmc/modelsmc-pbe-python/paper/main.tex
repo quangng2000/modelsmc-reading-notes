@@ -39,21 +39,20 @@ Large language models can guide program synthesis, but importance-corrected
 sequential Monte Carlo requires an evaluable proposal probability for every
 sampled program. We present \method, a typed programming-by-example
 system in which a model supplies four repair slots and the application converts
-the resulting shortlist, including invalid and duplicate entries, into a
-full-support proposal over the declared bounded grammar. In a fresh-blind study on 12
-finite-domain filter--map tasks, the LLM-guided system solved 10 tasks under a
-29-slot budget per task and arm, compared with 2 for a matched grammar-random
-system.
-All eight discordant pairs favored LLM guidance (one-sided exact sign test,
-$p=1/256$). This discovery result did not imply calibrated inference. In a
-separate provider-free study, the $N=256$ estimate of exact-program target mass
-missed both prespecified thresholds (RMSE 0.2395; bias $+0.1130$), even though
-all 128 $N=256$ runs found an exact program. A follow-up terminal
-diagnostic verified the finite-state importance identities and supported poor
-proposal--target overlap as a material error source in the conditioned terminal
-step. Together, the studies support \method as an auditable method for bounded
-discovery, but not as a calibrated inference procedure, a general synthesizer,
-or a wall-clock speedup.
+the resulting shortlist into a full-support proposal over a bounded grammar.
+In a fresh-blind study on 12 finite-domain filter--map tasks, the LLM-guided
+system solved 10 tasks under a 29-slot budget, versus 2 for matched
+grammar-random acquisition; all eight discordant pairs favored LLM guidance
+($p=1/256$, one-sided exact sign test). This discovery result did not establish
+calibration: provider-free V1 and a later 20-task fresh V2 study both failed
+their exact-program-mass gates. After a reused-task diagnostic, a redesigned
+factorized proposal--bridge method was frozen and tested on a second fresh suite
+of 32 tasks. At $N=256$, it passed every gate (RMSE 0.0399; bootstrap upper
+bound 0.0494; bias $-0.0109$, central 90\% interval
+$[-0.0150,-0.00764]$), and RMSE fell to 0.0259 at $N=1024$. This confirmation
+concerns only provider-free terminal finite-support inference on
+singleton-complete synthetic tasks; it does not calibrate LLM guidance,
+four-stage SMC, the full PBE system, or target mean loss.
 \end{abstract}
 
 \begin{keywords}
@@ -111,13 +110,14 @@ reference computation. Together, these components turn each recorded shortlist
 into a replayable proposal.
 
 % [P-INT-06]
-We evaluate that proposal through three separate questions. A fresh-blind
-paired study asks whether LLM shortlists improve bounded discovery. A separately
-frozen provider-free study asks whether its particle system approximates the
-declared target, and a follow-up diagnostic examines why that calibration gate
-failed. We also report a released-data ExeDec adapter exercise as a limited
-stress test. The studies expose the paper's central distinction: a proposal can
-improve discovery while still approximating its target poorly.
+We evaluate that proposal through distinct evidentiary layers. A fresh-blind
+paired study asks whether LLM shortlists improve bounded discovery. A
+provider-free calibration sequence then preserves two failed proposals, uses
+post-failure diagnostics to redesign the proposal, and tests the redesign on a
+second independently generated suite. Finally, a released-data ExeDec adapter
+exercise provides a limited stress test. This ordering keeps the central
+distinction visible: discovery can improve while distributional accuracy
+depends on the proposal, estimator, target functional, and study domain.
 
 \section{Related Work}
 \label{sec:related}
@@ -139,8 +139,9 @@ importance weighting and resampling
 systems have combined learned guidance with particle inference
 \citep{ellis2019repl,wahl2026modelsmc}. The contribution here is not the use of
 SMC itself. We focus on the totalized four-slot proposal and use exact
-references to show that evaluable proposal probabilities do not by themselves
-guarantee finite-$N$ calibration.
+references to show both that evaluable proposal probabilities do not by
+themselves guarantee finite-$N$ calibration and that a factorized redesign can
+pass a separately frozen terminal finite-support gate.
 
 % [P-REL-03]
 ExeDec studies execution decomposition across released DeepCoder and RobustFill
@@ -307,7 +308,7 @@ The studies also separate online search from exact reference computation. The
 r5 and ExeDec V2 online
 accounts cover only scheduled complete-program executions and report logical
 slots, online physical scorer calls, and provider calls; r5 also reports cache
-reuse and tokens. The provider-free V1/V2 studies and ExeDec V2's later
+reuse and tokens. The provider-free calibration studies and ExeDec V2's later
 reference step enumerate bounded supports separately. Those evaluations are
 excluded from online work, and programs found there are never credited as
 online discoveries.
@@ -319,9 +320,11 @@ online discoveries.
 The evaluation begins with bounded discovery: r5 compares the complete
 LLM-shortlist system with a matched grammar-shortlist system. Calibration V1
 then asks whether the weighted particles approximate an exactly enumerable
-target. When that gate fails, terminal V2 investigates the conditioned terminal
-step without changing the decision. ExeDec V2 is reported separately as a
-limited stress test of the released-data adapter.
+target. The calibration record continues through a conditioned terminal
+diagnostic, a failed fresh V2 confirmation, a reused-task factorized diagnostic,
+and a second fresh V3 confirmation. ExeDec V2 is reported last as a limited
+stress test of the released-data adapter; none of these endpoints is pooled with
+the r5 discovery result.
 
 \subsection{Fresh-blind r5 paired discovery}
 
@@ -360,7 +363,8 @@ statistical unit, and the analysis used a one-sided exact sign test over
 discordant outcomes. Every trajectory ran the full budget without
 outcome-dependent stopping.
 
-\subsection{Calibration V1 and terminal diagnostic V2}
+\subsection{Provider-free calibration sequence}
+\label{sec:calibration-sequence}
 
 % [P-EXP-CAL-01]
 Calibration V1 was frozen separately and used no provider. Four developmental
@@ -385,6 +389,38 @@ $N\in\{256,512\}$ with 128 repetitions per task--arm--$N$ cell. The diagnostic
 conditions on a mechanically selected zero-loss parent and addresses only the
 terminal calculation. It leaves V1's decision unchanged and does not test the
 four-stage recurrence or online search efficiency.
+
+% [P-EXP-CAL-04]
+Fresh calibration V2 asked the same terminal exact-mass question on 20 newly
+generated tasks, each with a 36,000-program support and complete singleton
+evidence. Its provider-free proposal--bridge method selected eight semantic
+modes by ranking a fixed grammar sample, assigned 0.25 mass to the grammar and
+0.75 to local neighborhoods, and used no primary Metropolis--Hastings moves.
+The primary $N=256$ cell and descriptive $N\in\{512,1024\}$ cells each used
+128 repetitions per task; task-first bootstrap intervals used 20,000
+replicates. All thresholds, seeds, source bindings, task custody, and the rule
+for publishing failure were frozen before the fresh secret.
+
+% [P-EXP-CAL-05]
+After V2 failed, a factorized diagnostic changed only mode acquisition. It
+ranked predicate and mapper behavior classes separately from public singleton
+evidence, crossed the top eight of each, scored at most 64 complete
+representatives, and retained eight semantic modes. The diagnostic reran the
+frozen particle counts and seeds on the same 20 V2 tasks, so its numerical
+success could motivate a new method but could not replace the failed V2 gate.
+
+% [P-EXP-CAL-06]
+Fresh V3 R2 then tested that factorized method on a second independently
+generated suite of 32 tasks. Before any exact reference was materialized, the
+study acquired all 32 public mode banks; the primary bridge followed
+$q(p)^{1-\beta}\gamma(p)^{\beta}$ with adaptive steps, no primary
+Metropolis--Hastings moves, and $N\in\{256,512,1024\}$. Each cell used 64
+repetitions with equal task weight. Matched factorized terminal importance
+sampling and the historical sticky proposal at $N=256$ were descriptive
+comparators. The frozen gate jointly required a task-first 95\% RMSE upper
+bound below 0.10, a central 90\% bias interval strictly inside
+$(-0.03,0.03)$, every task RMSE below 0.20, nonincreasing point RMSE, controlled
+weight tails, and a finite-state identity error at most $10^{-12}$.
 
 \subsection{ExeDec V2 released-data debug}
 \label{sec:exedec-debug}
@@ -412,10 +448,11 @@ the custody and packaging limitations.
 \label{sec:results}
 
 % [P-RES-01]
-The r5 study supports bounded discovery, whereas V1 does not support calibrated
-finite-particle inference. The ExeDec stress test is reported separately because
-its released data and repeated-seed design give it a different evidential
-status.
+The r5 study supports bounded discovery, while the calibration sequence shows
+that accuracy is proposal-specific: V1 and fresh V2 failed, and redesigned
+fresh V3 passed a narrower terminal finite-support gate. The ExeDec stress test
+is reported separately because its released data and repeated-seed design give
+it a different evidential status.
 
 \subsection{Fresh-blind r5 discovery}
 
@@ -447,7 +484,7 @@ singletons covered the complete declared domain, this is finite-domain semantic
 recovery, not unique-AST or out-of-domain recovery.
 
 \FloatBarrier
-\subsection{Negative calibration and terminal diagnosis}
+\subsection{Calibration failures, diagnosis, and fresh V3 confirmation}
 
 % [P-RES-CAL-01]
 V1 failed both frozen $N=256$ gate components despite exact-program discovery
@@ -490,6 +527,65 @@ rule and implicated poor proposal--target overlap in the conditioned terminal
 step. Because the control scores the complete finite support and starts from a
 zero-loss parent, it is a diagnostic rather than a practical search method and
 leaves the V1 failure unchanged.
+
+% [P-RES-CAL-04]
+Fresh V2 also failed its frozen gate. At $N=256$, the primary bridge had
+exact-mass RMSE 0.2612355 and bias $-0.0748415$; the task-first bootstrap
+95\% upper bound on RMSE was 0.3767653, and its central 90\% bias interval was
+$[-0.1497656,-0.0061850]$. Although pooled RMSE decreased to 0.2225051 and
+0.1458710 at $N=512$ and $1024$, respectively, two task-level RMSE values
+exceeded 0.82. These retained outcomes establish a second calibration failure,
+not a reason to replace difficult tasks.
+
+% [P-RES-CAL-05]
+The post-failure factorized diagnostic on those same 20 tasks reduced the
+$N=256$ RMSE to 0.0221995; its bootstrap upper bound was 0.0245201 and its
+central 90\% bias interval was $[-0.0081112,-0.0057479]$. Because the factorized
+acquisition rule was designed after observing V2 and reused its tasks and
+seeds, this result is mechanism evidence only. It justified the second fresh
+test but supplied no confirmatory outcome itself.
+
+% [P-RES-CAL-06]
+Fresh V3 passed all six components of its frozen primary gate. At $N=256$, the
+factorized proposal--bridge estimate had bias $-0.0109472$ and RMSE 0.0398662;
+the task-first bootstrap RMSE upper bound was 0.0494323 and the central 90\%
+bias interval was $[-0.0149663,-0.00763969]$. The largest task-level RMSE was
+0.102853, and point RMSE decreased from 0.0398662 to 0.0304513 to 0.0258555
+over $N=256,512,1024$. Table~\ref{tab:v3-calibration-gate} records the complete
+gate rather than selecting only its favorable components.
+
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Fresh V3 R2 provider-free terminal exact-mass calibration gate on
+32 newly generated tasks with 64 repetitions per task--cell. Every row was
+required to pass.}
+\label{tab:v3-calibration-gate}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Gate component & Criterion & Observed \\
+\midrule
+Task-first RMSE upper 95\% & $<0.10$ & 0.0494323 \\
+Task-first bias central 90\% & inside $(-0.03,0.03)$ & $[-0.0149663,-0.00763969]$ \\
+Maximum task RMSE at $N=256$ & $<0.20$ & 0.102853 \\
+Point RMSE at $N=256,512,1024$ & nonincreasing & 0.0398662, 0.0304513, 0.0258555 \\
+95th percentile of runwise max weight & $<0.05$ & 0.0117401 \\
+Fraction of max weights above 0.25 & at most 0.01 & 0 \\
+Maximum identity error & at most 1e-12 & 1.33e-15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+% [P-RES-CAL-07]
+The descriptive $N=256$ matched factorized terminal-importance arm had
+exact-mass RMSE 0.0421178, while the historical sticky arm had RMSE 0.110263.
+These comparisons help locate the gain but were not confirmation gates. More
+importantly, the primary method's target-mean-loss RMSE was 0.2991 at $N=256$,
+so the pass applies to exact-program target mass, not to every posterior
+functional. It is evidence for a provider-free terminal estimator on this
+singleton-complete finite law, not for LLM calibration, the four-stage
+recurrence, or full-PBE inference.
 
 \subsection{ExeDec V2 debug}
 
@@ -551,13 +647,14 @@ does not support extrapolation beyond the observed domain or represent
 arbitrary PBE, and temperature-zero calls are not independent model replicates.
 
 % [P-LIM-02]
-Calibration imposes an additional limit. V1 did not pass its gate, and terminal
-V2 supports one material mechanism only within a conditioned, provider-free
-terminal calculation. Neither exact proposal
-accounting nor high discovery establishes low-variance importance weights,
-accurate target-mass estimates, normalizer accuracy, or validity of the full
-sequential approximation. Exact references were possible only because the four
-developmental supports were small enough to enumerate.
+Calibration remains deliberately narrow. V1 and fresh V2 retain failed gates;
+their post-failure diagnostics do not revise those decisions. Fresh V3 confirms
+one redesigned provider-free proposal--bridge estimator for terminal
+exact-program mass on a singleton-complete synthetic law, but it does not test
+the LLM shortlist, the four-stage recurrence, or a large DSL. Its
+target-mean-loss error also shows that a pass for one functional is not a pass
+for every posterior quantity. Exact references were possible only because each
+bounded support contained 36,000 programs.
 
 % [P-LIM-03]
 The ExeDec result has narrower evidential value than r5. It uses four
@@ -589,15 +686,15 @@ tested system. It does not isolate an LLM-only effect or establish a speedup or
 broad generalization.
 
 % [P-CON-02]
-The calibration study qualifies that discovery result. Although every
-$N=256$ run found an exact program and every proposal probability was
-evaluable, the particle approximation did not estimate exact-program target
-mass accurately. The terminal diagnostic points to poor proposal--target
-overlap as a material mechanism in the conditioned terminal step while leaving
-the failed gate unchanged; it does not validate the full SMC procedure. The
-next step is to redesign and recalibrate the proposal before evaluating it on
-independently selected external tasks. Discovery, distributional accuracy, and
-computational cost should remain separate endpoints.
+The calibration sequence qualifies that discovery result rather than reversing
+it. V1 and fresh V2 show that evaluable probabilities and exact-program
+discovery do not guarantee accurate target-mass estimates; the factorized
+redesign then passes a second fresh test for one terminal finite-support
+functional. Because target mean loss remained much less accurate and neither
+the provider nor the four-stage recurrence was tested, the next step is a new
+full-pipeline calibration study followed by independently selected external
+tasks. Discovery, distributional accuracy by functional, and computational cost
+should remain separate endpoints.
 
 % [P-ACK-01]
 \acks{This draft received no declared external funding. Compute and hardware
@@ -620,6 +717,17 @@ the extended target and proposal, the same normalized acquisition factor
 $R_t^a$ appears at each stage and cancels from
 Equation~\ref{eq:potential}. This proves normalization of the implemented
 proposal laws, not finite-$N$ calibration.
+
+% [P-APP-NORM-02]
+The fresh proposal--bridge studies use a separate finite-support law. It assigns
+0.25 total mass to the normalized grammar and divides the remaining 0.75
+equally among eight semantic modes. Within a mode, the local kernel assigns
+0.75 to its center and 0.125 each to predicate- and mapper-alias slices, with
+overlapping syntax masses added before normalization checks. The V3 artifact
+records this mass ledger and reconstructs every sampled $q(p)$; the bridge
+ratios telescope from $q$ to the terminal target. This accounting makes the V3
+proposal evaluable, while its calibration status still comes from the separate
+fresh empirical gate.
 
 \section{Task-Level Results}
 \label{app:task-results}
@@ -714,28 +822,47 @@ r5 changed only the sealer contract and focused test, retained r4's scientific
 execution method, and generated a fresh secret and suite.
 
 % [P-APP-INTEGRITY-02]
-The calibration and adapter studies have separate revision histories.
-Provider-free calibration V1 failed and remains failed; terminal V2 was frozen
-afterward and is diagnostic only. ExeDec benchmark V1 was superseded before
-provider calls because its source closure omitted import-time files. ExeDec V2
-is the final debug protocol. Its 1,143-file study archive passed the transfer
-verifier and was atomically imported, after which the canonical analysis passed
-its run-integrity checks.
+The provider-free calibration sequence likewise retains its negative results.
+Calibration V1 failed and remains failed; terminal V2 was frozen afterward and
+is diagnostic only. Fresh V2 then failed on 20 newly generated tasks. The
+factorized V3 diagnostic was designed after that failure and reused the V2
+tasks, so it had no confirmatory standing. Fresh V3 R1 was superseded before
+secret creation, custody, task generation, Monte Carlo draws, or provider calls
+solely to make the bias-interval wording match the already strict validator; it
+produced no numerical outcome. R2 used a new secret and independently generated
+32 tasks, and its pass supplements rather than overwrites both failures.
 
 % [P-APP-INTEGRITY-03]
-The separate original ExeDec V2 operations-evidence archive failed its frozen
-safe-mode verifier at
-\path{files/operations/bin/exedec_v2_driver.py}. All 149 manifested content
+Fresh V3 R2 acquired all 32 public mode banks before any exact reference was
+materialized. After execution, a deterministic replay regenerated every public
+bank, reference, seeded run, analysis value, and inventory binding without
+reading the private reveal. Unblinding occurred only after that replay passed;
+the final verification bound the protocol, method seal, custody seal, public
+manifest, analysis, inventory, replay receipt, and secret commitment. This
+sequence supports the freshness and reproducibility of the narrow V3 result,
+not a broader calibration claim.
+
+% [P-APP-INTEGRITY-04]
+The adapter studies have a separate revision history. ExeDec benchmark V1 was
+superseded before provider calls because its source closure omitted import-time
+files. ExeDec V2 is the final debug protocol. Its 1,143-file study archive
+passed the transfer verifier and was atomically imported, after which the
+canonical analysis passed its run-integrity checks. The separate original
+operations-evidence archive nevertheless failed its frozen safe-mode verifier
+at \path{files/operations/bin/exedec_v2_driver.py}. All 149 manifested content
 hashes and scientific/operational cross-bindings independently validated, but
 the shared-FUSE tar-header modes violated the sealed packaging contract, so the
-original failure remains authoritative. A separately audited local derivative
-changed only the 150 tar mode headers to 146 files at \texttt{0600} and four
-executables at \texttt{0700}. That derivative and its report and seal are
-explicitly noncanonical and were not imported. Public-data, adapter,
-finite-probe, contamination, and nonexclusive-custody limits therefore apply to
-every report. We preserve the original archive, its failed verification, the
-noncanonical derivative, and the protocol history as separate records; none is
-rewritten to fit the final narrative.
+original failure remains authoritative.
+
+% [P-APP-INTEGRITY-05]
+A separately audited local derivative changed only the rejected archive's 150
+tar mode headers to 146 files at \texttt{0600} and four executables at
+\texttt{0700}. That derivative and its report and seal are explicitly
+noncanonical and were not imported. Public-data, adapter, finite-probe,
+contamination, and nonexclusive-custody limits therefore apply to every report.
+We preserve the original archive, its failed verification, the noncanonical
+derivative, and the protocol history as separate records; none is rewritten to
+fit the final narrative.
 
 \section{Exact-Reference Claim Boundary}
 \label{app:oracle}
@@ -749,6 +876,15 @@ unavailable to the online r5 search. Their discoveries, ranks, and work are not
 credited to the LLM or SMC search, and the positive control is not a practical
 synthesis algorithm.
 
+% [P-APP-ORACLE-02]
+Fresh V2 and V3 also use exhaustive support enumeration only to construct
+references and audit finite-state identities. In V3, factorized primary and
+matched-proposal acquisition completed for every task before any reference was
+materialized; only the descriptive historical sticky baseline was
+reference-derived. Exact references therefore make the calibration endpoint
+observable without turning the primary mode bank into an exhaustive-search
+oracle.
+
 \section{Artifact Availability}
 \label{app:availability}
 
@@ -757,9 +893,9 @@ The data-and-paper companion is available in the
 \href{https://huggingface.co/datasets/hackerprofile1/modelsmc-pbe-research}{public Hugging Face archive}.
 Implementation source and tests are available from the
 \href{https://github.com/quangng2000/modelsmc-reading-notes/tree/python-modelsmc-pbe}{GitHub publication branch};
-the completed-study revision is
-\texttt{d0eacd1e\allowbreak 6315cceb\allowbreak 640064c6\allowbreak
-b9a5fc59\allowbreak 19ec05a5}.
+the completed-study source revision is
+\texttt{50369a6b\allowbreak 0e264eda\allowbreak 9cb6e1aa\allowbreak
+b45949cb\allowbreak 3be11cb6}.
 \begin{quote}
 \small\raggedright
 R5 protocol SHA-256:
@@ -772,6 +908,72 @@ Calibration V1:
 \path{artifacts/particle-calibration-v1/analysis.json}.\par
 Terminal diagnostic V2:
 \path{artifacts/particle-calibration-terminal-diagnostic-v2/analysis.json}.\par
+Fresh calibration V2 failed analysis:
+\path{artifacts/calibrated-program-inference-v2-fresh/analysis.json}.
+SHA-256:
+\texttt{4d2fbca0\allowbreak a6a2f16f\allowbreak 0db085b9\allowbreak
+6c9eeec8\allowbreak dfd4938e\allowbreak 45361710\allowbreak
+7107462a\allowbreak ff114008}.\par
+Factorized reused-task diagnostic:
+\path{artifacts/calibrated-program-inference-v3-factorized-diagnostic/analysis.json}.
+SHA-256:
+\texttt{31158c00\allowbreak 1ad67c6c\allowbreak 95599fdd\allowbreak
+5c7ed9f8\allowbreak 5d1a619a\allowbreak 01946f8b\allowbreak
+b6bff68b\allowbreak d9ee18b3}.\par
+Fresh V3 R1 pre-secret supersession record:
+\path{papers/01-modelsmc/modelsmc-pbe-python/research/CALIBRATED_PROGRAM_INFERENCE_V3_FRESH_R1_SUPERSESSION.md}.
+SHA-256:
+\texttt{295f8c40\allowbreak e046b281\allowbreak 095d0d85\allowbreak
+d8c04a25\allowbreak f5dc76fc\allowbreak 02b33552\allowbreak
+8f8b65b3\allowbreak 7209c3b9}.\par
+Fresh V3 R2 protocol:
+\path{papers/01-modelsmc/modelsmc-pbe-python/research/protocol-calibrated-program-inference-v3-fresh-r2.json}.
+SHA-256:
+\texttt{36f4a6c5\allowbreak 930c2da2\allowbreak c89c1515\allowbreak
+d44267b6\allowbreak cc9bab94\allowbreak e7a00035\allowbreak
+2f4343fd\allowbreak 97fc97d6}.\par
+Fresh V3 R2 method seal:
+\path{papers/01-modelsmc/modelsmc-pbe-python/research/protocol-calibrated-program-inference-v3-fresh-r2.method-seal.json}.
+SHA-256:
+\texttt{788a44cc\allowbreak 32ed617a\allowbreak a853a9e7\allowbreak
+ac97ab22\allowbreak 36844382\allowbreak 85149eba\allowbreak
+0073cc6d\allowbreak 0a31dc4}.\par
+Fresh V3 R2 custody seal:
+\path{artifacts/calibrated-program-inference-v3-fresh-custody-seal.json}.
+SHA-256:
+\texttt{32631bef\allowbreak ddaecd28\allowbreak aa4008c7\allowbreak
+3232475b\allowbreak 3676b26a\allowbreak 7e1e0fe4\allowbreak
+57dac699\allowbreak 5ab0932f}.\par
+Fresh V3 R2 public manifest:
+\path{artifacts/calibrated-program-inference-v3-fresh-suite/public/manifest.json}.
+SHA-256:
+\texttt{4fd1747c\allowbreak 8e52b68a\allowbreak 6fe14310\allowbreak
+ac39e178\allowbreak 269c7093\allowbreak 03dec0c5\allowbreak
+cbed45b0\allowbreak 47f4cfc6}.\par
+Fresh V3 R2 analysis:
+\path{artifacts/calibrated-program-inference-v3-fresh/analysis.json}.
+SHA-256:
+\texttt{51973aae\allowbreak 5f443332\allowbreak 973e65e3\allowbreak
+d60fa20e\allowbreak e328d60b\allowbreak 12b478e1\allowbreak
+ed23d243\allowbreak 0bb23e33}.\par
+Fresh V3 R2 inventory:
+\path{artifacts/calibrated-program-inference-v3-fresh/inventory.json}.
+SHA-256:
+\texttt{bbac158d\allowbreak d44ab99d\allowbreak 83f1cd40\allowbreak
+4b2150ae\allowbreak af4402fe\allowbreak 9f75d694\allowbreak
+bb4bc0ed\allowbreak 66995895}.\par
+Fresh V3 deterministic replay receipt:
+\path{artifacts/calibrated-program-inference-v3-fresh-replay-verification.json}.
+SHA-256:
+\texttt{c7b08c03\allowbreak 85867436\allowbreak e3e2d7a0\allowbreak
+8cfe5a50\allowbreak 6ed8dfae\allowbreak a702defc\allowbreak
+abeff1e8\allowbreak 8b1859a7}.\par
+Fresh V3 unblind verification:
+\path{artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json}.
+SHA-256:
+\texttt{3c3d5448\allowbreak 800eaf85\allowbreak d904d05e\allowbreak
+a5e4387e\allowbreak 8919c1dc\allowbreak 1e1e4b4c\allowbreak
+7b5c8e97\allowbreak 57021868}.\par
 ExeDec V2 protocol SHA-256:
 \texttt{305cd2d8\allowbreak 9fbe0918\allowbreak a52b8e0e\allowbreak
 a6b3c4df\allowbreak ce23ad04\allowbreak ae669c48\allowbreak
@@ -819,8 +1021,6 @@ The companion archive distributes data, checksums, failure records, and the
 manuscript; implementation source is distributed through the GitHub revision
 above. The path locators in this appendix are relative to that source checkout
 and its companion artifact tree.
-
-\clearpage
 
 {\small
 \bibliography{references}

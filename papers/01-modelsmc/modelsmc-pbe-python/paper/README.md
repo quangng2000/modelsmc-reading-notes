@@ -28,6 +28,14 @@ frozen safe-mode verifier; its mode-header-normalized derivative is validated
 but noncanonical and unimported. Do not describe this as two successful imports
 or as confirmatory ExeDec evidence.
 
+The calibration narrative preserves failed V1 and fresh V2, the conditioned
+terminal and reused-task diagnostics, and the authenticated second-fresh V3 R2
+pass as one chronology. V3 confirms only provider-free terminal exact-program
+mass on the declared singleton-complete finite-support law. It does not
+calibrate the LLM, four-stage SMC, full PBE, a large DSL, or target mean loss.
+The exact protocol, method-seal, custody, analysis, replay, and unblind hashes
+are listed in the manuscript's Artifact Availability appendix.
+
 The intended commands are:
 
 ```bash

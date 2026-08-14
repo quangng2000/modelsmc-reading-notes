@@ -86,11 +86,63 @@ The protocol, implementation, and analysis are
 [research/particle_calibration_terminal_diagnostic_v2.py](research/particle_calibration_terminal_diagnostic_v2.py), and
 [../../../artifacts/particle-calibration-terminal-diagnostic-v2](../../../artifacts/particle-calibration-terminal-diagnostic-v2).
 
+### Fresh calibration V2: second frozen negative gate
+
+- 20 independently generated singleton-complete tasks, 128 repetitions per
+  task--cell, and no provider calls.
+- At 256 particles, exact-program-mass RMSE was 0.2612355 and bias was
+  -0.0748415; the task-first bootstrap upper-95 RMSE was 0.3767653.
+- Two task RMSE values exceeded 0.82. The frozen multi-component gate failed,
+  no task was replaced, and the failure remains part of the evidence record.
+
+The protocol and failed analysis are
+[research/protocol-calibrated-program-inference-v2-fresh.json](research/protocol-calibrated-program-inference-v2-fresh.json)
+and
+[../../../artifacts/calibrated-program-inference-v2-fresh/analysis.json](../../../artifacts/calibrated-program-inference-v2-fresh/analysis.json).
+
+### Factorized V3 diagnostic: reused-task mechanism evidence
+
+- The post-failure diagnostic changed semantic mode acquisition while reusing
+  the 20 fresh V2 tasks, particle counts, and seeds.
+- At 256 particles, exact-mass RMSE was 0.0221995, bootstrap upper-95 RMSE was
+  0.0245201, and the central 90% bias interval was
+  [-0.0081112, -0.0057479].
+- Because the factorized rule was designed after the V2 failure and reused its
+  tasks, this result is diagnostic rather than confirmatory.
+
+The protocol and analysis are
+[research/protocol-calibrated-program-inference-v3-factorized-diagnostic.json](research/protocol-calibrated-program-inference-v3-factorized-diagnostic.json)
+and
+[../../../artifacts/calibrated-program-inference-v3-factorized-diagnostic/analysis.json](../../../artifacts/calibrated-program-inference-v3-factorized-diagnostic/analysis.json).
+
+### Fresh V3 R2: narrow second-fresh confirmation
+
+- 32 independently generated singleton-complete tasks under a new secret, 64
+  repetitions per task--cell, and no provider calls.
+- The frozen terminal exact-mass gate passed. At 256 particles, RMSE was
+  0.0398662, bias was -0.0109472, bootstrap upper-95 RMSE was 0.0494323, and
+  the central 90% bias interval was [-0.0149663, -0.00763969].
+- Point RMSE decreased to 0.0304513 and 0.0258555 at 512 and 1,024 particles;
+  every task and weight-tail requirement also passed.
+- Target-mean-loss was not primary and remained much less accurate (256-
+  particle RMSE 0.2991).
+
+The authenticated R2 protocol, analysis, deterministic replay receipt, and
+unblind verification are
+[research/protocol-calibrated-program-inference-v3-fresh-r2.json](research/protocol-calibrated-program-inference-v3-fresh-r2.json),
+[../../../artifacts/calibrated-program-inference-v3-fresh/analysis.json](../../../artifacts/calibrated-program-inference-v3-fresh/analysis.json),
+[../../../artifacts/calibrated-program-inference-v3-fresh-replay-verification.json](../../../artifacts/calibrated-program-inference-v3-fresh-replay-verification.json),
+and
+[../../../artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json](../../../artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json).
+This pass is limited to provider-free terminal exact-program mass on the
+declared finite synthetic law. It does not calibrate the LLM shortlist, the
+four-stage recurrence, full PBE, a large DSL, or target mean loss.
+
 ### ExeDec V2: released-data debug evidence
 
 - 64/64 completed runs in 32 paired seed blocks over four deduplicated public
   targets; 1,856 logical slots.
-- Hidden-probe exactness: 17/32 for LLM-SMC and 3/32 for grammar-random, with
+- Private-debug-probe exactness: 17/32 for LLM-SMC and 3/32 for grammar-random, with
   16 LLM-only, 2 grammar-only, 1 both, and 13 neither blocks.
 - Public-example exactness: 21/32 versus 5/32. LLM-SMC made 188 provider calls
   under a cap of 224; grammar-random made none. The study recorded 1,040
@@ -123,10 +175,12 @@ unimported, and not a second successful import.
 
 ## Claim boundaries
 
-This project supports claims about a fixed bounded grammar and the complete r5
-system. It does not support claims of:
+This project supports claims about a fixed bounded grammar, the complete r5
+discovery system, and the narrow fresh V3 terminal exact-mass endpoint. It does
+not support claims of:
 
-- a calibrated LLM posterior or calibrated finite-particle target mass;
+- a calibrated LLM posterior, calibrated four-stage SMC system, or calibration
+  of target mean loss and other ungated posterior functionals;
 - a causal LLM-only contribution;
 - arbitrary-task, out-of-domain, or full-DeepCoder generalization;
 - semantic equivalence inferred from finite examples or probes; or

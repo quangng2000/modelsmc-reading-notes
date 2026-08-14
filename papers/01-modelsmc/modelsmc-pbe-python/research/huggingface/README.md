@@ -11,88 +11,115 @@ tags:
 
 # ModelSMC-PBE research artifacts
 
-This dataset archives the evidence package for **Deduce, Propose, Correct:
-Probability-Accountable LLM Guidance for Typed Program Inference**.
-The manuscript authors are **Tri Nguyen** and **Thanh-Dat Nguyen**. The latter's
-verified affiliations are Harvard University and Basis Research Institute.
+This dataset is the public data-and-paper companion for **Deduce, Propose,
+Correct: Probability-Accountable LLM Shortlists for Typed Program Synthesis**
+by **Tri Nguyen** and **Thanh-Dat Nguyen**. The verified manuscript is 16 pages.
 
-The `exploratory-pilots-v0.1.3` release is intentionally labeled
-**exploratory, not confirmatory**. It contains the eight matched seed-23 pilot
-runs declared in `pilot_release.json`, including inexact outcomes rather than
-only successful examples. It must not be used to infer population success
-rates or statistical significance.
+- Dataset: [hackerprofile1/modelsmc-pbe-research](https://huggingface.co/datasets/hackerprofile1/modelsmc-pbe-research)
+- Implementation source and tests: [GitHub commit 50369a6b0e264eda9cb6e1aab45949cb3be11cb6](https://github.com/quangng2000/modelsmc-reading-notes/tree/50369a6b0e264eda9cb6e1aab45949cb3be11cb6)
+- Manuscript: [`paper/main.pdf`](paper/main.pdf)
 
-The implementation snapshot is pinned to Git revision
-`578eba5c9c97456335bdc7dc9a51a50602b3809f`; the uploaded `SHA256SUMS` file
-independently covers every artifact in this release.
+The archive preserves successful, failed, diagnostic, superseded, and
+integrity-limited records separately. A later pass never rewrites an earlier
+failed gate.
 
-## What is being studied
+## Main evidence
 
-The system transforms input-output examples into typed program skeletons,
-refutes structurally impossible families, derives specifications for finite
-holes, and asks an LLM to score canonical choices. The sampled proposal mixes
-LLM energies, a symbolic deduction guide, and a uniform support floor. Because
-every family and hole choice has an explicit probability, the proposal can be
-importance-corrected and compared with an exact finite reference on small
-supports.
+### Fresh-blind r5 bounded discovery
 
-The LLM does **not** emit unrestricted source code in these experiments. The
-initial model is `Qwen/Qwen3-Coder-30B-A3B-Instruct` at revision
-`b2cff646eb4bb1d68355c01b18ae02e7cf42d120`, served through vLLM 0.11.0 with
-processed prompt log probabilities.
+On 12 freshly generated finite-domain Filter-then-Map tasks, the complete
+LLM-shortlist SMC system found an exact program on 10 tasks versus 2 for matched
+grammar-random acquisition. All eight discordant pairs favored the LLM-guided
+system (`p = 1/256`, one-sided exact sign test). This is a bounded system-level
+discovery result, not an isolated LLM effect, a speed claim, or broad
+generalization evidence.
 
-The implementation supports two declared finite energies over each complete
-teacher-forced prefix-plus-candidate prompt: the total scored log probability
-(the historical default) and its mean over scored full-prompt positions. The
-mean is a length-normalized energy, not a candidate-only likelihood; this
-release makes no token-boundary claim for the textual prefix and candidate.
+### Calibration chronology
 
-## Important negative result
+The provider-free calibration evidence must be read in this order:
 
-The initial pilots do not show that Qwen improves synthesis. On the hardest
-signed-window task, Qwen strongly disfavored the exact family and hole choices;
-the symbolic deduction mixture rescued the successful particle. This is why
-the archive exposes proposal components rather than presenting one passing
-program as evidence of LLM value.
+1. **Calibration V1 failed.** At 256 particles, exact-program-mass RMSE was
+   0.2395265 and bias was +0.1130184. Exact-program discovery in every primary
+   run did not change the failed gate.
+2. **Terminal diagnostic V2 was diagnostic only.** On the same developmental
+   supports, an exhaustive positive control supported poor terminal
+   proposal--target overlap as a material mechanism. It did not rescue V1 or
+   validate the four-stage recurrence.
+3. **Fresh calibration V2 failed.** On 20 newly generated tasks, 256-particle
+   RMSE was 0.2612355, bias was -0.0748415, and the task-first bootstrap
+   upper-95 RMSE was 0.3767653. No difficult task was replaced.
+4. **The factorized V3 diagnostic reused the V2 tasks.** Its 256-particle RMSE
+   was 0.0221995, but the method was designed after the V2 failure and reused
+   the same tasks and seeds. It was mechanism evidence, not confirmation.
+5. **Fresh V3 R2 passed its narrow frozen gate.** A new secret generated 32
+   independent tasks. At 256 particles, exact-mass RMSE was 0.0398662, bias was
+   -0.0109472, the bootstrap upper-95 RMSE was 0.0494323, and the central 90%
+   bias interval was [-0.0149663, -0.00763969]. Point RMSE decreased to
+   0.0304513 and 0.0258555 at 512 and 1,024 particles.
 
-## Layout
+Fresh V3 R2 is a provider-free confirmation for **terminal exact-program target
+mass on the declared singleton-complete finite synthetic law**. It does not
+calibrate an LLM posterior, LLM mode banks, the four-stage SMC recurrence, the
+full PBE system, a large DSL, or external tasks. Target-mean-loss was not the
+primary endpoint and remained much less accurate (256-particle RMSE 0.2991), so
+the pass does not extend to that functional.
 
-- `pilot_release.json`: immutable labels for the matched exploratory subset.
-- `pilots/runs/`: sanitized run manifests, events, particles, and results;
-  failures are retained.
-- `research/`: frozen held-out generators, matrix runner, aggregation code, and
-  draft preregistration.
-- `paper/`: JMLR-style manuscript source and the separate paragraph-level
-  author review map; `paper/main.pdf` is the verified compiled manuscript.
-- `src/`, `tests/`, and `examples/`: implementation, tests, and specifications
-  in their original executable project layout.
-- `pyproject.toml`, `uv.lock`, and `PROJECT_README.md`: the frozen environment
-  and original project documentation needed to replay the controls.
-- `SHA256SUMS`: checksums of every uploaded evidence file.
+### ExeDec V2 released-data debug
 
-## Privacy and replay boundary
+ExeDec V2 observed private-debug-probe exactness in 17/32 paired seed blocks for
+LLM-SMC versus 3/32 for grammar-random on four public released targets. The
+strict Filter-then-Map adapter is unofficial, repeated seeds are nested within
+only four potentially contaminated targets, finite probes are not semantic
+equivalence, and nonexclusive staging limits integrity. The result is
+descriptive debug evidence, not a confirmatory ExeDec benchmark.
 
-The publication copy removes local usernames, hostnames, absolute paths, and
-ephemeral provider endpoints. No provider tokens are stored. Historical pilot
-runs predate the complete candidate-score ledger and therefore cannot replay
-every Qwen categorical exactly. Confirmatory releases will include complete
-candidate strings, full-prompt token IDs, processed log probabilities, total
-and configured energy, probabilities, selections, immutable model/tokenizer
-revisions, and provider configuration.
+## Artifact locations
 
-## Intended use
+- r5 evidence: `artifacts/blind-filter-map-confirmation-v3-r5/`
+- Calibration V1: `artifacts/particle-calibration-v1/`
+- Terminal diagnostic V2:
+  `artifacts/particle-calibration-terminal-diagnostic-v2/`
+- Failed fresh V2:
+  `calibration-v3-r2/artifacts/calibrated-program-inference-v2-fresh/`
+- Reused-task factorized V3 diagnostic:
+  `calibration-v3-r2/artifacts/calibrated-program-inference-v3-factorized-diagnostic/`
+- Fresh V3 R2 protocol: [frozen source record](https://github.com/quangng2000/modelsmc-reading-notes/blob/50369a6b0e264eda9cb6e1aab45949cb3be11cb6/papers/01-modelsmc/modelsmc-pbe-python/research/protocol-calibrated-program-inference-v3-fresh-r2.json)
+- Fresh V3 R2 analysis:
+  `calibration-v3-r2/artifacts/calibrated-program-inference-v3-fresh/analysis.json`
+- Fresh V3 R2 deterministic replay receipt:
+  `calibration-v3-r2/artifacts/calibrated-program-inference-v3-fresh-replay-verification.json`
+- Fresh V3 R2 unblind verification:
+  `calibration-v3-r2/artifacts/calibrated-program-inference-v3-fresh-unblind-verification.json`
+- Fresh V3 R2 release checksums: `calibration-v3-r2/SHA256SUMS`
+- ExeDec V2 canonical study:
+  `artifacts/exedec-deepcoder-ho-debug-benchmark-v2/`
+- Preserved failed ExeDec operations transfer:
+  `artifacts/exedec-deepcoder-ho-debug-benchmark-v2-operations-evidence-failed-v1/`
 
-Use this dataset to inspect implementation claims, reproduce provider-free
-controls, validate result aggregation, or audit negative LLM-guidance outcomes.
-Run `uv sync`, `uv run pytest -q`, and the commands in `research/README.md`
-directly from the dataset root.
-Do not treat the current handcrafted DSL tasks as evidence of general-purpose
-program synthesis, a Bayesian posterior over unbounded programs, formal
-verification, or an improvement over exhaustive enumeration.
+The Fresh V3 R2 protocol, method seal, custody seal, and deterministic replay
+receipt have SHA-256 values
+`36f4a6c5930c2da2c89c1515d44267b6cc9bab94e7a000352f4343fd97fc97d6`,
+`788a44cc32ed617aa853a9e7ac97ab2236844382825149eba0073cc6d0a31dc4`,
+`32631befddaecd28aa4008c73232475b3676b26a7e1e0fe457dac6995ab0932f`,
+and `c7b08c0385867436e3e2d7a08cfe5a506ed8dfaea702defcabeff1e88b1859a7`,
+respectively.
+
+## Intended use and replay boundary
+
+Use this dataset to audit manuscript claims, inspect frozen analyses and
+failure histories, reproduce provider-free validation with the linked source,
+or verify checksum bindings. The publication copy excludes credentials and
+ephemeral provider endpoints. Frozen studies must not be retried, resumed,
+backfilled, or rewritten to obtain a different outcome.
+
+Do not treat these bounded tasks as evidence of general-purpose program
+synthesis, formal verification, a Bayesian posterior over unbounded programs,
+wall-clock superiority, or calibration beyond the explicitly gated Fresh V3
+terminal exact-mass endpoint.
 
 ## Licensing
 
 This dataset card, experiment metadata, and sanitized run outputs are released
 under CC BY 4.0. Third-party model and paper references retain their original
-licenses. Source code is mirrored for reproducibility but does not receive a
-new license through this dataset release.
+licenses. Source code remains under its repository license and is distributed
+through the linked GitHub revision, not this dataset.
