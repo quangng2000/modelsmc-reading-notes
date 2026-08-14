@@ -1,0 +1,1 @@
+{"examples":[{"input":["7","-10","3"],"output":["10"]},{"input":["-4","9"],"output":["4"]},{"input":["-4","-1"],"output":["4","1"]}],"integerConstants":["-1","0","1","2","3","4"],"name":"exedec-public-debug-compose-different-concepts-0131","signature":{"input":"List<Int>","output":"List<Int>"}}

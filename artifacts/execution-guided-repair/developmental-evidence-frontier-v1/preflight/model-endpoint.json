@@ -1,0 +1,37 @@
+{
+  "checked_at_utc": "2026-08-13T05:43:39Z",
+  "endpoint": "http://127.0.0.1:18000/v1",
+  "host_scope": "remote experiment machine loopback",
+  "vllm_version": "0.27.1",
+  "served_model_name": "gpt-oss-120b",
+  "model_snapshot_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+  "max_model_len": 4096,
+  "serving_arguments": [
+    "--tensor-parallel-size=1",
+    "--dtype=auto",
+    "--quantization=mxfp4",
+    "--gpu-memory-utilization=0.90",
+    "--max-num-seqs=128",
+    "--enforce-eager",
+    "--logprobs-mode=processed_logprobs",
+    "--generation-config=vllm",
+    "--no-enable-prefix-caching",
+    "--no-enable-chunked-prefill",
+    "--no-async-scheduling",
+    "--moe-backend=emulation"
+  ],
+  "health_checks": {
+    "version_endpoint": "ok",
+    "models_endpoint": "ok",
+    "model_revision_matches_protocol": true,
+    "remote_harness_sha256_matches_local": true,
+    "remote_test_sha256_matches_local": true
+  },
+  "remote_harness_sha256": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3",
+  "remote_test_sha256": "1c7f0e116518aa8cf66a6dbb51fca1c292240b383fdc26ef942b80e9edd1b632",
+  "validation": {
+    "ruff": "passed",
+    "focused_pytest": "29 passed",
+    "pytest_elapsed_seconds": 13.71
+  }
+}

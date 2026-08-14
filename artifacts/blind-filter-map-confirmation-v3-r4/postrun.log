@@ -1,0 +1,337 @@
+{
+  "claim_scope": [
+    "Evidence concerns this frozen target distribution, model revision, and 29-slot budget only.",
+    "A positive result supports bounded exact-discovery advantage over this grammar-random local proposal arm, not exhaustive-search or asymptotic speedup.",
+    "Importance accounting concerns the declared weighted SMC target and does not itself guarantee exact discovery.",
+    "The provider can derive facts from the public grammar, but neither the prompt nor the algorithm explicitly receives or requires the full support cardinality."
+  ],
+  "custody_seal_sha256": "7f978f0e68d9b3034b651581ee67b563a8d651b28bc6aa01d39ccb45b3e27077",
+  "method_integrity": "valid",
+  "method_seal_sha256": "a0dba72f8d2df04668fab9799d2a357bf47b389421854949d4fdc73c4056f9dd",
+  "primary": {
+    "alpha": 0.05,
+    "discordant_pairs": 9,
+    "endpoint": "semantic exact discovery at or before logical slot 29",
+    "grammar_random_only_wins": 0,
+    "grammar_random_successes": 2,
+    "llm_only_wins": 9,
+    "llm_successes": 11,
+    "one_sided_exact_sign_test_p_value": 0.001953125,
+    "paired_advantage": 9,
+    "practical_threshold_met": true,
+    "study_success": true
+  },
+  "private_reveal_read": false,
+  "provider_seal_sha256": "b5e343f52202a6f0935fca96cfacda6b6fdf8ae3c961756e9f93459ae9884482",
+  "runs": [
+    {
+      "arm": "grammar-random",
+      "best_loss": 0.0,
+      "exact_by_21": false,
+      "exact_by_29": true,
+      "execution_file_sha256": "b59a5623a3e6276d10958e41b30061f71fe51ba397c974a36e9a1f5f50399399",
+      "first_exact_slot": 24,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "1dd8d4c5c512eac9de35f5329b6fca7c328a2df9e3befafc1b768a818337d332",
+      "task_id": "blind-v3-01"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "2bb379162a0027fdb81cc79b2be36edb91f4e043ade6340f22b3e8ccfea18770",
+      "first_exact_slot": 14,
+      "provider_calls": 5,
+      "provider_inventory_sha256": "6d19263f1841d3b73a3e09b4203ce83179b2126b97cd11f3492179b8f48e78f6",
+      "result_file_sha256": "428c7134ce7cb3861edfd0b2028daa5af259401efff73fc0de017291ff6fb8fd",
+      "task_id": "blind-v3-01"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 12.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "047a0c5975f82b2eb69a898cbf0a0c26b029d09fe95f25b220a29fa4cae1ccda",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "c4c5a4fc7af3d725ff7325959d119dc113b82b24332a81c76f7ebc14c90ea1e5",
+      "task_id": "blind-v3-02"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "bd469b34fb0945df5e10057247ff5bcd6e160fc8687c9cecaabdf169c4451684",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "56d405b741eaeb293f40493c986646366a7b80a91c0440ec2166a57db7fe7869",
+      "result_file_sha256": "039849cd248f5276f4f8d62790012877abd98490eda00205965b19969f11bc5d",
+      "task_id": "blind-v3-02"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 22.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "9b4f58f789b5bae8eb10658553a3372064c346ef3b9fea507bc951bc613c8c9c",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "9fe94400967c2a01c3036e7f5220e53c0f08582e3e8e7190403c7ae49bb00220",
+      "task_id": "blind-v3-03"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "87e472b6d5b79667506093d5056bb9ef15b30e8eb7e2beb3928760f89bfb9cfe",
+      "first_exact_slot": 9,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "a3bd6838119ef887f59718ae68895409da40ed269aa7e62b921343dc05fb0406",
+      "result_file_sha256": "510948f3af6bdbc98696d470f7c52a7030005016c63bc8b37deb73c13b87cfe1",
+      "task_id": "blind-v3-03"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 15.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "76c0e215168030d319a61dc0fc3327f8037041433234295e78d84da50e39baf5",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "255aed7d09927462513c0d2dfc3fbf5dc5a58ebc25741156637b62ebef8b6f8f",
+      "task_id": "blind-v3-04"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "ae693df862f037239b89ff7ccffb9077f1e94248585e1b28b7bc3836cfaf92f6",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "62d9e05814b99d29c5b8ce0d0bdeb4433ca9b3af039d38da62dc34da7656cf90",
+      "result_file_sha256": "79b060299fde53daf484bd39a83548cbee6fd68451051ad2472428494d6b4caa",
+      "task_id": "blind-v3-04"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 20.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "087df8708668c9d5968af441e2a38badb42dd3fdaf0d8214d75c3b8c159326f9",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "0faec264462626669c726f3766a3eef463567539ee80d35aa8638755cc332d00",
+      "task_id": "blind-v3-05"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "bc910db0198d4593f0297ad95b62171a44e530c8b1561a4daa03dd758013a7dd",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "1c837d8e0c5ff79b8ca74886c1d4bf4a16121e57a2213260c4588ae3b8024bcd",
+      "result_file_sha256": "761e454c91e03620d6f6a38fd147962be41ae1ca403066372ab7c54ae9d1ddb7",
+      "task_id": "blind-v3-05"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 0.0,
+      "exact_by_21": false,
+      "exact_by_29": true,
+      "execution_file_sha256": "663797136f927206464566644ea43c3078e6877cc5e23c59a3d2746efa3bb104",
+      "first_exact_slot": 26,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "1ed364d8c9fdc263a85a3304a91719663f1d22da948900ae81735f8a0ad431b8",
+      "task_id": "blind-v3-06"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "eea452d1ea79d65821a6cbf48801b0b85f37658737907457e2568c2eef4858c7",
+      "first_exact_slot": 10,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "3daa1154d1b02757277f5bbd01b4d558966813f1933e483f3e602c99577842ca",
+      "result_file_sha256": "bdc04b0986d834e2978ce36fd1e30c91dc0108b362f9124f07da85793cc86a59",
+      "task_id": "blind-v3-06"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 5.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "d796ade2b2e8215088ec29938bd268f57a6db4840cfb65e00c6ac86494935259",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "34db3ef5c380b66e95c0f9c0a293079528454274ce147c137935523c5a3e3ddf",
+      "task_id": "blind-v3-07"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "ac4b958c8c29e8609abaf7bd4ee9049fc17ef194416e33b2a22531134ab96585",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "74ee1046949b52be239513e4c5969e795d90febb2ed9a01cc338d675d923b64a",
+      "result_file_sha256": "e3d88b17fa64f8eccc106a5b37c0efaa46259b692270d52c940ca3637ca272ed",
+      "task_id": "blind-v3-07"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 20.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "f54185b43e071403bf2ae40de05ae189d46a42d1fb01e8b30a47878a6424732a",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "53f2edde909442608e9450407cb8df5753f763f3fbc316986b8c79f5d92a0a84",
+      "task_id": "blind-v3-08"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "db66d1f36354fb76b0956e570b900a5dcdd92cc8abffe8b0407381a5d179cd21",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "3c65ace3dcfb021348bd906922fb702aa4313387c74c1bc1ff1fdb3177578d15",
+      "result_file_sha256": "b715b76be4eb2142228ccc5c1821fa80a43d5a8383049482dfba01965d5143c7",
+      "task_id": "blind-v3-08"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 20.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "e54f54a47d0cd175d57c65ec40415cc78ab8bb11bfc13198ad016ce885d5a4f1",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "6bb735f635bcf2ffef3254c4ce027b1cef332616d46377094f80b031d44722d0",
+      "task_id": "blind-v3-09"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "f559734fe233f705f8b4a028c8a4efce4461b241ca2835d9b56bb4963143a091",
+      "first_exact_slot": 6,
+      "provider_calls": 3,
+      "provider_inventory_sha256": "7eeccb6c61f6932772931efb2cb730c38c4627f00e79928750805455c7c909f4",
+      "result_file_sha256": "d3e84f7beacd975da73eb3a73254f02b4a5748573e64dba11f7b43197fca7794",
+      "task_id": "blind-v3-09"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 10.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "3fcf0dc554cfc1d42d786795a3651aa6553330642335053cfd008db46342436c",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "13cbab70e42ce2c67ac04b46870dc38fa929b06d87e13147d9dd71acc9f83335",
+      "task_id": "blind-v3-10"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": false,
+      "exact_by_29": true,
+      "execution_file_sha256": "d43b99e636feca0fbb0e5b2eeab9de02aee40cf7d927c3c2b98a187a06f56be5",
+      "first_exact_slot": 26,
+      "provider_calls": 7,
+      "provider_inventory_sha256": "b90a02dbde0a91566b5b388bde153d7903d18114ef3dc69c5136e7746df77e1a",
+      "result_file_sha256": "0a1e129233e7997e494cb3c022085deaa7b59af4ee9553d0200f5118246ffd36",
+      "task_id": "blind-v3-10"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 17.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "ddc6165e5bc52a899e11be5a49761c53387a49348154deaee010470d92da3227",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "5dfc29945f2ebb7ccde99ecb451d8e16da60c3528fe6a4eca8400bdc69948bf3",
+      "task_id": "blind-v3-11"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 0.0,
+      "exact_by_21": true,
+      "exact_by_29": true,
+      "execution_file_sha256": "7953080c24c0418a5513b2f4e80465bf20d567937e4c77cf0dad81c5aa60b871",
+      "first_exact_slot": 16,
+      "provider_calls": 5,
+      "provider_inventory_sha256": "24f0faa46ddc3b2ceb3918d1a829551988e1a678026b60e4a9d22dfd982937fd",
+      "result_file_sha256": "06fab44ed25686d9067122caa263f8387f835e9b1b0126dd0f347d521ca2a4c5",
+      "task_id": "blind-v3-11"
+    },
+    {
+      "arm": "grammar-random",
+      "best_loss": 12.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "b81821100f6071f0f1cd747b50a15af685dbf96ce88eaadf50998b9c04080fb6",
+      "first_exact_slot": null,
+      "provider_calls": 0,
+      "provider_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "result_file_sha256": "94074cfdd9ea31aba000ada12101b5b88e783eba9c23fadba25f1856ae8de420",
+      "task_id": "blind-v3-12"
+    },
+    {
+      "arm": "llm",
+      "best_loss": 10.0,
+      "exact_by_21": false,
+      "exact_by_29": false,
+      "execution_file_sha256": "dbbed2133a77796ed3af9a914c3c818f11c32874b9d57616b65c76d3bf306404",
+      "first_exact_slot": null,
+      "provider_calls": 7,
+      "provider_inventory_sha256": "b6a278b73565fc3e1e7c61277356089254f01c55f1883e65340ff4edd11c1baf",
+      "result_file_sha256": "f8f36d765706b989f03db31375ffad8d62dc1c6a996b33f3076e81b500765d49",
+      "task_id": "blind-v3-12"
+    }
+  ],
+  "schema": "blind-filter-map-confirmation-v3-analysis-v1",
+  "secondary": {
+    "slot_21_grammar_random_successes": 0,
+    "slot_21_llm_successes": 10
+  },
+  "status": "complete-reveal-free-confirmatory-analysis",
+  "study_protocol_sha256": "9c44d1391413163d93dd538288b470e63ea3aedb1616b77dd82f65fac4d95990"
+}
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/steve/modelsmc-reading-notes/research/seal_blind_filter_map_confirmation_v3_public.py", line 247, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/workspace/steve/modelsmc-reading-notes/research/seal_blind_filter_map_confirmation_v3_public.py", line 236, in main
+    result = seal_public_artifacts(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/steve/modelsmc-reading-notes/research/seal_blind_filter_map_confirmation_v3_public.py", line 207, in seal_public_artifacts
+    validate_public_artifacts(runs, analysis_file)
+  File "/workspace/steve/modelsmc-reading-notes/research/seal_blind_filter_map_confirmation_v3_public.py", line 155, in validate_public_artifacts
+    raise ValueError(f"unexpected/incomplete run entries for {task_id}/{arm}")
+ValueError: unexpected/incomplete run entries for blind-v3-01/grammar-random

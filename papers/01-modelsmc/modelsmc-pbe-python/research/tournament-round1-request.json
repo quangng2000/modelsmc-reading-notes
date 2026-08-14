@@ -1,0 +1,37 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Solve four independent programming-by-example predicate comparisons. The same raw examples and fixed skeleton apply to every match. For each match, infer whether either keep mask can work with one shared deterministic small arithmetic mapper. Return only the winner of each match in the required JSON. Keep reasoning concise."
+    },
+    {
+      "role": "user",
+      "content": "Skeleton: foldr((item,acc) => if predicate(item) then mapper(item)::acc else acc, [], xs), preserving retained order. Examples: []->[]; [-3,-1,0,2,4]->[1,0,4]; [3,1,-2,4,2]->[1,4]; [0,4,-1,3]->[0,1]; [2,-3,1,-2]->[4,1]. DomainOrder=[-3,-2,-1,0,1,2,3,4]. Each 8-bit keep mask uses 1=retain. Match 1: A=00111100, B=00011100. Match 2: A=00011000, B=11111000. Match 3: A=11111110, B=01111111. Match 4: A=01111100, B=00001111. Choose A or B independently for every match."
+    }
+  ],
+  "temperature": 0,
+  "top_p": 1,
+  "max_tokens": 1200,
+  "seed": 51839,
+  "reasoning_effort": "medium",
+  "include_reasoning": true,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "tournament_round",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["match1", "match2", "match3", "match4"],
+        "properties": {
+          "match1": {"type": "string", "enum": ["A", "B"]},
+          "match2": {"type": "string", "enum": ["A", "B"]},
+          "match3": {"type": "string", "enum": ["A", "B"]},
+          "match4": {"type": "string", "enum": ["A", "B"]}
+        }
+      }
+    }
+  }
+}

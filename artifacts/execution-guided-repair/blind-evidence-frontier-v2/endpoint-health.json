@@ -1,0 +1,37 @@
+{
+  "schema": "blind-v2-endpoint-health-v1",
+  "checked_at_utc": "2026-08-13T06:39:01Z",
+  "endpoint": "http://127.0.0.1:18000/v1",
+  "host_scope": "remote experiment machine loopback",
+  "health": "ok",
+  "vllm_version": "0.27.1",
+  "served_model_name": "gpt-oss-120b",
+  "model_snapshot_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+  "max_model_len": 4096,
+  "serving_arguments": [
+    "--tensor-parallel-size=1",
+    "--dtype=auto",
+    "--quantization=mxfp4",
+    "--gpu-memory-utilization=0.90",
+    "--max-num-seqs=128",
+    "--enforce-eager",
+    "--logprobs-mode=processed_logprobs",
+    "--generation-config=vllm",
+    "--no-enable-prefix-caching",
+    "--no-enable-chunked-prefill",
+    "--no-async-scheduling",
+    "--moe-backend=emulation"
+  ],
+  "deployed_source_sha256": {
+    "research/generate_blinded_filter_map_tasks.py": "88cd68f31d222e6424dd91e5d2ccf7bb5e6ad2b08c68c25f4a142c1b030bf31a",
+    "research/iterative_beam_experiment.py": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3",
+    "research/run_blind_evidence_frontier_v2.py": "7e6ba997dc3dc750b5432066a6d7ab29bbf94f1e0cc578a2dbac974c0e365fec",
+    "research/analyze_blind_evidence_frontier_v2.py": "c5a132a993edd681c430b44bc57f2f457cba4cefc0c4467d1ea093412cea3578"
+  },
+  "validation": {
+    "model_revision_matches_method_protocol": true,
+    "deployed_sources_match_method_protocol": true,
+    "combined_ruff": "passed",
+    "combined_focused_tests": "49 passed"
+  }
+}

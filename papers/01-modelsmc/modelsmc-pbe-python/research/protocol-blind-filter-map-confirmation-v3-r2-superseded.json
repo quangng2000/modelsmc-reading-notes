@@ -1,0 +1,33 @@
+{
+  "schema": "blind-filter-map-confirmation-v3-method-supersession-v1",
+  "status": "superseded-before-secret-preparation",
+  "superseded": {
+    "protocol_path": "research/protocol-blind-filter-map-confirmation-v3-r2.json",
+    "protocol_sha256": "f0a6a2cb3ccbbbf14497586bfc359493a353d654992eba00f3e6711395f58fc8",
+    "method_seal_path": "research/protocol-blind-filter-map-confirmation-v3-r2.method-seal.json",
+    "method_seal_sha256": "bf12ed1d88bfd3d72e736123c13924bc3ab7b8816a43fe8c68f288eafa08dc40"
+  },
+  "replacement": {
+    "protocol_path": "research/protocol-blind-filter-map-confirmation-v3-r3.json",
+    "protocol_sha256": "f1c4624282de6ec526f8cfe6dce794e9b908c1d0300af1572e931cd5d7132b8f",
+    "method_seal_path": "research/protocol-blind-filter-map-confirmation-v3-r3.method-seal.json",
+    "method_seal_sha256": "6de10073ab209f286fe6ea89e203cd970ca3e5e1fef1cd1186b7ae5f2abec6a3"
+  },
+  "reason": [
+    "bind the complete statically imported research-module closure of the runtime harness",
+    "make the Stage-1 freezer reject any future unbound transitive research import"
+  ],
+  "newly_bound_runtime_modules": [
+    "research/__init__.py",
+    "research/protocol.py",
+    "research/adaptive_shortlist_experiment.py",
+    "research/direct_json_repair_choice.py",
+    "research/execution_guided_repair.py",
+    "research/local_repair_importance.py"
+  ],
+  "custody_assertion": {
+    "suite_secret_prepared_under_superseded_seal": false,
+    "task_generated_under_superseded_seal": false,
+    "provider_completion_called_under_superseded_seal": false
+  }
+}

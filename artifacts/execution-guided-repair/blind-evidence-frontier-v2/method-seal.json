@@ -1,0 +1,15 @@
+{
+  "schema": "blind-evidence-frontier-method-seal-v2",
+  "sealed_before_task_generation": true,
+  "sealed_at_utc": "2026-08-13T06:37:41Z",
+  "protocol": {
+    "path": "research/protocol-blind-evidence-frontier-v2.json",
+    "sha256": "091b71f1e4045645048f4d607ced277e94dca99a9e235e56dd8508a968b747f8"
+  },
+  "task_secret_commitment_sha256": "ec9985b322f8dafa1c0ae93461de31526a40b553535564a680de60a14e0b5d8e",
+  "validation": {
+    "frozen_method_validator": "passed",
+    "remote_ruff": "passed",
+    "remote_focused_tests": "49 passed"
+  }
+}

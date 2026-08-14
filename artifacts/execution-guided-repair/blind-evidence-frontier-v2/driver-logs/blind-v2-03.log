@@ -1,0 +1,298 @@
+{
+  "llm_beam_metrics": {
+    "best_exact_examples": 12,
+    "best_loss": 0.0,
+    "best_loss_by_proposal_slot_checkpoint": {
+      "1": 20.0,
+      "13": 20.0,
+      "21": 0.0,
+      "29": 0.0,
+      "5": 20.0
+    },
+    "best_state": {
+      "finite_component_semantics": {
+        "mapper_values": [
+          -1,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "predicate_keep_mask": [
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "scope": "finite observational equivalence only",
+        "semantic_id": "bfe365ddbe2de5c3e875b4219a880776d5965db217383e15a363cd57ee21887c",
+        "version": "training-item-component-signature-v1"
+      },
+      "history": [
+        {
+          "hole": "predicate",
+          "loss_after": 30.0,
+          "repair": "lt(item,0)",
+          "round": 2
+        },
+        {
+          "hole": "mapper",
+          "loss_after": 0.0,
+          "repair": "add(item,2)",
+          "round": 3
+        }
+      ],
+      "mapper": "add(item,2)",
+      "predicate": "lt(item,0)",
+      "score": {
+        "cost": 14,
+        "evaluations": [
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[-1]",
+            "input": "[-3]",
+            "loss": 0.0,
+            "predicted": "[-1]"
+          },
+          {
+            "exact": true,
+            "expected": "[0]",
+            "input": "[-2]",
+            "loss": 0.0,
+            "predicted": "[0]"
+          },
+          {
+            "exact": true,
+            "expected": "[1]",
+            "input": "[-1]",
+            "loss": 0.0,
+            "predicted": "[1]"
+          },
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[0]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[1]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[2]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[3]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[]",
+            "input": "[4]",
+            "loss": 0.0,
+            "predicted": "[]"
+          },
+          {
+            "exact": true,
+            "expected": "[-1, 0, 1]",
+            "input": "[-3, -2, -1, 0, 1, 2, 3, 4]",
+            "loss": 0.0,
+            "predicted": "[-1, 0, 1]"
+          },
+          {
+            "exact": true,
+            "expected": "[0, -1, 1]",
+            "input": "[0, 1, 4, 2, -2, 3, -3, -1]",
+            "loss": 0.0,
+            "predicted": "[0, -1, 1]"
+          },
+          {
+            "exact": true,
+            "expected": "[0, -1, 1, 0, 1, -1]",
+            "input": "[0, 1, 4, 2, -2, 3, -3, -1, 4, 2, 3, -2, -1, 1, -3, 0]",
+            "loss": 0.0,
+            "predicted": "[0, -1, 1, 0, 1, -1]"
+          }
+        ],
+        "exact_matches": 12,
+        "exact_program": true,
+        "inferred_type": "IntListType",
+        "kind": "Scored",
+        "log_target": -0.28,
+        "total_loss": 0.0
+      },
+      "selection_provenance": {
+        "parent_rank": 1,
+        "proposal_rank": 0
+      },
+      "singleton_constraint_violations": {
+        "mapper": 0,
+        "predicate": 0
+      },
+      "state_id": "7521a6c79663523f"
+    },
+    "evidence_guided_expansions": 5,
+    "fallback_expansions": 0,
+    "first_exact_proposal_slot": 18,
+    "first_exact_state_evaluation": 14,
+    "logical_candidate_evaluations": 17,
+    "maximum_budget": 29,
+    "physical_scorer_calls": 14,
+    "primary_checkpoint_slot": 29,
+    "primary_checkpoint_success": true,
+    "proposal_slots_consumed": 21,
+    "provider_calls_attempted": 5,
+    "provider_calls_invalid": 1,
+    "provider_calls_valid": 4,
+    "rounds_completed": 3,
+    "score_cache_hits": 19,
+    "semantic_no_op_proposals": 2,
+    "semantic_redundancy_rate": 0.6428571428571428,
+    "success": true,
+    "success_by_proposal_slot_checkpoint": {
+      "1": false,
+      "13": false,
+      "21": true,
+      "29": true,
+      "5": false
+    },
+    "termination_reason": "exact-program",
+    "unique_joint_semantic_cells_evaluated": 5,
+    "unique_mapper_behaviors_evaluated": 3,
+    "unique_predicate_behaviors_evaluated": 3,
+    "unique_programs_evaluated": 14,
+    "within_call_semantic_duplicates": 7
+  },
+  "matched_random_beam": {
+    "aggregate_physical_scorer_calls": 1176,
+    "aggregate_score_cache_hits": 274008,
+    "best_loss_mean": 11.7019,
+    "best_loss_median": 12.0,
+    "best_loss_p05": 0.0,
+    "best_loss_summary_by_proposal_slot_checkpoint": {
+      "1": {
+        "fraction_at_most_llm": 1.0,
+        "mean": 20.0,
+        "median": 20.0,
+        "observed_trials": 10000,
+        "p05": 20.0,
+        "p95": 20.0
+      },
+      "13": {
+        "fraction_at_most_llm": 1.0,
+        "mean": 13.8627,
+        "median": 15.0,
+        "observed_trials": 10000,
+        "p05": 12.0,
+        "p95": 15.0
+      },
+      "21": {
+        "fraction_at_most_llm": 0.048,
+        "mean": 12.7768,
+        "median": 13.0,
+        "observed_trials": 10000,
+        "p05": 10.0,
+        "p95": 15.0
+      },
+      "29": {
+        "fraction_at_most_llm": null,
+        "mean": 11.7019,
+        "median": 12.0,
+        "observed_trials": 10000,
+        "p05": 0.0,
+        "p95": 15.0
+      },
+      "5": {
+        "fraction_at_most_llm": 1.0,
+        "mean": 14.835,
+        "median": 15.0,
+        "observed_trials": 10000,
+        "p05": 12.0,
+        "p95": 15.0
+      }
+    },
+    "first_exact_execution_median_when_successful": 21,
+    "fraction_best_loss_at_most_llm": 0.0959,
+    "mean_evidence_guided_expansions": 6.8796,
+    "mean_fallback_expansions": 0,
+    "mean_logical_candidate_evaluations": 28.5184,
+    "mean_proposal_slots_used": 28.5184,
+    "mean_semantic_no_op_proposals": 4.9646,
+    "mean_unique_joint_semantic_cells": 11.92,
+    "mean_unique_mapper_behaviors": 2.7245,
+    "mean_unique_predicate_behaviors": 10.1955,
+    "success_rate": 0.0959,
+    "success_rate_wilson_95": [
+      0.09028300234925091,
+      0.10182734513392991
+    ],
+    "success_rate_wilson_95_by_proposal_slot_checkpoint": {
+      "1": [
+        0.0,
+        0.00038399837067659573
+      ],
+      "13": [
+        0.010227982913488937,
+        0.014546645896943149
+      ],
+      "21": [
+        0.043981036388118365,
+        0.05236609813897327
+      ],
+      "29": [
+        0.09028300234925091,
+        0.10182734513392991
+      ],
+      "5": [
+        0.0,
+        0.00038399837067659573
+      ]
+    },
+    "success_rates_by_proposal_slot_checkpoint": {
+      "1": 0.0,
+      "13": 0.0122,
+      "21": 0.048,
+      "29": 0.0959,
+      "5": 0.0
+    },
+    "successes": 959,
+    "successes_by_proposal_slot_checkpoint": {
+      "1": 0,
+      "13": 122,
+      "21": 480,
+      "29": 959,
+      "5": 0
+    },
+    "trials": 10000
+  },
+  "timing": {
+    "matched_random_baseline_seconds": 8.189439977984875,
+    "provider_and_llm_search_seconds": 591.2082581130089,
+    "total_seconds": 599.4757608840009
+  }
+}

@@ -1,2 +1,17 @@
 .DS_Store
 **/.DS_Store
+
+# Local build, test, and transfer scratch.
+/tmp/
+/research/
+**/__pycache__/
+**/.pytest_cache/
+
+# Preserved local duplicates; canonical copies live in the sibling paths.
+/artifacts/particle-calibration/
+/artifacts/blind-filter-map-confirmation-v3-r4/posthoc-abort-evidence-public-bundle/
+
+# Post-unblinding custody material and private debug oracles stay local.
+/artifacts/execution-guided-repair/blind-beam-four-v1/suite/private/
+/artifacts/execution-guided-repair/blind-evidence-frontier-v2/unblinded/
+/artifacts/exedec-deepcoder-ho-debug-v1/private/

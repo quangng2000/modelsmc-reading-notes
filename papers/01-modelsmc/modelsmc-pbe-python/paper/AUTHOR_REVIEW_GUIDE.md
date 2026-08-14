@@ -1,152 +1,149 @@
-# Paragraph-level author review guide
+# Author review guide
 
-This file is deliberately separate from the manuscript. Paragraph IDs appear
-as LaTeX comments in `main.tex`; they are not rendered in the paper.
+This guide is separate from the manuscript. Paragraph IDs appear as LaTeX
+comments in `main.tex` and are not rendered.
 
-Review each paragraph in this order:
+For every paragraph, ask:
 
-1. Does the opening sentence state the topic or claim immediately?
-2. Does the paragraph have exactly one primary job?
-3. Does the middle develop that job with the listed evidence or dependency?
-4. Does the final sentence resolve the paragraph and hand off to what follows?
-5. Would a skeptical reviewer interpret it more broadly than intended?
+1. Does the opening sentence state its topic or claim immediately?
+2. Does the paragraph perform one primary job?
+3. Is every number traceable to a frozen, verified artifact?
+4. Does the final sentence enforce the correct claim boundary or handoff?
+5. Could a skeptical reader interpret it more broadly than the evidence allows?
 
-| ID | Purpose | Evidence or dependency | Likely reviewer challenge |
-|---|---|---|---|
-| P-ABS-01 | State the problem, method, paired result, and boundary in under 200 words. | Entire paper; complete one-seed Gate-2 grid is exploratory. | Report the paired Q failure/Q+D success and attribute the tested difference to deduction; do not imply independent Qwen value, checkpoint scaling, speed, resampling benefit, or generality. |
-| P-INT-01 | Establish PBE and the symbolic/learned search context. | Gulwani; Feser; Kalyan; HYSYNTH; Li. | Why another hybrid synthesizer? |
-| P-INT-02 | Define the attribution problem that motivates the work. | Support-builder audit and matched pilots. | Is this only an evaluation hygiene issue? |
-| P-INT-03 | Explain why SMC is relevant and expose the proposal-density gap. | Ellis et al.; ModelSMC; SMC background. | Prior SMC synthesis already exists. |
-| P-INT-04 | Give the central design move: finite canonical energy scoring at staged-choice or deterministic complete-slate granularity. | Sections 3--5, staged score ledger, and semantic score ledger. | These are declared energy proposals with evaluable construction probabilities, not free-form AST probabilities; keep the two scoring regimes distinct. |
-| P-INT-05 | Enumerate the factorized support, two accountable proposal granularities, corrected target, and bounded evaluation protocol. | Implementation, propositions, protocol. | Contributions must survive closest-work comparison without implying general synthesis or speed. |
-| P-BG-01 | Formalize PBE exactness, language, cost, and held-out semantics. | DSL implementation; Feser. | Training consistency is not intended correctness. |
-| P-BG-02 | Define the equal-family conditional Occam measure on construction traces. | Factorized family normalization and exact control. | It is data-dependent; call it a base measure, not a Bayesian prior, and do not silently quotient trace aliases into ASTs. |
-| P-BG-03 | Define the finite Gibbs target and its interpretation. | Target implementation and exact oracle. | Soft loss is not a calibrated likelihood. |
-| P-SYM-01 | Explain type-directed hypotheses with a concrete fold skeleton. | Induction engine and grammar. | Specialized families may encode task knowledge. |
-| P-SYM-02 | Separate sound refutation from soft deduction guidance. | Deduction rules and tests. | Prove each rule or label its tested boundary. |
-| P-SYM-03 | Define finite catalogs and distinguish online trace identity from reference alias ownership. | Lazy support, materialized support, and alias tests. | The modes define different targets when cross-family aliases are present; do not compare their oracle metrics without checking injectivity. |
-| P-PROP-01 | Define what the staged family-and-hole scorer asks Qwen to score and what is archived. | vLLM scorer and staged score-ledger schema. | The implemented scores cover the complete concatenated prompt. They are neither AST probabilities nor candidate-suffix probabilities. |
-| P-PROP-02 | Define the staged node proposal and defensive mixture. | Normalization tests and deduction guide. | Explain why mixture, not additive score penalties, and do not apply this law to the complete-program semantic scorer. |
-| P-PROP-03 | Factorize a complete construction trace and instantiate the family--predicate--mapper conditional law. | Construction-factorization equation, filter--map skeleton, proposal trie, and forced-evaluation tests. | Verify $q(e)=q_H(h)q_P(p\mid h)q_M(m\mid h,p)$: mapper scoring must condition on both $h$ and $p$; also check the single-family shortcut and request deduplication. |
-| P-PROP-04 | Bound staged scorer work for one distinct sparse bounded-square ancestry. | Three surviving families and the finite 600-predicate and 60-mapper catalogs. | $3+600+60=663$ is a per-ancestry choice bound, not a claim that all $600\times60=36{,}000$ complete programs were semantically scored or that total run-wide work is 663. |
-| P-PROP-05 | Account for clone mass, failures, and budget. | `logaddexp`, failure policy, and budget tests. | Any fallback with unknown mass breaks the claim. |
-| P-PROP-06 | Define the separate joint-semantic proposal over a deterministic complete-program slate and recover its sequential conditionals. | Symmetrized label-score law, prefix-mass implementation, compact semantic ledger, and replay tests. | Do not conflate complete-program compatibility with staged hole scores, execution loss, or calibrated target probabilities; verify telescoping prefix conditionals, the $p_0$ floor, and $\alpha=0$. |
-| P-SMC-01 | Give the Feynman--Kac path target and potential for either accountable transition. | Staged and joint-semantic SMC engines; Del Moral. | Clarify the product-of-static-target path and which transition law supplies each denominator. |
-| P-SMC-02 | Separate path normalizer and terminal marginal diagnostics. | Exact target and result schema. | Never claim unbiased log normalizer. |
-| P-SMC-03 | Separate online lazy evaluation from exhaustive reference. | Lazy-mode regression test and explicit `--materialize-reference` control. | Initialization samples are executed too; count them. Matching oracle claims also require identical trace semantics. |
-| P-EXP-01 | Describe the planned four-arm factorial and identify the two-arm Gate-2 slice. | `research/protocol-size-study-transport32.json`. | Gate 2 contains Q and Q+D only; it cannot identify deduction-only or resampling effects. |
-| P-EXP-02 | Define recorded outcomes, cache/provider accounting, transport amendment, seed-level independence, and the exploratory boundary. | Amended protocol SHA `56c590864d456f884c82bf62ada3c11c1c2504d21b021e650bc323007553fc60`; lazy records; archive schema and provider/cache telemetry. | Particles are not independent trials; cached reuse is not new provider work; one seed and unfinished inference block scaling and confirmatory claims. |
-| P-EXP-03 | Scope the benchmark and disclose external-validity limits. | Frozen task manifests. | Current task count is too small for JMLR. |
-| P-EXP-04 | Separate the partial-slate preflight from the full-slate semantic-scoring diagnostic. | Completed 512-trace semantic ledger; rebuilt exact-trace identities; 36,198-trace support and 144,792-path regression tests. | The 512-trace slate omitted both exact traces and validates only the pipeline; the full slate is an exhaustive scoring diagnostic, not scalable discovery. |
-| P-EXP-05 | Predeclare exact-trace ranks, mass decomposition, fixed-$q$ hit calculation, and identical-slate model comparison. | Full semantic ledgers and independent replay, once complete. | Report ties plus $p_0$, semantic-component, and defensive masses separately; the hit formula is proposal-only and excludes initialization, and all rank/mass/model claims remain pending until both ledgers verify. |
-| P-RES-01 | Report the complete exploratory Gate-2 discovery and held-out matrix. | `paper/generated/figures/gate2-size-transport32/outcome_matrix.pdf`; 16 cells under one protocol hash. | One seed cannot estimate success; particles are not replicates. |
-| P-RES-02 | Attribute the Q versus Q+D difference to defensive deduction under the tested conditions. | Paired raw cells across 3B, 7B, 14B, and 32B checkpoints. | No D arm means no independent Qwen-value estimate; identical columns are not evidence of a size effect or SMC benefit. |
-| P-RES-03 | Treat provider work as cache-disposition accounting and bound score semantics. | `paper/generated/figures/gate2-size-transport32/provider_work.pdf`; cache and provider telemetry. | Fully warm 32B map cells and partly warm 32B hard cells preclude checkpoint timing or efficiency comparisons; mean-full-prompt energy is not a candidate-suffix or AST probability. |
-| P-REL-01 | Position against symbolic and LLM-guided synthesis. | Primary related-work papers. | HYSYNTH and LLM-guided enumeration are closest. |
-| P-REL-02 | Position against SMC synthesis and LLM steering. | Ellis; ModelSMC; Lew; Zhao. | Do not claim first use of SMC; restrict novelty to evaluable staged and complete-slate proposal terms. |
-| P-LIM-01 | State technical and external-validity limitations. | Implementation audit and full-slate score budget. | Specialized DSL, exact enumeration, and exhaustive full-slate semantic scoring are major limitations. |
-| P-LIM-02 | State resource, safety, bias, and transparency implications. | Lazy execution, uniform support, and archive design. | Avoiding unvisited executions is not evidence of lower wall time or total compute; mathematical support is not deployment safety. |
-| P-CON-01 | Re-state the contribution as attribution and auditability, then name both required follow-ups. | Entire paper. | Repeated-seed D controls and replay-verified full-slate ranks/masses remain necessary; do not end with a speed or model-quality claim. |
-| P-ACK-01 | Disclose current funding and compute, then flag the declarations still required for submission. | Author statements, RunPod records, and final conflict/funding review. | The final submission must name all funding, donated compute, and competing interests. |
-| P-APP-01 | Sketch normalization and full-support arguments for both proposal laws. | Node, clone, and joint-semantic equations; proposal replay tests. | Check staged trie induction, joint-semantic slate normalization, defensive $p_0$ support, and prefix telescoping; expand to a formal proposition before submission. |
-| P-APP-02 | Prevent oracle enumeration from being misreported as discovery. | Lazy/reference separation; Gate-2 search-success schema; full-slate retrospective rank lookup. | The Gate-2 grid is lazy, while exact identities in the full-slate diagnostic are used only after model scoring; neither reference construction nor identity lookup is discovery. |
+The paper has one narrative: probability-accountable four-slot repair SMC,
+fresh-blind r5 discovery, negative calibration V1, terminal diagnostic V2, and a
+separately marked ExeDec V2 debug study. Do not restore the staged family/hole
+Qwen proposal, joint-semantic slate, Gate-2 grid, blind evidence-frontier V2,
+developmental matrix, or unexecuted full-slate study to the rendered paper.
 
-## Opening and closing sentence plan
+## Front matter and motivation
 
-These entries describe the **job** of the first and final sentence, not frozen
-wording. The manuscript owns the prose; this guide owns the argument structure.
-
-| ID | Opening-sentence job | Closing-sentence job or handoff |
+| ID | Primary job | Required evidence or boundary |
 |---|---|---|
-| P-ABS-01 | Pose the attribution problem and the free-form proposal-density gap. | End on the paired Q failure/Q+D success, its tested deduction attribution, and the paper's measurement—not performance—claim. |
-| P-INT-01 | Define PBE and locate classical symbolic versus learned prioritization. | Hand learned guidance to the attribution question. |
-| P-INT-02 | Challenge the naive question “did the LLM help?” | Demand isolation of model proposal, symbolic support, target, and selection. |
-| P-INT-03 | Introduce SMC as a population view of synthesis. | Expose the unavailable canonical-AST proposal density, motivating the bounded construction. |
-| P-INT-04 | Narrow the problem to staged finite choices and a separate deterministic complete-program slate. | Establish two evaluable energy proposals—not free-form AST probabilities—then hand off to the contributions. |
-| P-INT-05 | Enumerate the four technical and evaluation contributions, including both proposal granularities. | Bound generality, calibration, and speed claims before formalization. |
-| P-BG-01 | Formalize examples, exactness, the DSL, and structural cost. | Separate training consistency from intended semantics through held-out evaluation. |
-| P-BG-02 | Define construction traces and the equal-family conditional Occam measure. | Label it data-conditional, not an unconditional Bayesian prior, motivating the Gibbs target. |
-| P-BG-03 | Define the finite loss-tempered target. | Restrict interpretation to the declared finite target, then move to constructing its support. |
-| P-SYM-01 | Map types and structural relations to skeleton hypotheses. | Use the filter–map example to expose typed holes for deduction. |
-| P-SYM-02 | Split deduction into refutation and hole-example inference. | Preserve all choices not eliminated by sound invariants, handing off to finite catalogs. |
-| P-SYM-03 | Define complete typed catalogs and online trace identity. | Warn that alias handling can change the target, setting the accounting requirements for proposals. |
-| P-PROP-01 | Specify the staged common prompt and complete full-prompt token scoring. | Define the staged energies and explicitly deny candidate-suffix likelihood semantics. |
-| P-PROP-02 | Define the staged Qwen, deduction, and uniform node mixture. | Explain why normalized mixtures, rather than additive penalties, control serialization-length domination. |
-| P-PROP-03 | Factor a complete trace into family and sequential-hole probabilities, then instantiate the filter--map conditional law. | Make $q_H(h)q_P(p\mid h)q_M(m\mid h,p)$ explicit; close with the single-family shortcut and request deduplication before work accounting. |
-| P-PROP-04 | Contrast $600\times60=36{,}000$ specialized leaves with at most $3+600+60=663$ choices along one distinct staged ancestry. | Restrict 663 to per-ancestry staged-scoring work—not complete-slate or run-wide work—before clone accounting. |
-| P-PROP-05 | Add the clone route to the transition law. | Close unknown fallback mass and reserve the score budget before introducing the separate complete-program semantic proposal. |
-| P-PROP-06 | Separate complete-program semantic-slate scoring from the staged family-and-hole scorer. | End with prefix conditionals telescoping to the persisted defensive $q(z)$ while only sampled programs are executed, then hand off to SMC correction. |
-| P-SMC-01 | Define the product-of-static-target path law and incremental potential for either accountable transition. | State the terminal marginal and the resampled versus non-resampled base-weight rule. |
-| P-SMC-02 | Separate path-normalizer and terminal-target references. | Bound diagnostics to a finite-particle approximation, motivating execution-boundary separation. |
-| P-SMC-03 | Contrast exhaustive reference and lazy online execution. | Refuse to credit support construction as discovery, handing off to experimental design. |
-| P-EXP-01 | Define the U, D, Q, and Q+D plan, then identify Gate 2 as Q/Q+D only. | Prevent the two-arm slice from implying a deduction-only or resampling comparison. |
-| P-EXP-02 | Define archived outcomes, provider/cache accounting, the transport amendment, and the seed as the independent unit. | End with the one-seed and unfinished-inference boundary that blocks confirmatory or size claims. |
-| P-EXP-03 | Introduce the controlled benchmark and covered DSL structures. | Disclose the small synthetic scope before presenting pilots. |
-| P-EXP-04 | Open with the fixed 36,198-trace sparse bounded-square support and the completed 512-trace preflight. | Establish that the preflight omitted both exact traces and require all 36,198 scores before interpreting semantic discrimination. |
-| P-EXP-05 | Define tie-aware raw semantic ranks and separate base, learned-component, and defensive exact-trace masses. | Restrict the hit budget to independent draws from fixed $q$, require an identical-slate model comparison, and leave all measured values pending replay. |
-| P-RES-01 | Open with the complete exploratory Gate-2 grid and its fixed design. | Close by making seed, not particles or cells, the unit and refusing a general model effect. |
-| P-RES-02 | State that checkpoint size did not separate the raw outcomes. | Attribute the paired difference to defensive deduction under test while denying independent Qwen, scaling, and resampling claims. |
-| P-RES-03 | Separate discovery outcomes from cache-confounded provider telemetry. | Bound cache, latency, and mean-full-prompt semantics; deny checkpoint-efficiency, speed, and scaling conclusions. |
-| P-REL-01 | Position against symbolic, neural-guided, and LLM-guided synthesis. | Differentiate this work through exact factorized proposal accounting. |
-| P-REL-02 | Position against SMC synthesis, ModelSMC, and token steering. | Deny priority claims and state the narrower evaluability of staged and complete-slate proposal terms. |
-| P-LIM-01 | Lead with the small DSL, specialized catalogs, data-dependent support, and exhaustive diagnostic costs. | Rule out general synthesis, scalable full-slate scoring, formal correctness, and unbounded-code posterior claims. |
-| P-LIM-02 | State that lazy execution does not yet prove lower total cost. | End on sandboxing and publication of failures and ledgers, handing off to the conclusion. |
-| P-CON-01 | Recast credible LLM synthesis as an attribution and accounting problem. | Leave where Qwen adds value to repeated-seed D controls and the replay-verified full-slate rank-and-mass diagnostic. |
-| P-ACK-01 | State the draft's current funding status. | Require complete funding, compute, conflict, and author disclosures before submission. |
-| P-APP-01 | Prove staged-node and joint-semantic normalization plus positive support. | Lift staged normalization through the trie and clone mixture, prove joint-slate normalization and prefix telescoping, then hand off to oracle boundaries. |
-| P-APP-02 | State that reference enumeration itself discovers exact programs. | Permit only retrospective rank/mass lookup after model scoring; forbid crediting oracle-only discoveries to Qwen or SMC. |
+| `P-ABS-01` | State the proposal, r5 result, failed V1 gate, terminal V2 diagnosis, and limits in under 200 words. | ExeDec is not an abstract-level result; do not imply calibrated SMC or speed. |
+| `P-INT-01` | Locate PBE among symbolic and learned search methods. | Gulwani, Feser, Kalyan, HYSYNTH, and LLM-guided enumeration. |
+| `P-INT-02` | Define the system-attribution problem. | Treat model, interpreter, selector, target, and comparator as separate components. |
+| `P-INT-03` | Explain why SMC needs an evaluable proposal law. | Free-form text probability is not canonical-program probability. |
+| `P-INT-04` | Introduce application totalization and auxiliary-law cancellation. | Claim an accountable implemented transition, not an inferred LLM AST probability. |
+| `P-INT-05` | State the completed evidence sequence and bounded ExeDec debug result. | Discovery and calibration remain distinct; ExeDec stays descriptive and integrity-limited. |
 
-## Multi-paragraph section skeletons
+## Setting, proposal, and SMC
 
-- **Abstract:** pose attribution gap -> state bounded method -> name the
-  accountable proposal -> report paired Q failure/Q+D success -> attribute the
-  tested difference to deduction -> bound the claim.
-- **Introduction:** establish PBE -> expose attribution/probability gap -> state
-  controlled solution -> enumerate bounded contributions.
-- **Background:** define examples and DSL -> define conditional base measure ->
-  define finite target.
-- **Symbolic front end:** generate typed skeletons -> refute/derive evidence ->
-  enumerate canonical hole choices.
-- **Proposal:** score finite staged choices -> mix normalized guides ->
-  instantiate the conditional construction path -> bound per-ancestry staged
-  work -> add cloning and failure policy -> define the separate complete-program
-  semantic slate and telescoping prefix law.
-- **SMC:** define target/potential -> state measurable diagnostics -> separate
-  online search from exact oracle.
-- **Experiments:** isolate components -> define statistical unit/outcomes ->
-  disclose benchmark scope -> separate the 512-trace preflight from the full
-  36,198-trace diagnostic -> predeclare tie-aware ranks, mass decomposition,
-  fixed-$q$ hit accounting, and identical-slate model comparison.
-- **Results:** report the complete one-seed grid -> attribute the paired
-  difference to defensive deduction -> separate cache-disposition accounting
-  and score semantics from discovery outcomes.
-- **Related work:** position against symbolic and learned synthesis -> position
-  against SMC and steering -> isolate the finite-accounting contribution.
-- **Limitations:** disclose technical/external-validity limits -> disclose
-  compute, bias, safety, and transparency limits.
-- **Conclusion:** restate the attribution requirement -> summarize inspectable
-  components -> leave LLM value to confirmatory evidence.
-- **Acknowledgments:** state present funding and compute -> require final
-  disclosure review.
-- **Appendices:** establish normalization/full support -> enforce the boundary
-  between oracle enumeration and online discovery.
+| ID | Primary job | Required evidence or boundary |
+|---|---|---|
+| `P-BG-01` | Define PBE exactness, bounded DSL, structural cost, and semantic scope. | Example exactness is not out-of-domain correctness. |
+| `P-SYM-01` | Define the strict Filter-then-Map skeleton and normalized recursive grammar. | Do not imply support enumeration is required online. |
+| `P-SYM-02` | Explain sound singleton evidence and provider-visible information. | Hidden targets, secrets, catalogs, and comparator outcomes remain unavailable. |
+| `P-SYM-03` | Make the application authoritative for parsing, typing, execution, and caching. | The provider neither validates programs nor supplies confidence. |
+| `P-PROP-SHORT-01` | Define four-slot totalization and `q=(1-epsilon)H_S+epsilon g`. | `epsilon=0.05` for r5, V1, ExeDec V2, and sticky V2; V2 also has prespecified alternatives. Preserve failed slots. |
+| `P-PROP-SHORT-02` | Define acquisition law `R` and its exact cancellation. | Four-slot arms use Equation 2; V2 alternatives have declared evaluable laws, including the top-64 control's 64-slot empirical law. |
+| `P-PROP-SHORT-03` | Separate proposal correctness from overlap and finite-particle accuracy. | This paragraph must set up the negative calibration result. |
+| `P-SMC-01` | Define the four declared stage targets and frozen scales. | `L_D` is capped soft execution loss; r5/V1/V2 use `(0.75,0.02,2)`, ExeDec uses scorer defaults `(2.0,0.15,2)`; targets are not scale-matched. |
+| `P-SMC-02` | Define the initial-program-conditioned extended target, proposal, and incremental potential. | The same acquisition factor must occur in numerator and denominator. |
+| `P-SMC-03` | Define child weights, resampling, and terminal/path distinction. | Do not conflate the product-path normalizer with the terminal target. |
+| `P-SMC-04` | Separate r5/ExeDec online execution from V1/V2 and ExeDec reference work. | ExeDec's online physical-call count excludes public-reference enumeration; oracle discoveries are never online synthesis. |
 
-## Non-paragraph material
+## Study methods
 
-The author block, keywords, equations, table captions, and bibliography are not
-paragraph units. Review them separately for metadata accuracy, notation,
-self-contained captions, and citation completeness.
+| ID | Primary job | Required evidence or boundary |
+|---|---|---|
+| `P-EXP-01` | Introduce the evidence layers in their final order. | R5, V1, V2, then ExeDec debug; no parallel paper fork. |
+| `P-EXP-R5-01` | State fresh task generation, model binding, provider settings, and blind custody. | R5 and ExeDec calls share frozen settings and no retries; long hashes belong in the appendix. |
+| `P-EXP-R5-02` | Define paired seeds/arms, the `1+4+3x8=29` slot schedule, endpoint, and analysis unit. | Acquisition seeds differ; shared sampling and resampling seeds make the pairing explicit. |
+| `P-EXP-CAL-01` | Define V1's provider-free design, `N`, `1+4N` schedule, and frozen gate. | The ranking oracle is exhaustive and not an LLM or search baseline. |
+| `P-EXP-CAL-02` | Define terminal V2's six-arm, two-`N`, 128-repetition post-failure design. | It cannot rescue V1 or validate the four-stage recurrence. |
+| `P-EXP-EXEDEC-V2-01` | Define the four-target, eight-seed paired debug design. | Local strict Filter-then-Map adapter; not an official ExeDec split; no efficacy gate. |
+| `P-EXP-EXEDEC-V2-02` | Disclose public-data, finite-probe, contamination, custody, and transfer limits. | The study archive is canonical and imported; the original operations-evidence export failed, and its derivative is noncanonical and unimported. Never say that two imports passed. |
 
-### Exploratory figure attachments
+## Results
 
-The manifest reports `complete_four_checkpoint_gate2: true`, so the outcome and
-provider-work figures are attached to `main.tex`. They remain exploratory and
-cannot add confidence intervals, success-rate estimates, or confirmatory
-language to their host paragraphs. The paired-seed figure remains inactive
-because only seed 101 is available.
+| ID | Primary job | Required evidence or boundary |
+|---|---|---|
+| `P-RES-01` | Preserve the methods/results ordering and endpoint separation. | Never pool r5 discovery, calibration, or ExeDec debug outcomes. |
+| `P-RES-R5-01` | Report 10/12 versus 2/12, the exact paired test, and post hoc two-look sensitivity. | Primary `p=1/256`; `0.0078125` is not the frozen analysis and treats invalid r4 as another look; r4 remains excluded. |
+| `P-RES-R5-02` | Report slots, physical scoring, cache reuse, provider work, and totalized failures. | Logical and physical work are different quantities; no speed claim. |
+| `P-RES-R5-03` | Report sealing and semantic-alias audit. | Finite-domain recovery is not unique-AST or out-of-domain recovery. |
+| `P-RES-CAL-01` | State that V1 failed despite exact-program discovery in all 128 `N=256` runs. | Both gate components remain visible; do not generalize discovery to the full 640-run grid. |
+| `P-RES-CAL-02` | Report the particle-count RMSE sequence. | Do not claim an `N^{-1/2}` rate or that more particles intrinsically worsen SMC. |
+| `P-RES-CAL-03` | Report V2 identities and global top-64, `epsilon=0.50` mechanism evidence. | The exhaustive positive control is not search and does not revise V1. |
+| `P-RES-EXEDEC-V2-01` | Report 17/32 versus 3/32, paired cells, difference, and exact two-sided value. | Eight seeds are nested within only four public targets; the exact value is descriptive, not a significance or confirmation claim. |
+| `P-RES-EXEDEC-V2-02` | Report public exactness, online work before reference enumeration, provider calls, conditional first success, and ESS. | The 1,040 count excludes public-reference evaluations; finite probes and slot summaries imply neither equivalence nor speed. |
+| `P-RES-EXEDEC-V2-03` | State canonical study integrity and the operations-evidence qualification. | Valid content audit and the noncanonical derivative do not erase the original verifier failure or create exclusive custody. |
 
-| Figure | Planned paragraph | Purpose | Reviewer check |
-|---|---|---|---|
-| Exact/held-out outcome matrix (`paper/generated/figures/gate2-size-transport32/outcome_matrix.pdf`) | P-RES-01 | Show every raw checkpoint-task-arm outcome, including failures and held-out unavailability. | All four amended Gate-2 checkpoints must be present under one protocol hash; `n=1` is not a success-rate estimate. |
-| Paired Q versus QD seeds (inactive) | P-RES-01 | Show within-seed changes attributable to adding the deduction guide. | Generate only with at least two genuinely paired seeds; show raw pairs without treating particles as replicates. |
-| Provider work and cache status (`paper/generated/figures/gate2-size-transport32/provider_work.pdf`) | P-RES-03 | Separate provider-scored token positions, provider wait for cache misses, and cached reuse. | Cached scores are replayed evidence, not new provider work; neither provider seconds nor wall time alone establishes faster synthesis. |
+## Interpretation and close
+
+| ID | Primary job | Required evidence or boundary |
+|---|---|---|
+| `P-REL-01` | Position against symbolic, neural-guided, and LLM-guided PBE. | The narrow contribution is application-computed shortlist probability. |
+| `P-REL-02` | Position against SMC synthesis and model discovery. | Do not claim first use of SMC; emphasize exact accounting plus a tested calibration failure. |
+| `P-REL-03` | Position the ExeDec adapter against the actual ExeDec contribution. | No complete DSL, official split, or execution-decomposition claim. |
+| `P-LIM-01` | Bound r5 by task count, generator, integer domain, model, and comparator. | No task-population or independent model-replicate inference. |
+| `P-LIM-02` | Preserve the negative calibration interpretation. | V2 is conditioned terminal evidence only. |
+| `P-LIM-03` | State ExeDec, compute, safety, and integrity limits. | Point once to the appendix timeline; do not duplicate failed-run numbers. |
+| `P-CON-01` | Conclude the positive bounded r5 result. | No LLM-only, speed, or broad-generalization conclusion. |
+| `P-CON-02` | Conclude with the negative calibration result and next evidentiary need. | Keep discovery, distributional accuracy, and compute separate. |
+| `P-ACK-01` | Record the draft disclosure status. | Replace before submission with complete funding, compute, author, and conflict disclosures. |
+
+## Appendices
+
+| ID | Primary job | Required evidence or boundary |
+|---|---|---|
+| `P-APP-NORM-01` | Prove four-slot normalization and note V2's analogous 64-slot control law. | Acquisition cancellation is shared; none of this is a finite-particle calibration proof. |
+| `P-APP-R5-TASK-01` | Introduce all r5 task--arm records. | Totals must reproduce 10/12 versus 2/12 and the failure-accounting text. |
+| `P-APP-CAL-TASK-01` | Expose V1 task heterogeneity. | Values must reproduce the pooled gate and retain discovery as descriptive. |
+| `P-APP-INTEGRITY-01` | Preserve r1/r2, r3, r4, and r5 chronology. | R4 values are invalidated history, not evidence. |
+| `P-APP-INTEGRITY-02` | Preserve V1/V2, ExeDec V1, and the verified V2 study import chronology. | The 1,143-file study archive and canonical analysis are distinct from operations evidence. |
+| `P-APP-INTEGRITY-03` | Preserve the original operations-evidence failure and local derivative status. | All content/cross-bindings validated, but the original failed; the derivative is noncanonical and unimported. |
+| `P-APP-ORACLE-01` | State the exact-reference claim boundary. | Exhaustive controls do not establish online discovery or speed. |
+| `P-APP-AVAIL-01` | List canonical study, analysis, inventory, failed operations transfer, and derivative locators. | Hashes must match the local artifacts; never label the derivative canonical or imported. Replace local paths before publication. |
+
+## Section-level handoff
+
+- **Abstract:** proposal -> r5 discovery -> failed V1 gate -> narrow terminal V2
+  diagnosis -> claim boundary.
+- **Introduction:** PBE ambiguity -> attribution problem -> proposal-density gap
+  -> totalized shortlist solution -> evidence sequence.
+- **Setting:** typed skeleton -> sound evidence -> authoritative application.
+- **Proposal:** totalize slots -> cancel unknown acquisition law -> warn about
+  overlap.
+- **SMC:** stage targets -> extended correction -> child/resampling geometry ->
+  online/reference boundary.
+- **Studies and Results:** r5 -> V1 -> V2 -> ExeDec debug, in the same order.
+- **Limitations:** narrow r5 scope -> negative calibration -> ExeDec and compute
+  boundaries.
+- **Conclusion:** bounded positive discovery -> central negative calibration ->
+  external confirmation.
+- **Appendices:** normalization -> task records -> integrity history -> oracle
+  boundary -> artifact inventory.
+
+## ExeDec claim review
+
+The integrated ExeDec result must satisfy all of the following checks:
+
+1. derive numerical outcomes only from the canonical imported study analysis;
+2. report 32 paired seed blocks nested within four public targets, never 64
+   independent observations or 32 independent target tasks;
+3. state the exact two-sided value and absence of an efficacy gate while
+   refusing a statistical-significance or confirmatory interpretation;
+4. describe success as exactness on finite private debug probes, not semantic
+   equivalence or fresh hidden generalization;
+5. report logical slots, physical scoring, provider calls, conditional first
+   success, and ESS without converting them into speed claims;
+6. repeat the unofficial-adapter, public-contamination, debug-only, and
+   nonexclusive-custody boundaries; and
+7. keep the verified study import separate from the original failed
+   operations-evidence transfer and the noncanonical, unimported derivative.
+
+## Metadata and submission review
+
+Before submission, verify the title, short title, author order, affiliations,
+contact addresses, funding, compute support, author contributions, competing
+interests, repository revision, archive DOI, licenses, and acknowledgments.
+Tri Nguyen's affiliation and contact address and the final disclosure package
+remain unresolved in the checked-in draft.
+
+The paper has no exploratory figure attachment plan. Any future figure must be
+generated from a canonical verified artifact, add information not already clear
+in the tables, and carry the same statistical and integrity boundaries as its
+host paragraph.

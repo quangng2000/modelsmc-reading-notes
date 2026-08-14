@@ -1,0 +1,37 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Repair only the mapper of a filter-map program using interpreter evidence. Keep the predicate frozen. Return one mapper from the allowed grammar in strict JSON. Keep reasoning concise."
+    },
+    {
+      "role": "user",
+      "content": "Current predicate mask=00011100 over DomainOrder=[-3,-2,-1,0,1,2,3,4], so it retains 0,1,2. Current mapper=item. Interpreter alignment evidence for retained values: item 0 must map to 0; item 1 must map to 1; item 2 must map to 4. The current mapper is wrong for item 2. Some outputs are also one element short, but a mapper cannot change output length; leave that issue for the later predicate-repair step. Allowed mapper grammar: item, an integer constant from -3 through 4, or Add/Subtract/Multiply of item and one such constant or item. Revise only the mapper."
+    }
+  ],
+  "temperature": 0,
+  "top_p": 1,
+  "max_tokens": 1600,
+  "seed": 78301,
+  "reasoning_effort": "high",
+  "include_reasoning": true,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "mapper_repair",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mapper"],
+        "properties": {
+          "mapper": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

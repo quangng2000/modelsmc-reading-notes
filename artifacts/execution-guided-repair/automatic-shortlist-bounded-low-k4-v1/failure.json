@@ -1,0 +1,9 @@
+{
+  "schema": "automatic-shortlist-failure-v1",
+  "status": "invalid-trial",
+  "stage": "predicate-given-m1",
+  "reason": "invalid-shortlist",
+  "detail": "The model generated lt(item,5), but 5 was not a declared integer constant. The preregistered no-repair/no-retry policy invalidated the trial.",
+  "methodological_finding": "The fixed mapper-first order was unsupported by the initial feedback: it contained zero mapper constraints and two predicate toggles. The generated mapper shortlist consisted of four identity-equivalent expressions.",
+  "raw_provider_artifacts_preserved": true
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "semantic-diversity-beam-study-v1",
+  "frozen_before_provider_calls": true,
+  "claim_scope": "exploratory mechanism study; manually designed compatible tasks are not confirmatory held-out evidence",
+  "harness": {
+    "path": "research/iterative_beam_experiment.py",
+    "sha256": "1e27cef2ba45792b2249af0a65758b81347747805faa979cd6ca11001fc5a739"
+  },
+  "model": {
+    "served_name": "gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "timeout_seconds": 420
+  },
+  "search": {
+    "selection_policy": "semantic-diverse",
+    "branching_factor": 4,
+    "beam_width": 2,
+    "rounds": 3,
+    "maximum_proposal_slots": 21,
+    "maximum_provider_calls": 5,
+    "start_seed": 17,
+    "semantic_signature": "predicate decisions and mapper values on sorted distinct scalar items in training inputs",
+    "selector": "deduplicate finite joint component cells; rank-2W loss quality gate; best-loss anchor; fill by component novelty, loss, minimum signature distance, proposal order, parent rank, and seeded SHA256",
+    "provider_order_contract": "candidates are ordered most to least promising",
+    "invalid_policy": "no retry or backfill",
+    "exact_stop": "complete the active K-candidate batch, then stop",
+    "importance_sampling_claim": false
+  },
+  "matched_random_baseline": {
+    "trials": 10000,
+    "policy": "identical start, feedback-driven hole selection, selector, budget, and stopping rule; replace only LLM proposals with syntax-uniform legal non-no-op repairs without replacement"
+  },
+  "runs_in_frozen_order": [
+    {
+      "role": "primary_exploratory",
+      "task": "examples/foldr-opaque-list-b.json",
+      "task_sha256": "f60c3e1ff66927ce15f5e8edd13dc71c09677431916bf1ca9727a8352252cd56",
+      "provider_seed": 97000,
+      "tie_seed": 97100,
+      "random_baseline_seed": 97200
+    },
+    {
+      "role": "secondary_exploratory",
+      "task": "examples/foldr-opaque-list-a.json",
+      "task_sha256": "c17e4e0a4ef2f8dc80c60cb5498a3d0ce913079943d52515e49b7a62555395c8",
+      "provider_seed": 98000,
+      "tie_seed": 98100,
+      "random_baseline_seed": 98200
+    },
+    {
+      "role": "developmental_replay_only",
+      "task": "examples/foldr-bounded-square.json",
+      "task_sha256": "4c2a678f026b2c90677e581ff42d12de689bc97bcb8e6e428f4742e443fc130e",
+      "provider_seed": 99000,
+      "tie_seed": 99100,
+      "random_baseline_seed": 99200
+    }
+  ],
+  "no_retuning_rule": "Do not change prompts, selector, budgets, code, or seeds after seeing any run result. Infrastructure failures are sealed and do not authorize semantic retries."
+}

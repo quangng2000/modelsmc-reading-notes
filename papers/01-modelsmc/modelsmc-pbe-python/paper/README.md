@@ -20,8 +20,13 @@ The checked-in manuscript identifies Tri Nguyen and Thanh-Dat Nguyen as
 co-authors. Thanh-Dat Nguyen's verified author block lists Harvard University,
 Basis Research Institute, and `datnguyen@seas.harvard.edu`. Before an arXiv or
 journal submission, add Tri Nguyen's affiliation and contact address and the
-authors' final funding/compute disclosure. Do not submit the exploratory pilot
-table as confirmatory evidence.
+authors' final funding, compute, contribution, and competing-interest
+disclosures. The independently verified ExeDec V2 study import is complete, and
+the manuscript reports the released-data result as debug-only and
+integrity-limited. The separate original operations-evidence export failed its
+frozen safe-mode verifier; its mode-header-normalized derivative is validated
+but noncanonical and unimported. Do not describe this as two successful imports
+or as confirmatory ExeDec evidence.
 
 The intended commands are:
 

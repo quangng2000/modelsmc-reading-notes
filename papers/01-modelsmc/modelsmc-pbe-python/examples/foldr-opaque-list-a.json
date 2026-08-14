@@ -1,0 +1,40 @@
+{
+  "name": "opaque ordered-list transform A",
+  "signature": {
+    "input": "List<Int>",
+    "output": "List<Int>"
+  },
+  "examples": [
+    { "input": [], "output": [] },
+    { "input": ["-3"], "output": [] },
+    { "input": ["-2"], "output": [] },
+    { "input": ["-1"], "output": [] },
+    { "input": ["0"], "output": ["2"] },
+    { "input": ["3"], "output": ["5"] },
+    { "input": ["4"], "output": [] },
+    {
+      "input": ["-3", "-2", "-1", "0", "1", "2", "3", "4"],
+      "output": ["2", "3", "4", "5"]
+    },
+    {
+      "input": ["4", "3", "-1", "2", "0", "-3", "1", "-2"],
+      "output": ["5", "4", "2", "3"]
+    },
+    {
+      "input": ["2", "2", "-2", "0", "4"],
+      "output": ["4", "4", "2"]
+    }
+  ],
+  "integerConstants": ["-3", "-2", "-1", "0", "1", "2", "3", "4"],
+  "particles": 4,
+  "iterations": 3,
+  "cloneProbability": 0,
+  "essThreshold": 1,
+  "seed": 17,
+  "lossScale": 0.75,
+  "costScale": 0.02,
+  "lossCap": 1000,
+  "maxCost": 30,
+  "maxDepth": 12,
+  "maxNodes": 191
+}

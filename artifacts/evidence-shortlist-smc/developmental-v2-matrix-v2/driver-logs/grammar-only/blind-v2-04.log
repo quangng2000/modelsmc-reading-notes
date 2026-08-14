@@ -1,0 +1,14 @@
+{
+  "best_loss": 11.0,
+  "best_program": {
+    "mapper": "mul(-1,item)",
+    "predicate": "lt(0,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.425792318552199,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}

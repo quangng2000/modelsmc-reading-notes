@@ -1,0 +1,176 @@
+{
+  "schema": "blind-filter-map-confirmation-v3",
+  "protocol_status": "method-frozen-before-secret-preparation",
+  "study_class": "fresh-blind-paired-confirmation",
+  "stage_order": [
+    "freeze exact method protocol and external method-seal hash",
+    "custodian creates a new 32-byte secret and publishes only its commitment",
+    "custodian seals that commitment before task generation",
+    "generate the public suite and private reveal exactly once",
+    "seal exact public task and endpoint-health bytes before completion calls",
+    "complete and publicly seal both matched arms for all 12 tasks",
+    "run reveal-free confirmatory analysis and seal it",
+    "unblind and verify commitments only after the public artifact seal"
+  ],
+  "task_distribution": {
+    "distribution_id": "target-independent-recursive-grammar-rejection-v1",
+    "task_count": 12,
+    "task_ids_in_order": [
+      "blind-v3-01",
+      "blind-v3-02",
+      "blind-v3-03",
+      "blind-v3-04",
+      "blind-v3-05",
+      "blind-v3-06",
+      "blind-v3-07",
+      "blind-v3-08",
+      "blind-v3-09",
+      "blind-v3-10",
+      "blind-v3-11",
+      "blind-v3-12"
+    ],
+    "constants": {
+      "inclusive_integer_interval": [-3, 4]
+    },
+    "independent_target_draw": {
+      "predicate": "choose atom versus ordered conjunction with probability one half; each atom chooses uniformly among lt(item,c), lt(c,item), and eq(item,c), then uniformly chooses c",
+      "mapper": "choose uniformly among item, constant, op(item,item), op(item,c), and op(c,item); within a form choose op uniformly from add/sub/mul and c uniformly when present",
+      "joint": "draw predicate and mapper independently from their normalized top-down laws",
+      "complete_program_count_needed": false,
+      "complete_program_count_disclosed_to_provider": false
+    },
+    "deterministic_rejection_condition": [
+      "the predicate retains between three and five values on the public observed domain",
+      "the mapper produces at least three distinct values on retained domain inputs"
+    ],
+    "sampling_rule": "For each task independently, accept the first domain-separated secret-derived draw satisfying only the two frozen informativeness checks.",
+    "explicitly_forbidden_generation_dependencies": [
+      "model output or provider availability",
+      "prompt or repair ranking",
+      "search start state or any run seed",
+      "loss under either arm",
+      "another task or a family quota",
+      "syntactic alias multiplicity or human difficulty judgment"
+    ],
+    "duplicate_policy": "Independent draws are never replaced merely because another task has the same syntax or finite-domain behavior.",
+    "examples_in_order": [
+      "empty list",
+      "all eight singleton lists in ascending domain order",
+      "the complete domain in ascending order",
+      "one secret-derived permutation",
+      "two concatenated secret-derived permutations"
+    ],
+    "success_semantics": "semantic zero loss on every public example; no claim of unique hidden-AST recovery"
+  },
+  "provider": {
+    "base_url": "http://127.0.0.1:18000/v1",
+    "model": "gpt-oss-120b",
+    "model_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_output_tokens": 1200,
+    "timeout_seconds": 420,
+    "max_concurrency": 2,
+    "retry_policy": "none"
+  },
+  "model_information_boundary": {
+    "allowed": [
+      "the current task's public input-output examples",
+      "the current complete program and structured interpreter feedback",
+      "sound singleton constraints",
+      "the typed local grammar productions and allowed constant interval",
+      "selected repair hole and round"
+    ],
+    "forbidden": [
+      "suite secret, private reveal, hidden target AST, commitment nonce, or rejection log",
+      "complete program support count or catalog",
+      "component catalog cardinalities",
+      "other task identities, prompts, outputs, or run outcomes",
+      "matched-random outputs or posthoc exhaustive results"
+    ],
+    "provider_request_audit": "Every exact request and response byte sequence is retained; a public pre-unblinding audit must verify forbidden fields and explicit cardinalities never occur."
+  },
+  "proposal": {
+    "arms": ["llm", "grammar-random"],
+    "llm_shortlist_size": 4,
+    "law": "q(y|S,x,h)=(1-epsilon)*EmpiricalUniform(the four totalized local slots)+epsilon*g(y)",
+    "epsilon": 0.05,
+    "g": "the normalized top-down recursive grammar; g(y) is the product of local rule probabilities and requires no joint-catalog enumeration",
+    "llm_slots": "exactly four ordered typed local repairs returned through structured JSON",
+    "grammar_random_slots": "exactly four ordered non-current, nonduplicate local expressions drawn with exact grammar weights without replacement from the selected hole; component syntax may be materialized internally, but no joint program catalog or joint support count is constructed or sent to the provider",
+    "shared_downstream_mechanics": "Both arms use the same hole selection, totalization, mixture sampler, importance weights, stage targets, resampling code, execution oracle, and 29-slot budget.",
+    "failure_totalization": "Missing, malformed, invalid, no-op, and whole-response failures map to the current state; duplicates retain multiplicity; there is no provider retry or backfill.",
+    "exact_parent_semantics": "Skip local proposal acquisition and use four current-state slots, but still execute every scheduled child draw from the sticky mixture.",
+    "provider_response_probability_claim": false,
+    "full_support": true
+  },
+  "search": {
+    "rounds": 4,
+    "parent_count": 2,
+    "first_round_offspring": 4,
+    "offspring_per_parent": 4,
+    "proposal_slot_checkpoints": [1, 5, 13, 21, 29],
+    "logical_complete_program_execution_cap": 29,
+    "maximum_llm_provider_calls": 7,
+    "grammar_random_provider_calls": 0,
+    "early_stop": false,
+    "evidence_scale": 2,
+    "exact_reference_limit": 0,
+    "stage_targets": [
+      "g(z)*exp(-2*predicate singleton violations)",
+      "g(z)*exp(-2*(predicate+mapper singleton violations))",
+      "g(z)*exp(-(predicate+mapper singleton violations)+0.5*scorer.log_target)",
+      "g(z)*exp(scorer.log_target)"
+    ]
+  },
+  "matched_design": {
+    "pairing_unit": "task",
+    "runs_per_task": ["one llm arm", "one grammar-random arm"],
+    "common_random_numbers": "The two arms share the task-specific start, proposal-mixture sample, and resampling seeds; only provider and random-shortlist acquisition have distinct frozen seeds.",
+    "run_order": "For each task run grammar-random first, then llm; finish and seal both before starting the next task.",
+    "task_order": "blind-v3-01 through blind-v3-12",
+    "replacement_policy": "No task or arm replacement is permitted after generation."
+  },
+  "failure_policy": {
+    "valid_algorithmic_failures": [
+      "provider timeout, HTTP error, malformed response, invalid expression, or missing slot that the frozen harness totalizes and records",
+      "failure to discover a semantic zero-loss program within exactly 29 logical slots"
+    ],
+    "method_integrity_abort": [
+      "source, prompt, semantic setting, seed, task, or sealed byte drift",
+      "private target leakage before the public artifact bundle is sealed",
+      "unlogged retry, backfill, task replacement, or completion call before the provider seal",
+      "missing or structurally incomplete 29-slot result for either matched arm",
+      "baseline policy mismatch or any grammar-random provider call"
+    ],
+    "infrastructure_policy": "A preflight or process failure outside totalized harness semantics aborts the confirmatory attempt; it is not converted into a favorable arm outcome. Publish the aborted attempt and do not silently resume under the same method seal.",
+    "fixed_denominator": 12
+  },
+  "confirmatory_analysis": {
+    "primary_endpoint": "semantic exact discovery at or before logical slot 29",
+    "paired_counts": "Among discordant tasks, W is llm-only success and L is grammar-random-only success.",
+    "primary_p_value": "one-sided exact paired sign-test tail sum_{k=W}^{W+L} choose(W+L,k)/2^(W+L); p=1 when W+L=0",
+    "alpha": 0.05,
+    "practical_thresholds": [
+      "llm exact successes are at least 6 of 12",
+      "llm exact successes minus grammar-random exact successes is at least 4"
+    ],
+    "study_success_rule": "p<=0.05 and both practical thresholds hold, with no method-integrity abort",
+    "secondary_endpoints": [
+      "paired exact discovery at slot 21",
+      "first-exact slot and best-loss difference",
+      "ESS, unique terminal programs, grammar-restart draws, scorer calls, cache hits, invalid slots, tokens, and elapsed time"
+    ],
+    "multiplicity": "Only slot-29 exact discovery is confirmatory; all other endpoints are descriptive."
+  },
+  "reporting": {
+    "report_every_task_and_arm": true,
+    "public_seal_before_unblinding": true,
+    "required_claim_limits": [
+      "Evidence concerns this frozen target distribution, model revision, and 29-slot budget only.",
+      "A positive result supports bounded exact-discovery advantage over this grammar-random local proposal arm, not exhaustive-search or asymptotic speedup.",
+      "Importance accounting concerns the declared weighted SMC target and does not itself guarantee exact discovery.",
+      "The provider can derive facts from the public grammar, but neither the prompt nor the algorithm explicitly receives or requires the full support cardinality."
+    ]
+  }
+}

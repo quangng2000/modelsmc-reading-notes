@@ -1,0 +1,12 @@
+{
+  "authorization": "execute-frozen-exedec-v2-after-fresh-study-closure",
+  "exedec_protocol_sha256": "305cd2d89fbe0918a52b8e0ea6b3c4dfce23ad04ae669c48bcc3fcaa37c15b7d",
+  "fresh_study_analysis_sha256": "f73ef1ac255d783d912fcd8b2fc6555b9abc57efb04667490bbdd2ca6fe87196",
+  "fresh_study_artifact_sha256": "8cf0acec0b3ccedb3deeefa568a92d09cd03ff5ea3ff5f4b4a36394564e3d896",
+  "fresh_study_method_seal_sha256": "5238e17436c3e2860e2e4ee20869900e77b3534468d01a1206069e07bf49e228",
+  "fresh_study_protocol_sha256": "36bd14082c767f47327b73a1ee57f44763fcd97b2bea6dcca0637a8cddc83d2d",
+  "fresh_study_public_bundle_sealed": true,
+  "fresh_study_unblinding_audit_complete": true,
+  "fresh_study_unblinding_verification_sha256": "135d3faf621dd75d756fa767f645257d73611dbe02f042f64812f11650d53da9",
+  "schema": "exedec-v2-launch-authorization-v1"
+}

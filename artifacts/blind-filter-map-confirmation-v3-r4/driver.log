@@ -1,0 +1,386 @@
+{"event":"driver_started","utc":"2026-08-13T18:27:36Z"}
+{"event":"arm_started","task_id":"blind-v3-01","arm":"grammar-random","utc":"2026-08-13T18:27:36Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "item",
+    "predicate": "lt(-1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.0001557724251553,
+  "first_exact_slot": 24,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0.999922119853213
+}
+{"event":"arm_completed","task_id":"blind-v3-01","arm":"grammar-random","utc":"2026-08-13T18:27:57Z"}
+{"event":"arm_started","task_id":"blind-v3-01","arm":"llm","utc":"2026-08-13T18:27:57Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "add(item,0)",
+    "predicate": "lt(-1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 7.015497783990905,
+  "first_exact_slot": 14,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 5,
+  "self_normalized_exact_mass": 0.9988905372141332
+}
+{"event":"arm_completed","task_id":"blind-v3-01","arm":"llm","utc":"2026-08-13T18:34:35Z"}
+{"event":"arm_started","task_id":"blind-v3-02","arm":"grammar-random","utc":"2026-08-13T18:34:35Z"}
+{
+  "best_loss": 12.0,
+  "best_program": {
+    "mapper": "mul(-1,item)",
+    "predicate": "and(eq(item,2),lt(item,4))"
+  },
+  "exact_reference": null,
+  "final_ess": 3.2808679656693034,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-02","arm":"grammar-random","utc":"2026-08-13T18:35:26Z"}
+{"event":"arm_started","task_id":"blind-v3-02","arm":"llm","utc":"2026-08-13T18:35:26Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "item",
+    "predicate": "and(lt(item,0),lt(item,0))"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-02","arm":"llm","utc":"2026-08-13T18:42:27Z"}
+{"event":"arm_started","task_id":"blind-v3-03","arm":"grammar-random","utc":"2026-08-13T18:42:27Z"}
+{
+  "best_loss": 22.0,
+  "best_program": {
+    "mapper": "add(1,item)",
+    "predicate": "eq(item,-1)"
+  },
+  "exact_reference": null,
+  "final_ess": 6.044269618645865,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-03","arm":"grammar-random","utc":"2026-08-13T18:42:49Z"}
+{"event":"arm_started","task_id":"blind-v3-03","arm":"llm","utc":"2026-08-13T18:42:49Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "mul(item,item)",
+    "predicate": "lt(-1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 9,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-03","arm":"llm","utc":"2026-08-13T18:47:30Z"}
+{"event":"arm_started","task_id":"blind-v3-04","arm":"grammar-random","utc":"2026-08-13T18:47:30Z"}
+{
+  "best_loss": 15.0,
+  "best_program": {
+    "mapper": "mul(item,-3)",
+    "predicate": "and(eq(item,-1),eq(item,1))"
+  },
+  "exact_reference": null,
+  "final_ess": 2.0005743928837796,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-04","arm":"grammar-random","utc":"2026-08-13T18:47:58Z"}
+{"event":"arm_started","task_id":"blind-v3-04","arm":"llm","utc":"2026-08-13T18:47:58Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "item",
+    "predicate": "lt(item,0)"
+  },
+  "exact_reference": null,
+  "final_ess": 6.005578282795334,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 0.9995351426982069
+}
+{"event":"arm_completed","task_id":"blind-v3-04","arm":"llm","utc":"2026-08-13T18:51:48Z"}
+{"event":"arm_started","task_id":"blind-v3-05","arm":"grammar-random","utc":"2026-08-13T18:51:48Z"}
+{
+  "best_loss": 20.0,
+  "best_program": {
+    "mapper": "add(4,item)",
+    "predicate": "lt(4,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.5183853308262896,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-05","arm":"grammar-random","utc":"2026-08-13T18:52:22Z"}
+{"event":"arm_started","task_id":"blind-v3-05","arm":"llm","utc":"2026-08-13T18:52:22Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "item",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-05","arm":"llm","utc":"2026-08-13T18:56:33Z"}
+{"event":"arm_started","task_id":"blind-v3-06","arm":"grammar-random","utc":"2026-08-13T18:56:33Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "add(item,item)",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 2.00000032443554,
+  "first_exact_slot": 26,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0.9999999188911216
+}
+{"event":"arm_completed","task_id":"blind-v3-06","arm":"grammar-random","utc":"2026-08-13T18:56:53Z"}
+{"event":"arm_started","task_id":"blind-v3-06","arm":"llm","utc":"2026-08-13T18:56:53Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "mul(item,2)",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 10,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-06","arm":"llm","utc":"2026-08-13T19:02:39Z"}
+{"event":"arm_started","task_id":"blind-v3-07","arm":"grammar-random","utc":"2026-08-13T19:02:39Z"}
+{
+  "best_loss": 5.0,
+  "best_program": {
+    "mapper": "add(item,item)",
+    "predicate": "lt(item,0)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.0888688309812355,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-07","arm":"grammar-random","utc":"2026-08-13T19:03:10Z"}
+{"event":"arm_started","task_id":"blind-v3-07","arm":"llm","utc":"2026-08-13T19:03:10Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "mul(2,item)",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 7.065985266350793,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 0.9952401564858527
+}
+{"event":"arm_completed","task_id":"blind-v3-07","arm":"llm","utc":"2026-08-13T19:08:57Z"}
+{"event":"arm_started","task_id":"blind-v3-08","arm":"grammar-random","utc":"2026-08-13T19:08:57Z"}
+{
+  "best_loss": 20.0,
+  "best_program": {
+    "mapper": "mul(-1,item)",
+    "predicate": "and(lt(-3,item),eq(item,0))"
+  },
+  "exact_reference": null,
+  "final_ess": 1.1402157936294637,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-08","arm":"grammar-random","utc":"2026-08-13T19:09:41Z"}
+{"event":"arm_started","task_id":"blind-v3-08","arm":"llm","utc":"2026-08-13T19:09:41Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "item",
+    "predicate": "lt(-1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 7.000000344367748,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 0.9999999754023026
+}
+{"event":"arm_completed","task_id":"blind-v3-08","arm":"llm","utc":"2026-08-13T19:13:14Z"}
+{"event":"arm_started","task_id":"blind-v3-09","arm":"grammar-random","utc":"2026-08-13T19:13:14Z"}
+{
+  "best_loss": 20.0,
+  "best_program": {
+    "mapper": "3",
+    "predicate": "lt(4,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 3.786442951907891,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-09","arm":"grammar-random","utc":"2026-08-13T19:13:31Z"}
+{"event":"arm_started","task_id":"blind-v3-09","arm":"llm","utc":"2026-08-13T19:13:31Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "sub(item,-1)",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 6,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 3,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-09","arm":"llm","utc":"2026-08-13T19:18:14Z"}
+{"event":"arm_started","task_id":"blind-v3-10","arm":"grammar-random","utc":"2026-08-13T19:18:14Z"}
+{
+  "best_loss": 10.0,
+  "best_program": {
+    "mapper": "mul(0,item)",
+    "predicate": "lt(1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 5.84119710761969,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-10","arm":"grammar-random","utc":"2026-08-13T19:18:56Z"}
+{"event":"arm_started","task_id":"blind-v3-10","arm":"llm","utc":"2026-08-13T19:18:56Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "sub(item,3)",
+    "predicate": "lt(1,item)"
+  },
+  "exact_reference": null,
+  "final_ess": 3.5714509480303334,
+  "first_exact_slot": 26,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 7,
+  "self_normalized_exact_mass": 0.9999999999900616
+}
+{"event":"arm_completed","task_id":"blind-v3-10","arm":"llm","utc":"2026-08-13T19:31:31Z"}
+{"event":"arm_started","task_id":"blind-v3-11","arm":"grammar-random","utc":"2026-08-13T19:31:31Z"}
+{
+  "best_loss": 17.0,
+  "best_program": {
+    "mapper": "sub(item,item)",
+    "predicate": "eq(item,-1)"
+  },
+  "exact_reference": null,
+  "final_ess": 2.0526896359920785,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-11","arm":"grammar-random","utc":"2026-08-13T19:32:04Z"}
+{"event":"arm_started","task_id":"blind-v3-11","arm":"llm","utc":"2026-08-13T19:32:04Z"}
+{
+  "best_loss": 0.0,
+  "best_program": {
+    "mapper": "mul(item,3)",
+    "predicate": "lt(item,1)"
+  },
+  "exact_reference": null,
+  "final_ess": 8.0,
+  "first_exact_slot": 16,
+  "found_exact": true,
+  "logical_executions": 29,
+  "provider_calls": 5,
+  "self_normalized_exact_mass": 1.0
+}
+{"event":"arm_completed","task_id":"blind-v3-11","arm":"llm","utc":"2026-08-13T19:41:54Z"}
+{"event":"arm_started","task_id":"blind-v3-12","arm":"grammar-random","utc":"2026-08-13T19:41:54Z"}
+{
+  "best_loss": 12.0,
+  "best_program": {
+    "mapper": "add(1,item)",
+    "predicate": "eq(item,3)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.0000027396663445,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 0,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-12","arm":"grammar-random","utc":"2026-08-13T19:42:14Z"}
+{"event":"arm_started","task_id":"blind-v3-12","arm":"llm","utc":"2026-08-13T19:42:14Z"}
+{
+  "best_loss": 10.0,
+  "best_program": {
+    "mapper": "mul(item,3)",
+    "predicate": "eq(item,3)"
+  },
+  "exact_reference": null,
+  "final_ess": 1.0003317013108874,
+  "first_exact_slot": null,
+  "found_exact": false,
+  "logical_executions": 29,
+  "provider_calls": 7,
+  "self_normalized_exact_mass": 0
+}
+{"event":"arm_completed","task_id":"blind-v3-12","arm":"llm","utc":"2026-08-13T19:53:11Z"}
+{"event":"driver_completed","result_count":24,"utc":"2026-08-13T19:53:12Z"}

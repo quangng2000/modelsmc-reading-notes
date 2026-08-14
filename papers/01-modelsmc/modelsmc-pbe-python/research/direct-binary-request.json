@@ -1,0 +1,34 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Solve the programming-by-example task carefully. Compare only the two candidate predicate behaviors. Infer the shared mapper and predicate from the raw examples, then return the single more compatible choice."
+    },
+    {
+      "role": "user",
+      "content": "Fixed skeleton: foldr((item,acc) => if predicate(item) then mapper(item)::acc else acc, [], xs). Raw examples: [] -> []; [-3,-1,0,2,4] -> [1,0,4]; [3,1,-2,4,2] -> [1,4]; [0,4,-1,3] -> [0,1]; [2,-3,1,-2] -> [4,1]. The mapper is one deterministic small arithmetic expression shared by every retained item. Domain order is [-3,-2,-1,0,1,2,3,4]. Choice A keep mask: 00111100. Choice B keep mask: 00011100. In a keep mask, 1 means retain that domain value and 0 means drop it. Which choice is more compatible with all examples?"
+    }
+  ],
+  "temperature": 0,
+  "top_p": 1,
+  "max_tokens": 2000,
+  "seed": 90421,
+  "reasoning_effort": "high",
+  "include_reasoning": true,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "binary_predicate_choice",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["choice"],
+        "properties": {
+          "choice": {"type": "string", "enum": ["A", "B"]}
+        }
+      }
+    }
+  }
+}

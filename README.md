@@ -1,62 +1,80 @@
-# Program Synthesis and Model Discovery
+# ModelSMC-PBE: accountable program synthesis
 
-Reading notes for two papers on synthesizing executable programs from evidence. The papers use very different search and inference strategies, but both ask how a system can turn an incomplete specification into a useful program.
+This repository now centers on one reproducible study: a probability-accountable
+Sequential Monte Carlo (SMC) system for bounded programming by example. The
+publisher-facing manuscript, code, frozen protocols, completed evidence, and
+failure history are kept together so that the claims can be checked against the
+artifacts that support them.
 
-## Paper index
+The current paper is
+[ModelSMC-PBE: Probability-Accountable LLM-Shortlist SMC for Typed Programming by Example](papers/01-modelsmc/modelsmc-pbe-python/paper/main.pdf).
+Its source and paragraph-level review map are in the adjacent
+[paper directory](papers/01-modelsmc/modelsmc-pbe-python/paper/README.md).
 
-| # | Paper | Main idea | Review status | Source |
-| --- | --- | --- | --- | --- |
-| 1 | **A Probabilistic Framework for LLM-Based Model Discovery** | Use an LLM to propose executable scientific models and Sequential Monte Carlo to weight and resample them using observed data. | Full draft proposed in its own pull request | [arXiv:2602.18266](https://arxiv.org/abs/2602.18266) |
-| 2 | **Synthesizing Data Structure Transformations from Input-Output Examples** | Use typed program skeletons, deduction, and best-first enumeration to synthesize the simplest functional program consistent with examples. | Full draft proposed in its own pull request | [PLDI 2015](https://doi.org/10.1145/2737924.2737977) |
+## What the final paper claims
 
-## How the papers connect
+The method uses execution evidence to construct a finite typed shortlist,
+totalizes proposal failures with an explicit four-slot law, evaluates the
+proposal probability used by the application, and applies SMC weighting and
+resampling on a bounded Filter-then-Map grammar.
 
-| Question | Paper 1: ModelSMC | Paper 2: Lambda Learner |
-| --- | --- | --- |
-| What is synthesized? | Scientific simulator programs | Functional list and tree transformations |
-| What specifies the goal? | Observed scientific data, context, priors, and prompts | Input-output examples, types, primitives, and a cost model |
-| How are candidates proposed? | LLM-based program revision | Type-aware hypotheses and enumerative search |
-| How are candidates evaluated? | Likelihood-based potential functions | Deductive consistency checks against examples |
-| How does search focus? | Particle weighting and resampling | Best-first expansion by program cost |
-| What is returned? | A weighted population of plausible models | A minimum-cost program satisfying the examples |
+The completed evidence has three roles:
 
-The shared pattern is:
+- Fresh-blind r5 is the primary bounded-discovery study: the complete
+  LLM-shortlist SMC system found 10 of 12 frozen targets, compared with 2 of 12
+  for the matched grammar-random acquisition arm.
+- Provider-free calibration V1 is a negative result: its frozen target-mass
+  gate failed at 256 particles. Terminal diagnostic V2 verifies its
+  finite-state identities and isolates poor terminal proposal-target overlap
+  as a material mechanism, but it does not rescue V1 or validate the full SMC
+  recurrence.
+- ExeDec V2 is a released-data debug study, not confirmation: hidden-probe
+  exactness was 17/32 paired seed blocks for LLM-SMC and 3/32 for
+  grammar-random on an unofficial strict Filter-then-Map adapter to only four
+  public, potentially contaminated targets.
 
-```text
-specification or evidence
-        -> propose candidate programs
-        -> evaluate candidates
-        -> focus search on promising candidates
-        -> return an executable program or distribution over programs
+The paper does not claim a calibrated LLM posterior, an isolated LLM-only
+effect, arbitrary-task generalization, semantic equivalence from finite probes,
+or compute superiority.
+
+## Navigate the repository
+
+- [Package landing page](papers/01-modelsmc/modelsmc-pbe-python/README.md):
+  method, evidence ledger, install, and verification.
+- [Publication experiment plan](papers/01-modelsmc/modelsmc-pbe-python/research/PUBLICATION_EXPERIMENT_PLAN.md):
+  study-by-study claim policy and submission blockers.
+- [Research evidence index](papers/01-modelsmc/modelsmc-pbe-python/research/README.md):
+  current protocols, analyzers, artifacts, and preserved history.
+- [Design document](papers/01-modelsmc/modelsmc-pbe-python/DESIGN.md):
+  implementation and probability-accounting boundary.
+- [Root artifact tree](artifacts): imported study outputs, analyses, seals, and
+  retained failures. Frozen directories are evidence, not scratch space.
+- [Root research bindings](research): frozen r5 protocol and runbook copies
+  used at the repository-level custody boundary.
+
+Earlier reading-note framing and superseded experimental branches remain in
+version history and in their frozen files where integrity requires it. They are
+not parallel publication narratives.
+
+## Local verification
+
+Python 3.12 and `uv` are expected. From the repository root:
+
+```bash
+cd papers/01-modelsmc/modelsmc-pbe-python
+uv sync --dev
+uv run pytest -q
+uv run ruff check src tests research
 ```
 
-Paper 2 provides a classical program-synthesis reference point: the language and search space are explicit, and correctness is checked against examples. Paper 1 replaces the fixed symbolic proposal mechanism with open-ended LLM revisions and replaces exact example consistency with probabilistic evidence from simulation.
-
-## Repository layout
-
-```text
-.
-├── .github
-│   ├── ISSUE_TEMPLATE
-│   └── pull_request_template.md
-├── CONTRIBUTING.md
-└── README.md
-```
-
-The source PDFs are linked above rather than committed to this repository. Each paper's complete notes are intentionally introduced through a separate pull request. This makes the whole draft visible in GitHub's **Files changed** view so reviewers can comment on individual lines before the notes are merged.
-
-## Suggested reading path
-
-1. Start with Paper 2 for the classical synthesis vocabulary: hypotheses, holes, deduction, types, cost, and enumerative search.
-2. Continue with Paper 1 for probabilistic model discovery: kernels, potential functions, particles, likelihood weighting, and resampling.
-3. Compare what guarantees are gained or lost when moving from an explicit typed search space to open-ended LLM proposals.
+Build the manuscript with Tectonic or the JMLR-compatible `latexmk` command
+documented in the [paper README](papers/01-modelsmc/modelsmc-pbe-python/paper/README.md).
+Running the test suite does not contact a model provider. Completed frozen
+studies should not be resumed or rerun merely to reproduce the reported
+analysis.
 
 ## Collaboration
 
-- Discuss [Paper 1 in issue #2](https://github.com/quangng2000/modelsmc-reading-notes/issues/2) and [Paper 2 in issue #1](https://github.com/quangng2000/modelsmc-reading-notes/issues/1).
-- Review each initial paper draft in its own pull request. Open **Files changed** to comment on a specific README line or suggest replacement wording.
-- Open a [new paper-review issue](https://github.com/quangng2000/modelsmc-reading-notes/issues/new?template=paper-review.md) for a separate question, disputed interpretation, possible correction, or missing definition.
-- Use a focused branch and pull request for a concrete notes change that is ready for line-by-line review.
-- Follow the evidence, notation, and review guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-General rule: discuss the claim in an issue, propose exact wording in a pull request, and ask a collaborator to review before merging.
+Use focused changes, preserve frozen protocols and artifacts byte-for-byte, and
+separate new exploratory work from completed evidence. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for review conventions.

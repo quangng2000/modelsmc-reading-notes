@@ -1,0 +1,178 @@
+{
+  "schema": "post-hoc-developmental-evidence-frontier-v1",
+  "protocol_status": "developmental-post-hoc-frozen",
+  "study_classification": {
+    "blind": false,
+    "confirmatory": false,
+    "preregistered_before_original_task_outcomes": false,
+    "claim_scope": "mechanism-development check on two previously observed failures only",
+    "required_label_in_every_report": "POST-HOC DEVELOPMENTAL; NON-BLIND; NON-CONFIRMATORY",
+    "why_non_blind": "blind-02 and blind-03, their failures, their trajectories, and the hidden reveal were available before this selector was designed",
+    "forbidden_claims": [
+      "independent replication",
+      "confirmatory evidence",
+      "unbiased held-out success rate",
+      "general speedup over exhaustive search",
+      "importance-sampling correctness or calibrated proposal probabilities"
+    ]
+  },
+  "developmental_rationale": {
+    "observed_prior_outcomes": {
+      "blind-02": {
+        "exact_by_slot_37": false,
+        "best_loss": 17
+      },
+      "blind-03": {
+        "exact_by_slot_37": false,
+        "best_loss": 25
+      }
+    },
+    "post_hoc_failure_hypothesis": "Complete-program loss favored states that still violated sound singleton predicate facts. The predicate-first repair policy therefore kept requesting predicate repairs, and useful component progress could not reliably survive long enough to reach mapper repair.",
+    "single_planned_change": "Replace semantic-diverse beam selection with the evidence-frontier selector. Keep the tasks, examples, model, prompt information boundary, repair-hole policy, K, W, interpreter, and matched-random construction fixed.",
+    "developmental_question": "Does preserving a public-evidence constraint frontier allow both failed tasks to reach a predicate-correct state and then repair the mapper within four rounds?"
+  },
+  "bindings_to_original_study": {
+    "original_protocol": "research/protocol-blind-beam-four-task-v1.json",
+    "original_public_manifest": "artifacts/execution-guided-repair/blind-beam-four-v1/suite/public/manifest.json",
+    "original_public_manifest_sha256": "e312e1f0c540e766aa58c2739b8ee10304290676c138a41b22d3db4b225a78e4",
+    "tasks_in_fixed_run_order": [
+      {
+        "task_id": "blind-02",
+        "path": "artifacts/execution-guided-repair/blind-beam-four-v1/suite/public/blind-02.json",
+        "sha256": "4053ac3273dde06116f8b62ed021a41dd93822f16e4fb7f935169acd674f9457",
+        "provider_seed": 202000,
+        "tie_seed": 202100,
+        "matched_random_seed": 202200
+      },
+      {
+        "task_id": "blind-03",
+        "path": "artifacts/execution-guided-repair/blind-beam-four-v1/suite/public/blind-03.json",
+        "sha256": "a37e013d0d91f86d890ba7e3b1d509a39ab0bc017e1a32aebff248f10b48aff0",
+        "provider_seed": 203000,
+        "tie_seed": 203100,
+        "matched_random_seed": 203200
+      }
+    ],
+    "target_use_rule": "The provider request, selector, interpreter feedback, and run harness may use only the public task examples and mechanically derived singleton constraints. The private target AST and family label may be used only after provider sealing for audit, never for proposal generation or selection.",
+    "no_task_replacement": true
+  },
+  "freeze_before_followup_calls": {
+    "required_bindings": [
+      "final harness SHA-256",
+      "prompt-template SHA-256",
+      "analysis-code SHA-256",
+      "served-model revision and endpoint health record",
+      "this protocol SHA-256 after protocol_status changes to developmental-post-hoc-frozen"
+    ],
+    "no_retuning_rule": "After the first follow-up provider call, do not change selector ordering, prompts, examples, budgets, seeds, model settings, failure handling, or analysis. Any revision is a separately named post-hoc developmental protocol and invalidates this protocol's go/no-go result.",
+    "harness_path": "research/iterative_beam_experiment.py",
+    "harness_sha256": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3",
+    "prompt_template_sha256": "82d7f0754a00e1ba65eac10b592d449c01d7f9126d487ef41cae08a9480bb67f",
+    "prompt_template_binding": {
+      "scheme": "SHA256(domain || NUL || repeated(path || NUL || exact_file_bytes || NUL))",
+      "domain": "execution-guided-beam-prompt-source-bundle-v1",
+      "paths_in_order": [
+        "research/automatic_shortlist_experiment.py",
+        "research/adaptive_shortlist_experiment.py",
+        "research/iterative_beam_experiment.py"
+      ],
+      "source_sha256": {
+        "research/automatic_shortlist_experiment.py": "f757a9c32cc29974e5fa6f2a63a6cefc5f3aa235acbaa07265324016d975d782",
+        "research/adaptive_shortlist_experiment.py": "77e411006c3834c251c4dd563027ac5c2ed07afcbedb7eaa0f81d86ac745df85",
+        "research/iterative_beam_experiment.py": "44a430f44f2c0586b909f3e45e224ab4a70ec162893856ddd1da1e23344a04a3"
+      }
+    },
+    "test_suite_sha256": "1c7f0e116518aa8cf66a6dbb51fca1c292240b383fdc26ef942b80e9edd1b632",
+    "test_result": "remote pinned environment: ruff passed; 29 focused tests passed",
+    "endpoint_health_record": "artifacts/execution-guided-repair/developmental-evidence-frontier-v1/preflight/model-endpoint.json",
+    "endpoint_health_record_sha256": "66e0b67cf38e5828aa603f3f2664c92946697e4471ce43768e7e1f2518711d17",
+    "analysis_code_sha256": "ab3c92ce8e99aa079b036727613d282a8acfd25234f675f8c4d90c518b74ee6d",
+    "analysis_test_sha256": "3f8133761d53b92cd7ec46efe153b24d2ea8d4fac34bf43ee46c7556e35a22b4",
+    "analysis_test_result": "8 focused tests passed before provider calls"
+  },
+  "model": {
+    "served_name": "gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "reasoning_effort": "low",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "timeout_seconds": 420,
+    "provider_retry_policy": "none",
+    "trajectory_replication_note": "At temperature zero, changed bookkeeping seeds are not independent model replications."
+  },
+  "search": {
+    "selection_policy": "evidence-frontier",
+    "branching_factor": 4,
+    "beam_width": 2,
+    "maximum_rounds": 4,
+    "start_seed": 17,
+    "singleton_evidence": true,
+    "stall_policy": "alternate-hole",
+    "proposal_slot_checkpoints": {
+      "initial": 1,
+      "round_1": 5,
+      "round_2": 13,
+      "round_3_diagnostic": 21,
+      "round_4_developmental_endpoint": 29
+    },
+    "maximum_proposal_slots": 29,
+    "maximum_provider_calls": 7,
+    "fixed_round_schedule": "Expand one state in Round 1 and exactly W=2 scheduled states in Rounds 2 through 4; cycle an underfilled nonempty beam. Invalid calls consume K=4 proposal slots without retry or backfill.",
+    "evidence_metrics": {
+      "predicate_violations": "number of sound singleton predicate facts violated by the candidate predicate",
+      "mapper_violations": "number of sound retained-singleton mapper facts violated by the candidate mapper",
+      "source_restriction": "public singleton input-output examples only"
+    },
+    "selector": {
+      "deduplication": "deduplicate syntax, then finite joint predicate/mapper semantic cells on the sorted observed input domain",
+      "anchor_1": "best complete-program loss, with the frozen proposal/parent/SHA-256 tie break",
+      "anchor_2": "evidence frontier ordered by predicate violations, mapper violations, complete-program loss, proposal rank, parent rank, and seeded SHA-256",
+      "remaining_slots": "fill by component novelty, then the same evidence-frontier order",
+      "reason": "A component that satisfies more certified singleton facts can survive even when the other still-wrong component temporarily makes its complete-program loss worse.",
+      "target_independence": "The selector never reads the target AST, target family, catalog size, or unobserved examples."
+    },
+    "repair_hole_order": [
+      "repair violated sound singleton predicate constraints",
+      "then repair violated sound singleton mapper constraints",
+      "then use mechanically certified predicate-toggle support",
+      "then use conditional mapper constraints",
+      "otherwise use the frozen odd-round predicate/even-round mapper fallback labeled unsupported exploration"
+    ],
+    "beam_transition": "elitist pool of current parents plus valid children",
+    "exact_stop": "Complete all scheduled K-candidate expansions in the active round, then stop before the next round if any exact child was found.",
+    "importance_sampling_claim": false,
+    "proposal_probability_claim": false
+  },
+  "matched_random_baseline": {
+    "trials_per_task": 10000,
+    "run_after_provider_seal": true,
+    "policy": "Use the identical public task, initial state, singleton facts, repair-hole choice, evidence-frontier selector, K=4, W=2, R=4, slot accounting, active-round stopping, semantic deduplication, no-op exclusion, and failure policy. Replace only each LLM shortlist with four syntax-uniform legal non-no-op repairs sampled without replacement.",
+    "reported_checkpoints": [
+      21,
+      29
+    ],
+    "required_metrics": [
+      "exact successes and Wilson interval at each checkpoint",
+      "best-loss distribution at each checkpoint",
+      "constraint-frontier predicate and mapper violation distributions",
+      "fraction of random trajectories at least as good as the LLM on loss and violation counts",
+      "first-exact slot conditional on success"
+    ],
+    "wall_clock_speedup_claim": false
+  },
+  "developmental_endpoints": {
+    "mechanism_trace": "For every selected state after every round, report predicate violations, mapper violations, loss, repaired hole, and whether it occupied the loss anchor or evidence-frontier anchor.",
+    "round_3_checkpoint": "Descriptive only: exact discovery and best constraint-violation pair by slot 21.",
+    "round_4_go_no_go": "The developmental method succeeds only if blind-02 and blind-03 are both exact with interpreter total_loss=0 by slot 29, all scheduled artifacts validate, and no target-only information entered a request or selector.",
+    "random_comparison_role": "Descriptive mechanism comparator; it does not turn these reused tasks into confirmation.",
+    "failure_rule": "If either task misses the Round-4 endpoint, this version fails its developmental gate. Further diagnosis is allowed only under a newly versioned, explicitly post-hoc developmental protocol.",
+    "success_consequence": "A pass permits freezing the method and activating the separate blind-v2 template. It does not itself support a scientific speedup claim."
+  },
+  "reporting": {
+    "include_all_tasks": true,
+    "include_all_invalid_and_aborted_calls": true,
+    "include_prior_v1_outcomes_beside_followup_outcomes": true,
+    "do_not_pool_v1_and_followup_as_independent_trials": true,
+    "required_title_prefix": "Post-hoc developmental evidence-frontier follow-up"
+  }
+}
