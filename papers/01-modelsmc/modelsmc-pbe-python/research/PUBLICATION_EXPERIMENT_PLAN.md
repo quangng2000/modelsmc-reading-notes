@@ -310,11 +310,13 @@ evaluation.
   unimported local derivative remain preserved as distinct provenance records.
 - The 16-page PDF was rebuilt from the final evidence-integrated source and
   every page was rendered and visually inspected.
+- The public companion archive was published and independently downloaded at
+  [Hugging Face commit `c88f5194`](https://huggingface.co/datasets/hackerprofile1/modelsmc-pbe-research/commit/c88f519428afff80d3c5c376a666365540c8e7ab);
+  all 163 artifact checksums, the canonical PDF, the GitHub-only source split,
+  and the absence of private reveal files were verified.
 
 ## Remaining submission blockers
 
 - Complete Tri Nguyen's affiliation and contact metadata.
 - Complete funding, compute, author-contribution, and competing-interest
   disclosures.
-- Publish and verify the immutable public companion archive, then replace any
-  remaining local-only availability language with its permanent release URL.
